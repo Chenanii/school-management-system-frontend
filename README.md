@@ -13,9 +13,23 @@ src/
   features/
     auth/          Sign-in, school signup, and session state
     dashboard/     Overview page and summary data
+    academic-years/ Academic-year calendar management and term summaries
+    terms/          Term calendar, lifecycle, and status workflow
+    teaching-assignments/ Teacher, class group, standalone or curriculum subject, and term allocations
+    assessments/    Assessment lifecycle, mark entry, and results review
+    term-results/   Calculated term subject results and finalize/publish workflow
+    report-cards/   Student report-card previews and printing for published term results
+    promotions/     Result-based promotion policy, decisions, and batch history
+    subscriptions/  School billing self-service and platform plan/subscription management
     directory/     Student and staff directory UI and data
     students/      Student register, profiles, and status management
+    enrollments/   Student term placements, status management, and bulk progression
+    enrollments/   Student term placements, status management, and bulk progression
     subjects/      Subject catalogue and class-level curriculum links
+    class-levels/  Class levels, progression order, groups, and curriculum overview
+    class-groups/  Class groups within levels, with enrolment and assignment counts
+    teachers/      Teacher directory, invitation management, and invitation acceptance
+    class-subjects/ Curriculum links between class levels and subjects
     users/         Staff accounts, roles, status, and user data
   shared/          Shared navigation, role, and formatting utilities
   api.js           Shared API client
@@ -36,5 +50,5 @@ src/
 
 The development server proxies `/api` requests to the backend. To use a different API URL, set `VITE_API_BASE_URL` in a local `.env` file.
 
-The sidebar footer identifies the signed-in user and their school. Super administrators see the seeded `Legacy School` workspace by default; their overview includes school-level student and staff totals.
+The sidebar footer identifies the signed-in user and their school. Super administrators select a school workspace from the sidebar; school-specific requests use that selected context.
 # schook-reporting-frontend

@@ -1,0 +1,84 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  apiRequest,
+  clearAccessToken,
+  clearSchoolContextId,
+  getAccessToken,
+  saveAccessToken,
+  TOKEN_KEY
+} from '../../api.js';
+
+export default function useAuth() {
+  const [user, setUser] = useState(null);
+  const sessionVersion = useRef(0);
+
+  const signOut = useCallback(() => {
+    sessionVersion.current += 1;
+    clearAccessToken();
+    clearSchoolContextId();
+    setUser(null);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restoreSession() {
+      const token = getAccessToken();
+      if (!token) return;
+      const version = sessionVersion.current;
+      try {
+        const result = await apiRequest('/auth/me');
+        if (!cancelled && sessionVersion.current === version && getAccessToken() === token) {
+          setUser(result.data);
+        }
+      } catch {
+        if (!cancelled && sessionVersion.current === version && getAccessToken() === token) signOut();
+      }
+    }
+    restoreSession();
+    return () => { cancelled = true; };
+  }, [signOut]);
+
+  useEffect(() => {
+    function synchronizeSession(event) {
+      if (event.key !== TOKEN_KEY) return;
+      sessionVersion.current += 1;
+      if (!event.newValue) {
+        clearSchoolContextId();
+        setUser(null);
+        return;
+      }
+
+      const token = event.newValue;
+      clearSchoolContextId();
+      const version = sessionVersion.current;
+      apiRequest('/auth/me')
+        .then((result) => {
+          if (sessionVersion.current === version && getAccessToken() === token) {
+            setUser(result.data);
+          }
+        })
+        .catch(() => {
+          if (sessionVersion.current === version && getAccessToken() === token) {
+            clearAccessToken();
+            setUser(null);
+          }
+        });
+    }
+
+    window.addEventListener('storage', synchronizeSession);
+    return () => window.removeEventListener('storage', synchronizeSession);
+  }, []);
+
+  const signIn = useCallback(async (email, password) => {
+    const result = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    saveAccessToken(result.data.accessToken);
+    clearSchoolContextId();
+    sessionVersion.current += 1;
+    setUser(result.data.user);
+  }, []);
+
+  return { user, signIn, signOut };
+}
