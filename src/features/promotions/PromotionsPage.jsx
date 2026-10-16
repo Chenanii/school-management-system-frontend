@@ -115,6 +115,7 @@ function PolicyEditor({ policy, onSave, saving }) {
         <div><h3>{policy.classLevelName}</h3><p>{policy.isDefault ? 'Using the system default policy' : 'Custom policy saved'}</p></div>
         <span className={`subject-status ${policy.isDefault ? 'subject-status-inactive' : 'subject-status-active'}`}>{policy.isDefault ? 'Default' : 'Custom'}</span>
       </div>
+      <p className="px-5 pb-3 text-xs text-muted">Promotion thresholds use percentages for every school. Primary report marks out of 50 are converted to percentages for these checks.</p>
       <div className="promotion-policy-fields">
         <label className="field-label">Minimum average (%)
           <input className="text-input" type="number" min="0" max="100" step="0.01" value={form.minimumAverage} onChange={(event) => setForm({ ...form, minimumAverage: event.target.value })} required />

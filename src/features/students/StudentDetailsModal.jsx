@@ -4,7 +4,7 @@ import { apiRequest } from '../../api.js';
 import { formatDate, formatName } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
 
-export default function StudentDetailsModal({ student, onClose }) {
+export default function StudentDetailsModal({ student, isTeacher = false, onClose }) {
   const [details, setDetails] = useState(student);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,7 +47,7 @@ export default function StudentDetailsModal({ student, onClose }) {
                   <div><dt>Date of birth</dt><dd><CalendarDays size={14} />{formatDate(details.dateOfBirth)}</dd></div>
                   <div><dt>Gender</dt><dd>{details.gender || 'Not provided'}</dd></div>
                   <div><dt>Enrolments</dt><dd>{details._count?.enrollments ?? details.enrollments?.length ?? 0}</dd></div>
-                  <div><dt>Parents/guardians</dt><dd><Users size={14} />{details._count?.parents ?? details.parents?.length ?? 0}</dd></div>
+                  {!isTeacher && <div><dt>Parents/guardians</dt><dd><Users size={14} />{details._count?.parents ?? details.parents?.length ?? 0}</dd></div>}
                 </dl>
                 <section className="student-history">
                   <h3>Recent enrolments</h3>
@@ -58,13 +58,13 @@ export default function StudentDetailsModal({ student, onClose }) {
                     </div>
                   ))}
                 </section>
-                <section className="student-history">
+                {!isTeacher && <section className="student-history">
                   <h3>Parents & guardians</h3>
                   {!details.parents?.length ? <p>No parent or guardian linked yet.</p> : details.parents.map((link) => {
                     const parent = link.parent?.user;
                     return <div className="student-history-row" key={link.parent?.id || link.id}><div><strong>{parent ? formatName(parent) : 'Parent / guardian'}</strong><span><Mail size={12} />{parent?.email || 'Contact not provided'}</span></div></div>;
                   })}
-                </section>
+                </section>}
               </div>
             )}
         <div className="modal-actions">

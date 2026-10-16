@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import { createEnrollment, fetchAllPages } from '../enrollments/enrollmentApi.js';
 
 const blankStudent = {
   firstName: '',
@@ -20,6 +21,28 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
   const [form, setForm] = useState(blankStudent);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [terms, setTerms] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [termId, setTermId] = useState('');
+  const [classGroupId, setClassGroupId] = useState('');
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [createdStudentId, setCreatedStudentId] = useState('');
+
+  useEffect(() => {
+    if (editing) return undefined;
+    let cancelled = false;
+    setOptionsLoading(true);
+    Promise.all([fetchAllPages('/terms'), fetchAllPages('/class-groups')])
+      .then(([termData, groupData]) => {
+        if (!cancelled) {
+          setTerms(termData.filter((term) => ['DRAFT', 'OPEN'].includes(term.status)));
+          setGroups(groupData);
+        }
+      })
+      .catch((cause) => { if (!cancelled) setError(cause.message); })
+      .finally(() => { if (!cancelled) setOptionsLoading(false); });
+    return () => { cancelled = true; };
+  }, [editing]);
 
   useEffect(() => {
     setForm(student ? {
@@ -49,10 +72,17 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
     };
 
     try {
-      await apiRequest(editing ? `/students/${student.id}` : '/students', {
-        method: editing ? 'PATCH' : 'POST',
-        body: JSON.stringify(payload)
-      });
+      if (editing) {
+        await apiRequest(`/students/${student.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      } else {
+        let studentId = createdStudentId;
+        if (!studentId) {
+          const response = await apiRequest('/students', { method: 'POST', body: JSON.stringify(payload) });
+          studentId = response.data.id;
+          setCreatedStudentId(studentId);
+        }
+        await createEnrollment({ studentId, termId, classGroupId });
+      }
       onSaved();
     } catch (cause) {
       setError(cause.message);
@@ -68,7 +98,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
           <div>
             <p className="eyebrow">{editing ? 'Update student record' : 'New student'}</p>
             <h2 id="student-form-title">{editing ? 'Edit student' : 'Register a student'}</h2>
-            <p>{editing ? 'Update the student’s personal details.' : 'Add a learner to your school register.'}</p>
+            <p>{editing ? 'Update the student’s personal details.' : 'Add a learner and enroll them in a class and term.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -109,12 +139,27 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               </select>
             </label>
           </div>
+          {!editing && <div className="user-name-grid">
+            <label className="field-label">Academic term
+              <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required disabled={optionsLoading || Boolean(createdStudentId)}>
+                <option value="">{optionsLoading ? 'Loading terms…' : 'Select a term'}</option>
+                {terms.map((term) => <option key={term.id} value={term.id}>{term.academicYear?.name || 'Academic year'} · {term.sequence}. {term.name}</option>)}
+              </select>
+            </label>
+            <label className="field-label">Class group
+              <select className="text-input" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} required disabled={optionsLoading || Boolean(createdStudentId)}>
+                <option value="">{optionsLoading ? 'Loading classes…' : 'Select a class group'}</option>
+                {groups.map((group) => <option key={group.id} value={group.id}>{[group.classLevel?.name, group.name].filter(Boolean).join(' · ')}</option>)}
+              </select>
+            </label>
+          </div>}
+          {createdStudentId && <p className="field-hint">Student registered. Complete the enrollment below to finish.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={busy}>
+            <button className="primary-button" type="submit" disabled={busy || optionsLoading || (!editing && (!terms.length || !groups.length))}>
               {busy && <LoaderCircle size={16} className="animate-spin" />}
-              {busy ? 'Saving…' : editing ? 'Save changes' : 'Register student'}
+              {busy ? 'Saving…' : editing ? 'Save changes' : createdStudentId ? 'Retry enrollment' : 'Register and enroll'}
             </button>
           </div>
         </form>

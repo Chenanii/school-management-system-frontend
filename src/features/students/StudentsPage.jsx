@@ -14,7 +14,8 @@ const statuses = [
   { value: 'ARCHIVED', label: 'Archived' }
 ];
 
-export default function StudentsPage({ signOut }) {
+export default function StudentsPage({ user, signOut }) {
+  const isTeacher = user.role === 'TEACHER';
   const directory = useStudents({ enabled: true, signOut });
   const { students, pagination, loading, error, search, status, page } = directory;
   const [formStudent, setFormStudent] = useState(null);
@@ -58,9 +59,9 @@ export default function StudentsPage({ signOut }) {
         <div>
           <p className="eyebrow">Your school community</p>
           <h1 className="page-title">Students<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Keep track of every learner in your school.</p>
+          <p className="mt-2 text-sm text-muted">{isTeacher ? 'View learners enrolled in your assigned classes.' : 'Keep track of every learner in your school.'}</p>
         </div>
-        <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Register student</button>
+        {!isTeacher && <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Register student</button>}
       </div>
       {actionError && <div className="notice-error" role="alert"><span>{actionError}</span><button className="text-button" onClick={() => setActionError('')}>Dismiss</button></div>}
       <section className="panel directory-panel student-directory-panel">
@@ -69,10 +70,10 @@ export default function StudentsPage({ signOut }) {
             <Search size={17} className="search-icon" />
             <input className="search-input" type="search" value={search} onChange={(event) => directory.setSearch(event.target.value)} placeholder="Search name or admission no." aria-label="Search students" />
           </div>
-          <label className="sr-only" htmlFor="student-status-filter">Filter by status</label>
+          {!isTeacher && <><label className="sr-only" htmlFor="student-status-filter">Filter by status</label>
           <select id="student-status-filter" className="filter-select student-status-filter" value={status} onChange={(event) => directory.setStatus(event.target.value)}>
             {statuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
+          </select></>}
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'student' : 'students'}</span>
         </div>
         {error ? (
@@ -85,9 +86,9 @@ export default function StudentsPage({ signOut }) {
         ) : students.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><Users size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{noFilters ? 'No students registered yet' : 'No students match these filters'}</p>
-            <p className="mt-1 text-xs text-muted">{noFilters ? 'Add your first student to start building the school register.' : 'Try a different search or status filter.'}</p>
-            {noFilters && <button className="text-button mt-3" onClick={openCreate}>Register your first student</button>}
+            <p className="mt-3 text-sm font-semibold text-ink">{isTeacher ? 'No students in your assigned classes' : noFilters ? 'No students registered yet' : 'No students match these filters'}</p>
+            <p className="mt-1 text-xs text-muted">{isTeacher ? 'Students appear here when enrolled in one of your assigned classes.' : noFilters ? 'Add your first student to start building the school register.' : 'Try a different search or status filter.'}</p>
+            {!isTeacher && noFilters && <button className="text-button mt-3" onClick={openCreate}>Register your first student</button>}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -112,7 +113,8 @@ export default function StudentsPage({ signOut }) {
                     <td>
                       <div className="student-actions">
                         <button className="table-action" onClick={() => setDetailStudent(student)} aria-label={`View ${formatName(student)}`} title="View profile"><Eye size={14} /></button>
-                        <button className="table-action" onClick={() => openEdit(student)} aria-label={`Edit ${formatName(student)}`}>Edit</button>
+                        {!isTeacher && <button className="table-action" onClick={() => openEdit(student)} aria-label={`Edit ${formatName(student)}`}>Edit</button>}
+                        {!isTeacher && <>
                         <select
                           className="status-action"
                           aria-label={`Change status for ${formatName(student)}`}
@@ -123,6 +125,7 @@ export default function StudentsPage({ signOut }) {
                           {statuses.filter((item) => item.value).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
                         {updatingStudentId === student.id && <LoaderCircle size={14} className="animate-spin text-green-700" />}
+                        </>}
                       </div>
                     </td>
                   </tr>
@@ -141,7 +144,7 @@ export default function StudentsPage({ signOut }) {
           </div>
         )}
       </section>
-      {formOpen && (
+      {!isTeacher && formOpen && (
         <StudentFormModal
           student={formStudent}
           onClose={() => setFormOpen(false)}
@@ -151,7 +154,7 @@ export default function StudentsPage({ signOut }) {
           }}
         />
       )}
-      {detailStudent && <StudentDetailsModal student={detailStudent} onClose={() => setDetailStudent(null)} />}
+      {detailStudent && <StudentDetailsModal student={detailStudent} isTeacher={isTeacher} onClose={() => setDetailStudent(null)} />}
     </>
   );
 }

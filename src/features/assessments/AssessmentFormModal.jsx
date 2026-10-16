@@ -20,7 +20,13 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === 'assessmentType' ? {
+        weightPercent: value === 'FINAL_EXAM' ? '60' : current.assessmentType === 'FINAL_EXAM' ? '40' : current.weightPercent
+      } : {})
+    }));
   }
 
   async function submit(event) {
@@ -31,7 +37,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
       title: form.title.trim(),
       assessmentType: form.assessmentType,
       maxMark: Number(form.maxMark),
-      weightPercent: Number(form.weightPercent)
+      weightPercent: form.assessmentType === 'FINAL_EXAM' ? 60 : Number(form.weightPercent)
     };
     if (!editing) {
       payload.teachingAssignmentId = form.teachingAssignmentId;
@@ -98,11 +104,15 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
               <input className="text-input" type="number" name="maxMark" min="0.01" max="100" step="0.01" value={form.maxMark} onChange={updateField} required disabled={!canEdit} />
             </label>
           </div>
-          <label className="field-label">
-            Assessment weight (%)
-            <input className="text-input" type="number" name="weightPercent" min="0" max="100" step="0.01" value={form.weightPercent} onChange={updateField} required disabled={!canEdit} />
-            <span className="field-hint">How much this assessment contributes to the subject result; enter 0–100.</span>
-          </label>
+          {form.assessmentType === 'FINAL_EXAM' ? (
+            <div className="assessment-weight-fixed"><strong>Final exam contribution</strong><span>60% of the final subject result</span><small>The final exam is fixed at 60%; coursework and mid-term assessments share the remaining 40%.</small></div>
+          ) : (
+            <label className="field-label">
+              Contribution to final mark (%)
+              <input className="text-input" type="number" name="weightPercent" min="0" max="40" step="0.01" value={form.weightPercent} onChange={updateField} required disabled={!canEdit} />
+              <span className="field-hint">This assessment’s share of the final subject result. Coursework and mid-term assessments together must total 40%.</span>
+            </label>
+          )}
           {!canCreateForSelectedTerm && !editing && <p className="form-error" role="alert">The selected teaching assignment belongs to a term that does not accept new assessments.</p>}
           {!canEdit && <p className="form-hint">This assessment cannot be edited after leaving draft status or after results have been recorded.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}

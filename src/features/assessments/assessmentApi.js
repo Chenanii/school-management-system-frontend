@@ -55,6 +55,10 @@ export function transitionAssessment(id) {
   return apiRequest(`/assessments/${id}/transition`, { method: 'POST' });
 }
 
+export function resetAssessment(id) {
+  return apiRequest(`/assessments/${id}/reset`, { method: 'POST' });
+}
+
 export function fetchAssessmentResults(id) {
   return apiRequest(`/assessments/${id}/results`);
 }

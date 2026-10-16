@@ -21,9 +21,11 @@ export function fetchEnrollments({ page, limit = 20, termId, classGroupId, statu
   return apiRequest(`/enrollments?${params}`);
 }
 
-export function fetchStudents(search = '') {
-  const params = new URLSearchParams({ page: '1', limit: '100' });
+export function fetchStudents(search = '', excludeEnrolledTermId = '', page = 1) {
+  const params = new URLSearchParams({ page: String(page), limit: '20' });
   if (search.trim()) params.set('search', search.trim());
+  if (excludeEnrolledTermId) params.set('excludeEnrolledTermId', excludeEnrolledTermId);
+  params.set('status', 'ACTIVE');
   return apiRequest(`/students?${params}`);
 }
 
@@ -45,6 +47,13 @@ export function updateEnrollmentStatus(id, status) {
   });
 }
 
+export function updateEnrollmentClassGroup(id, classGroupId) {
+  return apiRequest(`/enrollments/${id}/class-group`, {
+    method: 'PATCH',
+    body: JSON.stringify({ classGroupId })
+  });
+}
+
 export function previewBulkEnrollment(data) {
   return apiRequest('/enrollments/bulk/preview', {
     method: 'POST',
@@ -57,4 +66,12 @@ export function createBulkEnrollments(data) {
     method: 'POST',
     body: JSON.stringify({ ...data, confirm: true })
   });
+}
+
+export function previewSelectedBulkEnrollment(data) {
+  return apiRequest('/enrollments/bulk/selected/preview', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function createSelectedBulkEnrollments(data) {
+  return apiRequest('/enrollments/bulk/selected', { method: 'POST', body: JSON.stringify(data) });
 }

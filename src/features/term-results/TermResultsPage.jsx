@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpenCheck, Calculator, Check, LoaderCircle, Megaphone, RefreshCw } from 'lucide-react';
 import { calculateTermResults, fetchAllPages, fetchTermResults, updateTermResultsStatus } from './termResultApi.js';
+import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -18,7 +19,7 @@ function termLabel(term) {
   return `${term.academicYear?.name || 'Academic year'} · ${term.sequence}. ${term.name}`;
 }
 
-export default function TermResultsPage({ signOut }) {
+export default function TermResultsPage({ user, onNavigate, signOut }) {
   const [terms, setTerms] = useState([]);
   const [groups, setGroups] = useState([]);
   const [classSubjects, setClassSubjects] = useState([]);
@@ -153,7 +154,7 @@ export default function TermResultsPage({ signOut }) {
           <p className="mt-2 text-sm text-muted">Calculate, review, finalize, and publish subject results for a class and term.</p>
         </div>
       </div>
-      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span><button className="text-button" onClick={() => setError('')}>Dismiss</button></div>}
+      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{error.includes('grade scale') && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user?.role) && <button className="text-button" onClick={() => onNavigate('academic-years')}>Configure academic year</button>}<button className="text-button" onClick={() => setError('')}>Dismiss</button></div>}
       {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" onClick={() => setNotice('')}>Dismiss</button></div>}
 
       <section className="panel term-results-scope">
@@ -223,7 +224,7 @@ export default function TermResultsPage({ signOut }) {
                   <tr key={result.id}>
                     <td><strong>{studentName(result.enrollment?.student)}</strong></td>
                     <td className="text-muted">{result.enrollment?.student?.admissionNumber || '—'}</td>
-                    <td className="term-result-mark">{result.finalMark == null ? '—' : `${Number(result.finalMark).toFixed(2)}%`}</td>
+                    <td className="term-result-mark">{formatAcademicMark(result.finalMark, resultSet.scoreOutOf)}</td>
                     <td><strong>{result.grade || '—'}</strong></td>
                     <td className="text-muted">{result.gradeDescription || '—'}</td>
                     <td><span className={`subject-status subject-status-${result.status.toLowerCase()}`}>{result.status}</span></td>
@@ -236,7 +237,7 @@ export default function TermResultsPage({ signOut }) {
             </div>
           ) : <div className="table-message"><span>No results calculated for this scope yet. Check assessments, then calculate results.</span></div>}
           <div className="term-results-footer">
-            <span>Calculation requires locked assessments, complete marks, valid coursework weights, one final exam, and a configured grade scale.</span>
+            <span>Calculation requires locked assessments, complete marks, coursework and mid-term weights totaling 40%, one final exam worth 60%, and a configured grade scale.</span>
             <button className="text-button" type="button" onClick={loadResults} disabled={loadingResults}><RefreshCw size={14} /> Refresh</button>
           </div>
         </section>

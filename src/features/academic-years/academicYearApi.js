@@ -9,6 +9,15 @@ export function fetchAcademicYear(id) {
   return apiRequest(`/academic-years/${id}`);
 }
 
+export async function fetchGradeScales() {
+  const result = await apiRequest('/grade-scales');
+  return result.data || [];
+}
+
+export function createGradeScale(data) {
+  return apiRequest('/grade-scales', { method: 'POST', body: JSON.stringify(data) });
+}
+
 export function saveAcademicYear(id, data) {
   return apiRequest(id ? `/academic-years/${id}` : '/academic-years', {
     method: id ? 'PATCH' : 'POST',

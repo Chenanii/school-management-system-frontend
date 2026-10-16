@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, Search } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search } from 'lucide-react';
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
 import {
@@ -10,10 +10,11 @@ import {
   assessmentTypes,
   fetchAllPages,
   fetchAssessments,
+  resetAssessment,
   transitionAssessment
 } from './assessmentApi.js';
 
-export default function AssessmentsPage({ signOut }) {
+export default function AssessmentsPage({ user, signOut }) {
   const [assessments, setAssessments] = useState([]);
   const [terms, setTerms] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -40,11 +41,16 @@ export default function AssessmentsPage({ signOut }) {
       setOptionsError('');
       try {
         const [termData, assignmentData] = await Promise.all([
-          fetchAllPages('/terms'),
+          user.role === 'TEACHER' ? Promise.resolve([]) : fetchAllPages('/terms'),
           fetchAllPages('/teaching-assignments')
         ]);
         if (!cancelled) {
-          setTerms(termData);
+          const assignmentTerms = assignmentData
+            .map((assignment) => assignment.term)
+            .filter((term) => term?.id);
+          setTerms(user.role === 'TEACHER'
+            ? [...new Map(assignmentTerms.map((term) => [term.id, term])).values()]
+            : termData);
           setAssignments(assignmentData);
         }
       } catch (cause) {
@@ -60,7 +66,7 @@ export default function AssessmentsPage({ signOut }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, signOut]);
+  }, [refreshKey, signOut, user.role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +135,7 @@ export default function AssessmentsPage({ signOut }) {
 
   async function advanceStatus(assessment) {
     const nextStatus = assessmentTransitions[assessment.status];
+    const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
     if (!nextStatus) return;
     setActionError('');
     setNotice('');
@@ -136,6 +143,27 @@ export default function AssessmentsPage({ signOut }) {
     try {
       await transitionAssessment(assessment.id);
       setNotice(`${assessment.title} moved to ${assessmentStatusLabel(nextStatus)}.`);
+      refresh();
+    } catch (cause) {
+      setActionError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function reopenAssessment(assessment) {
+    const confirmed = window.confirm(
+      `Reset “${assessment.title}” to Open? Existing assessment marks will be kept. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`,
+    );
+    if (!confirmed) return;
+    setActionError('');
+    setNotice('');
+    setBusyId(assessment.id);
+    try {
+      const result = await resetAssessment(assessment.id);
+      const invalidated = result.data?.invalidatedDraftTermResults ?? 0;
+      setNotice(`${assessment.title} is open for editing. Existing marks were kept.${invalidated ? ` ${invalidated} draft term result(s) need recalculation.` : ''}`);
       refresh();
     } catch (cause) {
       setActionError(cause.message);
@@ -153,7 +181,11 @@ export default function AssessmentsPage({ signOut }) {
         <div>
           <p className="eyebrow">Assessment & results</p>
           <h1 className="page-title">Assessments<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Create assessments, enter marks, and move work through review and approval.</p>
+          <p className="mt-2 text-sm text-muted">
+            {user.role === 'TEACHER'
+              ? 'Create assessments for your assigned classes and subjects, enter marks, and submit results for review.'
+              : 'Create assessments, enter marks, and move work through review and approval.'}
+          </p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError) || availableAssignments.length === 0}>
           <Plus size={17} /> Create assessment
@@ -177,6 +209,10 @@ export default function AssessmentsPage({ signOut }) {
           <button className="text-button" onClick={() => setNotice('')}>Dismiss</button>
         </div>
       )}
+      <div className="assessment-weight-guide">
+        <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>Coursework and mid-term contributions must add up to 40%. The final exam contributes a fixed 60%.</span></div>
+        <div className="assessment-weight-guide-bar" aria-label="40 percent coursework and mid-term, 60 percent final exam"><span>Coursework + mid-term <b>40%</b></span><span>Final exam <b>60%</b></span></div>
+      </div>
       <section className="panel directory-panel assessment-panel">
         <div className="assessment-toolbar">
           <div className="relative assessment-search">
@@ -216,7 +252,7 @@ export default function AssessmentsPage({ signOut }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table assessment-table">
-              <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Max mark</th><th>Weight</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Max mark</th><th>Contribution</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {filteredAssessments.map((assessment) => {
                   const assignment = assessment.teachingAssignment;
@@ -224,7 +260,10 @@ export default function AssessmentsPage({ signOut }) {
                   const className = [group?.classLevel?.name, group?.name].filter(Boolean).join(' · ');
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
+                  const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
+                  const canReset = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
+                    && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
                   return (
                     <tr key={assessment.id}>
                       <td>
@@ -249,10 +288,16 @@ export default function AssessmentsPage({ signOut }) {
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Enter or review marks">Results</button>
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment' : 'Only a draft assessment without results can be edited'}>Edit</button>
-                          {nextStatus && (
+                          {nextStatus && canTransition && (
                             <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`Move to ${assessmentStatusLabel(nextStatus)}`}>
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                               {assessmentStatusLabel(nextStatus)}
+                            </button>
+                          )}
+                          {canReset && (
+                            <button className="table-action assessment-reset-action" onClick={() => reopenAssessment(assessment)} disabled={busyId === assessment.id} title="Reopen this assessment and keep its marks">
+                              {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                              Reset
                             </button>
                           )}
                         </div>

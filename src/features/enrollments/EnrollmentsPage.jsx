@@ -8,7 +8,10 @@ import {
   fetchStudentEnrollments,
   fetchStudents,
   previewBulkEnrollment,
-  updateEnrollmentStatus
+  previewSelectedBulkEnrollment,
+  createSelectedBulkEnrollments,
+  updateEnrollmentStatus,
+  updateEnrollmentClassGroup
 } from './enrollmentApi.js';
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
@@ -57,7 +60,11 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
       setLoadingStudents(true);
       setOptionsError('');
       try {
-        const result = await fetchStudents(studentSearch);
+        if (!termId) {
+          if (!cancelled) setStudents([]);
+          return;
+        }
+        const result = await fetchStudents(studentSearch, termId);
         if (!cancelled) setStudents(result.data || []);
       } catch (cause) {
         if (!cancelled) {
@@ -72,7 +79,7 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [studentSearch, signOut]);
+  }, [studentSearch, termId, signOut]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,19 +142,9 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close">×</button>
         </div>
         <form className="user-form" onSubmit={submit}>
-          <label className="field-label">Student search
-            <input className="text-input" type="search" value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentId(''); }} placeholder="Name or admission number" required />
-          </label>
-          <label className="field-label">Active student
-            <select className="text-input" value={studentId} onChange={(event) => setStudentId(event.target.value)} required disabled={loadingStudents}>
-              <option value="">{loadingStudents ? 'Searching students…' : 'Select a student'}</option>
-              {activeStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} · {student.admissionNumber}</option>)}
-            </select>
-          </label>
-          {optionsError && <p className="form-error" role="alert">{optionsError}</p>}
           <div className="user-name-grid">
             <label className="field-label">Academic term
-              <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required>
+              <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setStudentId(''); }} required>
                 <option value="">Select a term</option>
                 {acceptingTerms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}
               </select>
@@ -159,6 +156,16 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
               </select>
             </label>
           </div>
+          <label className="field-label">Student search
+            <input className="text-input" type="search" value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentId(''); }} placeholder="Name or admission number" required disabled={!termId} />
+          </label>
+          <label className="field-label">Active student
+            <select className="text-input" value={studentId} onChange={(event) => setStudentId(event.target.value)} required disabled={!termId || loadingStudents}>
+              <option value="">{!termId ? 'Select a term first' : loadingStudents ? 'Searching students…' : activeStudents.length ? 'Select a student' : 'No eligible students found'}</option>
+              {activeStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} · {student.admissionNumber}</option>)}
+            </select>
+          </label>
+          {optionsError && <p className="form-error" role="alert">{optionsError}</p>}
           <label className="field-label">Previous enrollment <span className="optional-label">Optional</span>
             <select className="text-input" value={previousEnrollmentId} onChange={(event) => setPreviousEnrollmentId(event.target.value)} disabled={!studentId || loadingPrevious}>
               <option value="">{loadingPrevious ? 'Loading previous enrollments…' : 'No previous enrollment'}</option>
@@ -180,6 +187,180 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
         </form>
       </section>
     </div>
+  );
+}
+
+function ManualBulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
+  const [termId, setTermId] = useState('');
+  const [classGroupId, setClassGroupId] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [students, setStudents] = useState([]);
+  const [pagination, setPagination] = useState(emptyPagination);
+  const [selected, setSelected] = useState({});
+  const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const acceptingTerms = terms.filter((term) => ['DRAFT', 'OPEN'].includes(term.status));
+  const selectedStudents = Object.values(selected);
+  const selectedIds = selectedStudents.map((student) => student.id);
+  const allOnPageSelected = students.length > 0 && students.every((student) => selected[student.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!termId) {
+      setStudents([]);
+      setPagination(emptyPagination);
+      return undefined;
+    }
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const result = await fetchStudents(search, termId, page);
+        if (!cancelled) {
+          setStudents(result.data || []);
+          setPagination(result.pagination || emptyPagination);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause.message);
+          if (cause.status === 401) signOut();
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, search.trim() ? 250 : 0);
+    return () => { cancelled = true; window.clearTimeout(timeout); };
+  }, [termId, search, page, signOut]);
+
+  function changeDestination(field, value) {
+    if (field === 'termId') {
+      setTermId(value);
+      setSelected({});
+      setStudents([]);
+      setPagination(emptyPagination);
+      setPage(1);
+    } else {
+      setClassGroupId(value);
+    }
+    setPreview(null);
+    setNotice('');
+  }
+
+  function toggleStudent(student) {
+    setSelected((current) => {
+      if (current[student.id]) {
+        const next = { ...current };
+        delete next[student.id];
+        return next;
+      }
+      if (Object.keys(current).length >= 500) return current;
+      return { ...current, [student.id]: student };
+    });
+    setPreview(null);
+  }
+
+  function togglePage() {
+    setSelected((current) => {
+      const next = { ...current };
+      if (allOnPageSelected) students.forEach((student) => { delete next[student.id]; });
+      else students.forEach((student) => { if (Object.keys(next).length < 500) next[student.id] = student; });
+      return next;
+    });
+    setPreview(null);
+  }
+
+  async function makePreview(event) {
+    event?.preventDefault();
+    setLoading(true);
+    setError('');
+    setNotice('');
+    try {
+      const result = await previewSelectedBulkEnrollment({ targetTermId: termId, targetClassGroupId: classGroupId, studentIds: selectedIds });
+      setPreview(result.data);
+    } catch (cause) {
+      setError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function confirmEnrollment() {
+    if (!preview?.summary.eligible) return;
+    if (!window.confirm(`Enroll ${preview.summary.eligible} selected students in ${preview.destination.classLevel} · ${preview.destination.classGroupName}?`)) return;
+    setWorking(true);
+    setError('');
+    try {
+      const result = await createSelectedBulkEnrollments({ targetTermId: termId, targetClassGroupId: classGroupId, studentIds: selectedIds });
+      setNotice(`${result.summary.created} students enrolled. ${result.summary.skipped} were skipped because their eligibility changed.`);
+      setSelected({});
+      setPreview(null);
+      setPage(1);
+      onCompleted();
+    } catch (cause) {
+      setError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className="panel enrollment-bulk-panel">
+      <div className="enrollment-section-heading"><div><h2>Enroll selected students</h2><p>Choose a term and stream, then tick eligible students. Students already enrolled in the term are excluded.</p></div></div>
+      {error && <div className="notice-error mx-4 mb-3" role="alert"><span>{error}</span><button className="text-button" onClick={() => setError('')}>Dismiss</button></div>}
+      {notice && <div className="teaching-assignment-notice mx-4 mb-3" role="status"><span>{notice}</span><button className="text-button" onClick={() => setNotice('')}>Dismiss</button></div>}
+      <form className="enrollment-bulk-form" onSubmit={makePreview}>
+        <label className="field-label">Destination term
+          <select className="text-input" value={termId} onChange={(event) => changeDestination('termId', event.target.value)} required>
+            <option value="">Select term</option>
+            {acceptingTerms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}
+          </select>
+        </label>
+        <label className="field-label">Destination class group / stream
+          <select className="text-input" value={classGroupId} onChange={(event) => changeDestination('classGroupId', event.target.value)} required>
+            <option value="">Select class group</option>
+            {groups.map((group) => <option key={group.id} value={group.id}>{classLabel(group)}</option>)}
+          </select>
+        </label>
+      </form>
+      <div className="enrollment-bulk-form">
+        <label className="field-label">Search eligible students
+          <input className="text-input" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); setPreview(null); }} placeholder="Name or admission number" disabled={!termId} />
+        </label>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="people-table">
+          <thead><tr><th><input type="checkbox" aria-label="Select all eligible students on this page" checked={allOnPageSelected} onChange={togglePage} disabled={!students.length || loading || selectedStudents.length >= 500 && !allOnPageSelected} /></th><th>Student</th><th>Admission no.</th><th>Status</th></tr></thead>
+          <tbody>
+            {loading ? <tr><td colSpan="4">Loading eligible students…</td></tr> : students.length ? students.map((student) => (
+              <tr key={student.id}>
+                <td><input type="checkbox" checked={Boolean(selected[student.id])} onChange={() => toggleStudent(student)} disabled={!selected[student.id] && selectedStudents.length >= 500} aria-label={`Select ${studentName(student)}`} /></td>
+                <td>{studentName(student)}</td><td>{student.admissionNumber}</td><td>{student.status}</td>
+              </tr>
+            )) : <tr><td colSpan="4">{termId ? 'No eligible students found for this term.' : 'Select a term to view eligible students.'}</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="enrollment-preview-footer">
+        <span>{selectedStudents.length} selected · Up to 500 students per batch</span>
+        <div className="flex gap-2">
+          <button className="secondary-button" type="button" onClick={() => setSelected({})} disabled={!selectedStudents.length || working}>Clear selection</button>
+          <button className="primary-button" type="button" onClick={makePreview} disabled={loading || working || !termId || !classGroupId || !selectedStudents.length}>Preview selection</button>
+        </div>
+      </div>
+      {pagination.totalPages > 1 && <div className="pagination"><span>Page {page} of {pagination.totalPages} · {pagination.total} eligible students</span><div className="flex gap-2"><button className="pagination-button" type="button" disabled={page <= 1 || loading} onClick={() => setPage((current) => current - 1)} aria-label="Previous page"><ChevronLeft size={17} /></button><button className="pagination-button" type="button" disabled={page >= pagination.totalPages || loading} onClick={() => setPage((current) => current + 1)} aria-label="Next page"><ChevronRight size={17} /></button></div></div>}
+      {preview && <div className="enrollment-bulk-preview">
+        <div className="enrollment-preview-heading"><div><strong>{preview.destination.classLevel} · {preview.destination.classGroupName}</strong><span>{preview.destination.termName}, {preview.destination.academicYear}</span></div><div className="enrollment-preview-stats"><span>{preview.summary.eligible} eligible</span><span>{preview.summary.skipped} skipped</span></div></div>
+        <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Student</th><th>Admission no.</th></tr></thead><tbody>{preview.eligible.map((student) => <tr key={student.studentId}><td>{studentName(student)}</td><td>{student.admissionNumber}</td></tr>)}</tbody></table></div>
+        {preview.skipped.length > 0 && <details className="enrollment-skipped-details"><summary>Review {preview.skipped.length} skipped</summary><ul>{preview.skipped.map((student) => <li key={student.studentId}>{studentName(student)} · {student.reason.replaceAll('_', ' ').toLowerCase()}</li>)}</ul></details>}
+        <div className="enrollment-preview-footer"><span>The server will check eligibility again before enrolling.</span><button className="primary-button" type="button" onClick={confirmEnrollment} disabled={working || !preview.summary.eligible}>{working ? 'Enrolling…' : `Enroll ${preview.summary.eligible} students`}</button></div>
+      </div>}
+    </section>
   );
 }
 
@@ -407,6 +588,26 @@ export default function EnrollmentsPage({ user, signOut }) {
     }
   }
 
+  async function changeStream(enrollment, nextClassGroupId) {
+    if (nextClassGroupId === enrollment.classGroupId) return;
+    const student = studentName(enrollment.student);
+    const destination = groups.find((group) => group.id === nextClassGroupId);
+    if (!destination || !window.confirm(`Move ${student} from ${classLabel(enrollment.classGroup)} to ${classLabel(destination)} for this term?`)) return;
+    setBusyId(enrollment.id);
+    setError('');
+    setNotice('');
+    try {
+      await updateEnrollmentClassGroup(enrollment.id, nextClassGroupId);
+      setNotice(`${student} moved to ${classLabel(destination)}.`);
+      refresh();
+    } catch (cause) {
+      setError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setBusyId('');
+    }
+  }
+
   return (
     <>
       <div className="welcome-row students-welcome">
@@ -419,9 +620,11 @@ export default function EnrollmentsPage({ user, signOut }) {
         <div className="enrollment-tabs" role="tablist" aria-label="Enrollment management">
           <button className={tab === 'register' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'register'} onClick={() => setTab('register')}>Enrollment register</button>
           <button className={tab === 'bulk' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'bulk'} onClick={() => setTab('bulk')}>Bulk progression</button>
+          <button className={tab === 'select' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'select'} onClick={() => setTab('select')}>Select students</button>
         </div>
       )}
       {tab === 'bulk' && canManage && <BulkEnrollmentPanel terms={terms} groups={groups} signOut={signOut} onCompleted={refresh} />}
+      {tab === 'select' && canManage && <ManualBulkEnrollmentPanel terms={terms} groups={groups} signOut={signOut} onCompleted={refresh} />}
       {tab === 'register' && (
         <section className="panel enrollment-register-panel">
           <div className="enrollment-toolbar">
@@ -447,18 +650,29 @@ export default function EnrollmentsPage({ user, signOut }) {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="people-table enrollment-table">
-                    <thead><tr><th>Student</th><th>Term</th><th>Class group</th><th>Previous enrollment</th><th>Status</th><th>Created</th>{canManage && <th>Update status</th>}</tr></thead>
-                    <tbody>{enrollments.map((enrollment) => (
-                      <tr key={enrollment.id}>
+                    <thead><tr><th>Student</th><th>Term</th><th>Class group</th><th>Previous enrollment</th><th>Status</th><th>Created</th>{canManage && <th>Actions</th>}</tr></thead>
+                    <tbody>{enrollments.map((enrollment) => {
+                      const streamLockReason = enrollment._count?.results
+                        ? 'Class group cannot be changed after assessment results have been entered.'
+                        : enrollment.status !== 'ACTIVE'
+                          ? 'Only active enrollments can be moved.'
+                          : !['DRAFT', 'OPEN'].includes(enrollment.term.status)
+                            ? 'Class group can only be changed while the term is open.'
+                            : '';
+                      return <tr key={enrollment.id}>
                         <td><div className="enrollment-student-cell"><strong>{studentName(enrollment.student)}</strong><span>{enrollment.student?.admissionNumber}</span></div></td>
                         <td className="whitespace-nowrap">{termLabel(enrollment.term)}</td>
-                        <td className="whitespace-nowrap">{classLabel(enrollment.classGroup)}</td>
+                        <td className="whitespace-nowrap">{canManage
+                          ? <select className="enrollment-stream-select" aria-label={`Move ${studentName(enrollment.student)} to another class group`} title={streamLockReason || 'Move this student to another class group for the term.'} value={enrollment.classGroupId} disabled={busyId === enrollment.id || Boolean(streamLockReason)} onChange={(event) => changeStream(enrollment, event.target.value)}>
+                              {groups.filter((group) => group.classLevel?.id === enrollment.classGroup.classLevel?.id).map((group) => <option key={group.id} value={group.id}>{classLabel(group)}</option>)}
+                            </select>
+                          : classLabel(enrollment.classGroup)}</td>
                         <td className="text-muted">{enrollment.previousEnrollment ? `${enrollment.previousEnrollment.status.toLowerCase()} · linked` : '—'}</td>
                         <td><span className={`subject-status subject-status-${enrollment.status.toLowerCase()}`}>{statusLabels[enrollment.status]}</span></td>
                         <td className="whitespace-nowrap text-muted">{new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(enrollment.createdAt))}</td>
                         {canManage && <td><div className="enrollment-status-control"><select className="status-action" aria-label={`Update ${studentName(enrollment.student)} enrollment status`} value={enrollment.status} disabled={busyId === enrollment.id} onChange={(event) => changeStatus(enrollment, event.target.value)}>{enrollmentStatuses.map((item) => <option key={item} value={item}>{statusLabels[item]}</option>)}</select>{busyId === enrollment.id && <LoaderCircle size={14} className="animate-spin text-green-700" />}</div></td>}
-                      </tr>
-                    ))}</tbody>
+                      </tr>;
+                    })}</tbody>
                   </table>
                 </div>
               )}

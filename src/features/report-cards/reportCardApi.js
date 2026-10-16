@@ -27,3 +27,7 @@ export async function fetchTermEnrollments(termId, classGroupId) {
 export function fetchReportCard(enrollmentId) {
   return apiRequest(`/report-cards/enrollments/${enrollmentId}`);
 }
+
+export function fetchClassGroupReportCards(termId, classGroupId) {
+  return apiRequest(`/report-cards/terms/${termId}/class-groups/${classGroupId}`);
+}

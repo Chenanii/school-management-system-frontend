@@ -62,6 +62,7 @@ export default function AcademicYearDetailsModal({ year, signOut, onClose, onEdi
               <div><strong>{details.terms?.length ?? 0}</strong><span>Terms</span></div>
               <div><strong>{details._count?.annualResults ?? 0}</strong><span>Annual results</span></div>
               <div><strong>{details.isCurrent ? 'Current' : 'Previous'}</strong><span>Year status</span></div>
+              <div><strong>{details.gradeScale ? `${details.gradeScale.name} · ${details.gradeScale.maxScore === 50 ? '/ 50' : '%'}` : 'Not configured'}</strong><span>Grade scale</span></div>
             </div>
             <section className="academic-year-terms">
               <div className="class-level-section-title"><CalendarDays size={16} /><h3>Terms</h3></div>

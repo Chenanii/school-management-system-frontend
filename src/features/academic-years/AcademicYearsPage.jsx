@@ -64,7 +64,7 @@ export default function AcademicYearsPage({ signOut }) {
         <div>
           <p className="eyebrow">School calendar</p>
           <h1 className="page-title">Academic years<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Set school-year dates, choose the current year, and review term calendars.</p>
+          <p className="mt-2 text-sm text-muted">Set school-year dates, configure grading scales, choose the current year, and review term calendars.</p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add academic year</button>
       </div>
@@ -87,7 +87,7 @@ export default function AcademicYearsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table academic-year-table">
               <thead>
-                <tr><th>Academic year</th><th>Start date</th><th>End date</th><th>Terms</th><th>Annual results</th><th>Period</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Academic year</th><th>Start date</th><th>End date</th><th>Grade scale</th><th>Terms</th><th>Annual results</th><th>Period</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {years.map((year) => {
@@ -103,6 +103,7 @@ export default function AcademicYearsPage({ signOut }) {
                       </td>
                       <td className="whitespace-nowrap text-muted">{formatAcademicDate(year.startDate)}</td>
                       <td className="whitespace-nowrap text-muted">{formatAcademicDate(year.endDate)}</td>
+                      <td className="text-muted">{year.gradeScale ? `${year.gradeScale.name} · ${year.gradeScale.maxScore === 50 ? '/ 50' : '%'}` : <span className="text-amber-700">Not configured</span>}</td>
                       <td className="text-muted">{year.terms?.length ?? 0}</td>
                       <td className="text-muted">{year._count?.annualResults ?? 0}</td>
                       <td><span className={`subject-status subject-status-${status.toLowerCase().replace(' ', '-')}`}>{status}</span></td>
