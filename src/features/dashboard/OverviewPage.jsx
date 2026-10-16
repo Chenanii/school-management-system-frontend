@@ -16,6 +16,12 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
           <h1 className="page-title">Good day, {summary.user.firstName}<span className="title-dot">.</span></h1>
           <p className="mt-2 text-sm text-muted">Here’s what’s happening across your school.</p>
         </div>
+        {summary.school?.logoDataUrl && (
+          <div className="dashboard-school-brand">
+            <img src={summary.school.logoDataUrl} alt={`${summary.school.name} logo`} />
+            <span>{summary.school.name}</span>
+          </div>
+        )}
         <div className="welcome-illustration" aria-hidden="true">
           <div className="illustration-sun" />
           <div className="illustration-book"><BookOpen size={37} strokeWidth={1.4} /></div>

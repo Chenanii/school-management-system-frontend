@@ -60,13 +60,14 @@ export default function useDashboardData(signOut) {
           teacherCount: school?._count?.teachers ?? null
         });
       } else if (user.role === 'SCHOOL_ADMIN') {
-        const [studentsResult, teachersResult] = await Promise.all([
+        const [studentsResult, teachersResult, schoolResult] = await Promise.all([
           apiRequest('/students?limit=5'),
-          apiRequest('/teachers?limit=5')
+          apiRequest('/teachers?limit=5'),
+          apiRequest('/schools/current')
         ]);
         setSummary({
           user,
-          school: user.school,
+          school: schoolResult.data,
           schoolsManaged: null,
           students: studentsResult.data || [],
           teachers: teachersResult.data || [],
@@ -74,10 +75,13 @@ export default function useDashboardData(signOut) {
           teacherCount: teachersResult.pagination?.total ?? 0
         });
       } else {
+        const schoolResult = user.schoolId
+          ? await apiRequest('/schools/current')
+          : null;
         setSummary({
           ...emptySummary,
           user,
-          school: user.school
+          school: schoolResult?.data || user.school
         });
       }
     } catch (cause) {
@@ -106,5 +110,13 @@ export default function useDashboardData(signOut) {
     setError('');
   }, [summary.schools]);
 
-  return { summary, loading, error, loadSummary, selectSchool };
+  const updateCurrentSchool = useCallback((school) => {
+    setSummary((current) => ({
+      ...current,
+      school: { ...current.school, ...school },
+      schools: current.schools.map((item) => item.id === school.id ? { ...item, ...school } : item),
+    }));
+  }, []);
+
+  return { summary, loading, error, loadSummary, selectSchool, updateCurrentSchool };
 }

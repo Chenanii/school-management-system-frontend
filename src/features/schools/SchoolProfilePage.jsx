@@ -20,7 +20,7 @@ function optionalValue(value) {
   return typeof value === 'string' ? value.trim() || null : null;
 }
 
-export default function SchoolProfilePage({ signOut }) {
+export default function SchoolProfilePage({ signOut, onSaved }) {
   const [profile, setProfile] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -120,6 +120,7 @@ export default function SchoolProfilePage({ signOut }) {
         headteacherSignerName: data.headteacherSignerName || '',
       }));
       setNotice('School profile saved. New report cards will use these details.');
+      onSaved?.(data);
     } catch (cause) {
       setError(cause.message);
       if (cause.status === 401) signOut();
@@ -162,7 +163,7 @@ export default function SchoolProfilePage({ signOut }) {
             <label className="field-label">School name<input className="text-input" name="name" value={profile.name} onChange={updateField} maxLength={160} required /></label>
             <label className="field-label">School email<input className="text-input" type="email" name="email" value={profile.email} onChange={updateField} /></label>
             <label className="field-label">Phone<input className="text-input" type="tel" name="phone" value={profile.phone} onChange={updateField} maxLength={40} /></label>
-            <label className="field-label">School URL slug<input className="text-input" name="slug" value={profile.slug} onChange={updateField} maxLength={80} required /><span className="field-hint">Used to identify your school workspace.</span></label>
+            <label className="field-label">School URL slug<input className="text-input" name="slug" value={profile.slug} onChange={updateField} maxLength={80} required /><span className="field-hint">Workspace URL: {window.location.origin}/{profile.slug || 'school-slug'}</span></label>
             <label className="field-label school-profile-address">Address<textarea className="text-input" name="address" value={profile.address} onChange={updateField} maxLength={500} rows={3} /></label>
           </div>
           <div>

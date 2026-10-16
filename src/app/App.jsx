@@ -28,23 +28,15 @@ import UsersPage from '../features/users/UsersPage.jsx';
 import AuditLogsPage from '../features/audit-logs/AuditLogsPage.jsx';
 import SchoolProfilePage from '../features/schools/SchoolProfilePage.jsx';
 import { sections } from '../shared/navigation.js';
+import { workspacePath, workspaceRoute } from './workspace-routing.js';
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
-function pageFromPath(pathname) {
-  const segment = pathname.replace(/^\/+|\/+$/g, '');
-  return pageIds.has(segment) ? segment : 'overview';
-}
-
-function pathForPage(page) {
-  return page === 'overview' ? '/' : `/${page}`;
-}
-
 export default function App() {
   const { user, signIn, signOut } = useAuth();
-  const { summary, loading, error, loadSummary, selectSchool } = useDashboardData(signOut);
+  const { summary, loading, error, loadSummary, selectSchool, updateCurrentSchool } = useDashboardData(signOut);
   const isTeacherInvitation = window.location.pathname === '/accept-invitation';
-  const [page, setPage] = useState(() => pageFromPath(window.location.pathname));
+  const [page, setPage] = useState(() => workspaceRoute(window.location.pathname, pageIds).page);
   const [mobileNav, setMobileNav] = useState(false);
   const [search, setSearch] = useState('');
   const [directoryPage, setDirectoryPage] = useState(1);
@@ -62,17 +54,32 @@ export default function App() {
     if (user) loadSummary(user);
   }, [user, loadSummary]);
 
+  useEffect(() => {
+    if (isTeacherInvitation || !summary.school?.slug) return;
+    const route = workspaceRoute(window.location.pathname, pageIds);
+    const nextPath = workspacePath(route.page, summary.school.slug);
+    if (window.location.pathname !== nextPath) {
+      window.history.replaceState({ page: route.page }, '', nextPath);
+    }
+  }, [isTeacherInvitation, summary.school?.slug]);
+
   const navigate = useCallback((nextPage) => {
     setPage(nextPage);
-    const nextPath = pathForPage(nextPage);
+    const nextPath = workspacePath(nextPage, summary.school?.slug);
     if (window.location.pathname !== nextPath) window.history.pushState({ page: nextPage }, '', nextPath);
     setSearch('');
     setDirectoryPage(1);
-  }, []);
+  }, [summary.school?.slug]);
+
+  const onSchoolProfileSaved = useCallback((school) => {
+    updateCurrentSchool(school);
+    const nextPath = workspacePath(page, school.slug);
+    window.history.replaceState({ page }, '', nextPath);
+  }, [page, updateCurrentSchool]);
 
   useEffect(() => {
     function restorePageFromHistory() {
-      setPage(pageFromPath(window.location.pathname));
+      setPage(workspaceRoute(window.location.pathname, pageIds).page);
       setSearch('');
       setDirectoryPage(1);
     }
@@ -103,7 +110,7 @@ export default function App() {
         onClose={() => setMobileNav(false)}
       />
       <main className="main-area">
-        <Header page={page} onMenu={() => setMobileNav(true)} user={user} />
+        <Header page={page} onMenu={() => setMobileNav(true)} user={user} schoolId={summary.school?.id} />
         <div className="page-content" key={user.role === 'SUPER_ADMIN' ? summary.school?.id || 'no-school-context' : 'school-workspace'}>
           {user.role === 'SUPER_ADMIN' && !summary.school ? (
             loading ? (
@@ -156,7 +163,7 @@ export default function App() {
           ) : page === 'subscriptions' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
             <SubscriptionsPage user={user} signOut={signOut} />
           ) : page === 'school-profile' && ['SCHOOL_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
-            <SchoolProfilePage signOut={signOut} />
+            <SchoolProfilePage signOut={signOut} onSaved={onSchoolProfileSaved} />
           ) : page === 'users' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <UsersPage signOut={signOut} />
           ) : page === 'audit-logs' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (

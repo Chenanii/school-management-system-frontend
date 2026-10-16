@@ -39,7 +39,9 @@ export default function Sidebar({
           <button className="icon-button mobile-close" onClick={onClose} aria-label="Close menu"><X size={19} /></button>
         </div>
         <div className="school-switcher">
-          <div className="school-avatar">{schoolName.trim().charAt(0).toUpperCase() || 'S'}</div>
+          {school?.logoDataUrl
+            ? <img className="school-avatar school-avatar-logo" src={school.logoDataUrl} alt={`${schoolName} logo`} />
+            : <div className="school-avatar">{schoolName.trim().charAt(0).toUpperCase() || 'S'}</div>}
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-ink" title={schoolName}>{schoolName}</div>
             {isSuperAdmin ? (

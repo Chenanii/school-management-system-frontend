@@ -1,8 +1,9 @@
-import { Bell, CalendarDays, Menu } from 'lucide-react';
+import { CalendarDays, Menu } from 'lucide-react';
 import { initials } from '../../shared/utils/people.js';
 import { sections } from '../../shared/navigation.js';
+import NotificationCenter from '../../features/notifications/NotificationCenter.jsx';
 
-export default function Header({ page, onMenu, user }) {
+export default function Header({ page, onMenu, user, schoolId }) {
   const title = sections.find((item) => item.id === page)?.label || 'Overview';
   const today = new Intl.DateTimeFormat('en', {
     weekday: 'long',
@@ -21,7 +22,7 @@ export default function Header({ page, onMenu, user }) {
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="topbar-date"><CalendarDays size={15} /><span>{today}</span></div>
-        <button className="icon-button notification-button" aria-label="Notifications"><Bell size={18} /><span /></button>
+        <NotificationCenter key={schoolId || 'no-school-context'} schoolId={schoolId} />
         <div className="topbar-profile">{initials(user) || 'A'}</div>
       </div>
     </header>
