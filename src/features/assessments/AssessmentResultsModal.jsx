@@ -116,7 +116,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           <div>
             <p className="eyebrow">Results entry · Maximum {Number(assessment.maxMark)}</p>
             <h2 id="assessment-results-title">{assessment.title}</h2>
-            <p>{assessment.teachingAssignment?.classGroup?.classLevel?.name} {assessment.teachingAssignment?.classGroup?.name} · {assessment.subject?.name}</p>
+            <p>{assessment.teachingAssignment?.subjectStream?.classLevel?.name || assessment.teachingAssignment?.classGroup?.classLevel?.name} · {assessment.subject?.name}{assessment.teachingAssignment?.subjectStream?.name ? ` · Stream ${assessment.teachingAssignment.subjectStream.name}` : ''}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close" disabled={saving}><X size={19} /></button>
         </div>

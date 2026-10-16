@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
-import { createEnrollment, fetchAllPages } from '../enrollments/enrollmentApi.js';
+import { fetchAllPages } from '../enrollments/enrollmentApi.js';
 
 const blankStudent = {
   firstName: '',
@@ -10,6 +10,7 @@ const blankStudent = {
   dateOfBirth: '',
   gender: ''
 };
+const blankParent = { firstName: '', lastName: '', phone: '', email: '', relationship: '' };
 
 function inputDate(value) {
   if (!value) return '';
@@ -22,21 +23,21 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [terms, setTerms] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [classLevels, setClassLevels] = useState([]);
   const [termId, setTermId] = useState('');
-  const [classGroupId, setClassGroupId] = useState('');
+  const [classLevelId, setClassLevelId] = useState('');
+  const [parents, setParents] = useState([{ ...blankParent }]);
   const [optionsLoading, setOptionsLoading] = useState(false);
-  const [createdStudentId, setCreatedStudentId] = useState('');
 
   useEffect(() => {
     if (editing) return undefined;
     let cancelled = false;
     setOptionsLoading(true);
-    Promise.all([fetchAllPages('/terms'), fetchAllPages('/class-groups')])
-      .then(([termData, groupData]) => {
+    Promise.all([fetchAllPages('/terms'), fetchAllPages('/class-levels')])
+      .then(([termData, levelData]) => {
         if (!cancelled) {
           setTerms(termData.filter((term) => ['DRAFT', 'OPEN'].includes(term.status)));
-          setGroups(groupData);
+          setClassLevels(levelData);
         }
       })
       .catch((cause) => { if (!cancelled) setError(cause.message); })
@@ -59,6 +60,10 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function updateParent(index, name, value) {
+    setParents((current) => current.map((parent, parentIndex) => parentIndex === index ? { ...parent, [name]: value } : parent));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
@@ -68,20 +73,26 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
       middleName: form.middleName.trim() || null,
       lastName: form.lastName.trim(),
       dateOfBirth: form.dateOfBirth || null,
-      gender: form.gender.trim() || null
+      gender: form.gender.trim() || null,
+      parents: parents.map((parent) => ({
+        ...parent,
+        firstName: parent.firstName.trim(),
+        lastName: parent.lastName.trim(),
+        phone: parent.phone.trim(),
+        email: parent.email.trim(),
+        relationship: parent.relationship.trim() || undefined
+      }))
     };
+    if (editing) delete payload.parents;
 
     try {
       if (editing) {
         await apiRequest(`/students/${student.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
       } else {
-        let studentId = createdStudentId;
-        if (!studentId) {
-          const response = await apiRequest('/students', { method: 'POST', body: JSON.stringify(payload) });
-          studentId = response.data.id;
-          setCreatedStudentId(studentId);
-        }
-        await createEnrollment({ studentId, termId, classGroupId });
+        await apiRequest('/students', {
+          method: 'POST',
+          body: JSON.stringify({ ...payload, termId, classLevelId })
+        });
       }
       onSaved();
     } catch (cause) {
@@ -141,25 +152,36 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
           </div>
           {!editing && <div className="user-name-grid">
             <label className="field-label">Academic term
-              <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required disabled={optionsLoading || Boolean(createdStudentId)}>
+              <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required disabled={optionsLoading || busy}>
                 <option value="">{optionsLoading ? 'Loading terms…' : 'Select a term'}</option>
                 {terms.map((term) => <option key={term.id} value={term.id}>{term.academicYear?.name || 'Academic year'} · {term.sequence}. {term.name}</option>)}
               </select>
             </label>
-            <label className="field-label">Class group
-              <select className="text-input" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} required disabled={optionsLoading || Boolean(createdStudentId)}>
-                <option value="">{optionsLoading ? 'Loading classes…' : 'Select a class group'}</option>
-                {groups.map((group) => <option key={group.id} value={group.id}>{[group.classLevel?.name, group.name].filter(Boolean).join(' · ')}</option>)}
+            <label className="field-label">Class level
+              <select className="text-input" value={classLevelId} onChange={(event) => setClassLevelId(event.target.value)} required disabled={optionsLoading || busy}>
+                <option value="">{optionsLoading ? 'Loading class levels…' : 'Select a class level'}</option>
+                {classLevels.map((level) => <option key={level.id} value={level.id}>{level.name}</option>)}
               </select>
             </label>
           </div>}
-          {createdStudentId && <p className="field-hint">Student registered. Complete the enrollment below to finish.</p>}
+          {!editing && <section className="student-parent-registration">
+            <div className="student-parent-heading"><div><strong>Parent or guardian details</strong><span>Use the same email when registering siblings to link them to one parent record.</span></div><button className="text-button" type="button" onClick={() => setParents((current) => [...current, { ...blankParent }])} disabled={busy || parents.length >= 5}>Add another</button></div>
+            {parents.map((parent, index) => <div className="student-parent-fields" key={index}>
+              <label className="field-label">First name<input className="text-input" value={parent.firstName} onChange={(event) => updateParent(index, 'firstName', event.target.value)} required maxLength={80} disabled={busy} /></label>
+              <label className="field-label">Last name<input className="text-input" value={parent.lastName} onChange={(event) => updateParent(index, 'lastName', event.target.value)} required maxLength={80} disabled={busy} /></label>
+              <label className="field-label">Phone<input className="text-input" type="tel" value={parent.phone} onChange={(event) => updateParent(index, 'phone', event.target.value)} required maxLength={30} disabled={busy} /></label>
+              <label className="field-label">Email <span className="optional-label">Optional</span><input className="text-input" type="email" value={parent.email} onChange={(event) => updateParent(index, 'email', event.target.value)} maxLength={254} disabled={busy} /></label>
+              <label className="field-label">Relationship <span className="optional-label">Optional</span><input className="text-input" value={parent.relationship} onChange={(event) => updateParent(index, 'relationship', event.target.value)} placeholder="Parent, guardian…" maxLength={40} disabled={busy} /></label>
+              {parents.length > 1 && <button className="text-button student-parent-remove" type="button" onClick={() => setParents((current) => current.filter((_, parentIndex) => parentIndex !== index))} disabled={busy}>Remove</button>}
+            </div>)}
+          </section>}
+          {!editing && <p className="field-hint">The student, term enrollment, and parent contacts are saved together. Assign a home class group later from Enrollments; if any save fails, registration is rolled back.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={busy || optionsLoading || (!editing && (!terms.length || !groups.length))}>
+            <button className="primary-button" type="submit" disabled={busy || optionsLoading || (!editing && (!terms.length || !classLevels.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || !parent.phone.trim())))}>
               {busy && <LoaderCircle size={16} className="animate-spin" />}
-              {busy ? 'Saving…' : editing ? 'Save changes' : createdStudentId ? 'Retry enrollment' : 'Register and enroll'}
+              {busy ? 'Saving…' : editing ? 'Save changes' : 'Register and enroll'}
             </button>
           </div>
         </form>

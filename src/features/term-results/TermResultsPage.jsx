@@ -32,6 +32,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
   const [loadingResults, setLoadingResults] = useState(false);
   const [busyAction, setBusyAction] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
   function clearResults() {
     setResultSet(null);
     setError('');
+    setErrorCode('');
     setNotice('');
   }
 
@@ -90,12 +92,14 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
     if (!termId || !classGroupId || !subjectId) return;
     setLoadingResults(true);
     setError('');
+    setErrorCode('');
     setNotice('');
     try {
       const result = await fetchTermResults({ termId, classGroupId, subjectId });
       setResultSet(result);
     } catch (cause) {
       setError(cause.message);
+      setErrorCode(cause.code || '');
       if (cause.status === 401) signOut();
     } finally {
       setLoadingResults(false);
@@ -105,6 +109,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
   async function calculate() {
     setBusyAction('calculate');
     setError('');
+    setErrorCode('');
     setNotice('');
     try {
       const result = await calculateTermResults({ termId, classGroupId, subjectId });
@@ -112,6 +117,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
       await loadResults();
     } catch (cause) {
       setError(cause.message);
+      setErrorCode(cause.code || '');
       if (cause.status === 401) signOut();
     } finally {
       setBusyAction('');
@@ -123,6 +129,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
     if (!window.confirm(`${status === 'FINALIZED' ? 'Finalize' : 'Publish'} all ${resultSet.resultCount} results for this subject?`)) return;
     setBusyAction(action);
     setError('');
+    setErrorCode('');
     setNotice('');
     try {
       const result = await updateTermResultsStatus({ termId, classGroupId, subjectId, status });
@@ -130,6 +137,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
       await loadResults();
     } catch (cause) {
       setError(cause.message);
+      setErrorCode(cause.code || '');
       if (cause.status === 401) signOut();
     } finally {
       setBusyAction('');
@@ -154,11 +162,11 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
           <p className="mt-2 text-sm text-muted">Calculate, review, finalize, and publish subject results for a class and term.</p>
         </div>
       </div>
-      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{error.includes('grade scale') && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user?.role) && <button className="text-button" onClick={() => onNavigate('academic-years')}>Configure academic year</button>}<button className="text-button" onClick={() => setError('')}>Dismiss</button></div>}
+      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" onClick={() => onNavigate('class-levels')}>Configure class-level grading scale</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
       {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" onClick={() => setNotice('')}>Dismiss</button></div>}
 
       <section className="panel term-results-scope">
-        <div className="term-results-heading"><div><h2>Choose result scope</h2><p>Results are calculated from locked assessments and the academic year’s grade scale.</p></div></div>
+        <div className="term-results-heading"><div><h2>Choose result scope</h2><p>Results are calculated from locked assessments and the class level’s grading scale.</p></div></div>
         <form className="term-results-filters" onSubmit={loadResults}>
           <label className="field-label">Term
             <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); clearResults(); }} required disabled={loadingOptions}>

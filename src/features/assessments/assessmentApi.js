@@ -92,5 +92,6 @@ export function assessmentAssignmentLabel(assignment) {
   const subject = assignment.subject || assignment.classSubject?.subject;
   const teacher = assignment.teacher;
   const teacherName = [teacher?.firstName, teacher?.lastName].filter(Boolean).join(' ') || teacher?.email;
-  return [className, subject?.name, teacherName].filter(Boolean).join(' · ');
+  const stream = assignment.subjectStream?.name;
+  return [className, subject?.name, stream, teacherName].filter(Boolean).join(' · ');
 }

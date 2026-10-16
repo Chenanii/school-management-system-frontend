@@ -631,11 +631,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .report-card-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; color:#839087; font-size:11px; }
 .report-card-actions .primary-button { white-space:nowrap; }
 .report-card-incomplete { margin-bottom:12px; }
+.report-card-no-subjects { border-radius:8px; padding:12px; color:#806d49; background:#fbf6e9; font-size:11px; }
 .report-card-paper { border:1px solid #e5e9e4; border-radius:12px; padding:34px; background:#fff; box-shadow:0 6px 22px #2333260a; }
 .report-card-school-heading { display:flex; align-items:center; gap:15px; border-bottom:2px solid #287b59; padding-bottom:20px; }
 .report-card-school-mark { display:flex; width:54px; height:54px; flex:0 0 auto; align-items:center; justify-content:center; border-radius:14px; color:#287b59; background:#eaf3ec; font-size:25px; font-weight:700; }
-.report-card-school-heading h2 { margin-top:5px; color:#25312b; font-size:22px; font-weight:700; letter-spacing:-.03em; }
-.report-card-school-heading > div > p:last-child { margin-top:4px; color:#748078; font-size:12px; }
+.report-card-school-logo { width:70px; height:70px; flex:0 0 auto; object-fit:contain; }
+.report-card-school-identity { min-width:0; }
+.report-card-school-identity h1 { margin-top:3px; color:#25312b; font-size:19px; font-weight:750; letter-spacing:-.03em; }
+.report-card-school-identity h2 { margin-top:6px; color:#25312b; font-size:17px; font-weight:700; letter-spacing:-.03em; }
+.report-card-school-identity > p:last-child { margin-top:4px; color:#748078; font-size:12px; }
+.report-card-school-contact { margin-top:3px; color:#748078; font-size:10px; }
 .report-card-student-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; border-bottom:1px solid #e9ece8; padding:19px 0; }
 .report-card-student-summary > div,.report-card-summary > div { display:grid; gap:5px; }
 .report-card-student-summary span,.report-card-summary span { color:#8a958d; font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
@@ -650,6 +655,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .report-card-signatures i { border-bottom:1px solid #aeb7af; }
 .report-card-signatures strong { color:#354138; font-size:11px; }
 .report-card-generated { margin-top:21px; color:#929c94; font-size:9px; text-align:center; }
+.school-profile-panel { max-width:920px; padding:22px; }
+.school-profile-logo-row { display:flex; align-items:center; gap:18px; }
+.school-profile-logo { width:112px; height:112px; flex:0 0 auto; border:1px solid #e7ebe6; border-radius:12px; padding:8px; object-fit:contain; background:#fff; }
+.school-profile-logo-fallback { display:flex; width:112px; height:112px; flex:0 0 auto; align-items:center; justify-content:center; border:1px dashed #cdd8cf; border-radius:12px; color:#78917e; background:#f7faf7; }
+.school-profile-logo-controls { display:grid; gap:9px; }
+.school-profile-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.school-profile-address { grid-column:1 / -1; }
+.school-profile-address textarea { resize:vertical; padding:10px 12px; }
+.school-profile-section-title { color:#344139; font-size:14px; font-weight:700; }
+@media (max-width:600px) { .school-profile-panel { padding:15px; }.school-profile-fields { grid-template-columns:1fr; }.school-profile-address { grid-column:auto; }.school-profile-logo { width:84px; height:84px; }.school-profile-logo-fallback { width:84px; height:84px; }.report-card-school-logo { width:54px; height:54px; }.report-card-school-identity h1 { font-size:16px; } }
 .enrollment-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 16px; }
 .enrollment-tab { border:1px solid #e7ebe6; border-radius:9px; padding:9px 13px; color:#768179; background:#fff; font-size:12px; font-weight:600; }
 .enrollment-tab-active { border-color:#dce9dc; color:#287b59; background:#edf5ed; }
@@ -685,6 +700,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .enrollment-preview-footer { display:flex; align-items:center; justify-content:space-between; gap:14px; border-top:1px solid #eff1ee; padding:13px 19px; }
 .enrollment-preview-footer > span { color:#839087; font-size:10px; }
 .enrollment-preview-footer .primary-button { flex:0 0 auto; white-space:nowrap; }
+.stream-roster-toolbar { display:flex; align-items:center; gap:10px; border-top:1px solid #eff1ee; padding:12px 16px; color:#829087; font-size:11px; }
+.stream-roster-toolbar > span { margin-left:auto; white-space:nowrap; }
+.stream-roster-list { display:grid; max-height:440px; overflow:auto; border-top:1px solid #eff1ee; }
+.stream-roster-row { display:flex; min-height:54px; align-items:center; gap:11px; border-bottom:1px solid #f0f2ef; padding:9px 16px; cursor:pointer; }
+.stream-roster-row:hover { background:#f8faf8; }
+.stream-roster-row input { width:16px; height:16px; accent-color:#287b59; }
+.stream-roster-row > span { display:grid; gap:3px; }
+.stream-roster-row strong { color:#354138; font-size:11px; font-weight:600; }
+.stream-roster-row small { color:#8a958d; font-size:10px; }
+.stream-roster-row > svg { margin-left:auto; color:#287b59; }
 .subject-status-completed,.subject-status-promoted,.subject-status-repeating { color:#43815c; background:#edf5ee; }
 .subject-status-transferred { color:#627b91; background:#edf2f7; }
 .subject-status-withdrawn,.subject-status-graduated { color:#7d6e5e; background:#f5f0e9; }
@@ -707,6 +732,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 @media (max-width:600px) { .report-card-filters { grid-template-columns:1fr; }.report-card-actions { align-items:flex-start; flex-direction:column; }.report-card-paper { padding:17px; }.report-card-summary,.report-card-signatures { grid-template-columns:1fr; gap:13px; } }
 @media (max-width:900px) { .enrollment-toolbar { flex-wrap:wrap; }.enrollment-toolbar .filter-select { flex:1 1 160px; }.enrollment-toolbar .student-total { margin-left:0; }.enrollment-preview-heading,.enrollment-preview-footer { align-items:flex-start; flex-direction:column; } }
 @media (max-width:600px) { .enrollment-bulk-form { grid-template-columns:1fr; }.enrollment-preview-stats { flex-wrap:wrap; } }
+@media (max-width:600px) { .stream-roster-toolbar { align-items:stretch; flex-wrap:wrap; }.stream-roster-toolbar .enrollment-search { flex-basis:100%; }.stream-roster-toolbar > span { margin-left:0; }.stream-roster-toolbar > button { margin-left:auto; } }
 @media (max-width:900px) { .promotion-scope-form { grid-template-columns:1fr 1fr; }.promotion-preview-button { width:max-content; } }
 @media (max-width:600px) { .promotion-scope-form,.promotion-policy-fields { grid-template-columns:1fr; }.promotion-summary { flex-wrap:wrap; }.promotion-approval-footer,.promotion-policy-footer,.promotion-batch-meta { align-items:flex-start; flex-direction:column; }.promotion-tab { padding:8px; font-size:11px; } }
 .school-plan-selection,.subscription-history-panel { margin-bottom: 14px; padding: 19px; }
@@ -796,3 +822,26 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   .subscription-current-panel { flex-wrap: wrap; padding: 15px; }
   .subscription-tabs { overflow-x: auto; }
 }
+.student-parent-registration { display:grid; gap:12px; border-top:1px solid #e7ece7; padding-top:16px; }
+.student-parent-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.student-parent-heading > div { display:grid; gap:3px; }
+.student-parent-heading strong { color:#26352a; font-size:13px; }
+.student-parent-heading span { color:#7a867d; font-size:11px; }
+.student-parent-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 12px; border:1px solid #e8ede8; border-radius:10px; padding:12px; }
+.student-parent-remove { grid-column:1/-1; justify-self:end; }
+@media (max-width:600px) { .student-parent-fields { grid-template-columns:1fr; } }
+.audit-log-panel { overflow:hidden; }
+.audit-log-table { min-width:1050px; }
+.audit-actor,.audit-entity { display:grid; gap:3px; min-width:150px; }
+.audit-actor strong,.audit-entity strong { color:#26352a; font-size:12px; }
+.audit-actor span,.audit-entity span,.audit-entity small { color:#7a867d; font-size:10px; }
+.audit-action { display:inline-flex; border-radius:20px; padding:5px 8px; color:#416b50; background:#edf5ee; font-size:10px; font-weight:700; text-transform:capitalize; }
+.audit-details { min-width:200px; max-width:480px; }
+.audit-details summary { color:#397d58; cursor:pointer; font-size:11px; font-weight:650; }
+.audit-json-grid { display:grid; gap:8px; margin-top:8px; }
+.audit-json-grid > div { min-width:0; }
+.audit-json-grid strong { color:#536157; font-size:10px; text-transform:uppercase; }
+.audit-json-grid pre { max-height:240px; overflow:auto; margin-top:4px; border-radius:7px; padding:9px; color:#46534a; background:#f5f7f5; font-size:10px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.audit-details > small { display:block; margin-top:7px; color:#869087; font-size:9px; overflow-wrap:anywhere; }
+.audit-date-filter { display:grid; gap:3px; color:#707d74; font-size:10px; }
+.audit-date-filter input { min-width:140px; }

@@ -35,6 +35,7 @@ export default function ClassSubjectsPage({ signOut }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [removingId, setRemovingId] = useState('');
+  const [updatingRequirementId, setUpdatingRequirementId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +129,23 @@ export default function ClassSubjectsPage({ signOut }) {
     }
   }
 
+  async function updateRequirement(link, isRequired) {
+    setActionError('');
+    setUpdatingRequirementId(link.id);
+    try {
+      await apiRequest(`/class-subjects/${link.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isRequired })
+      });
+      refresh();
+    } catch (cause) {
+      setActionError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setUpdatingRequirementId('');
+    }
+  }
+
   const hasFilters = Boolean(search.trim() || classLevelId || subjectId);
   const canCreate = !loadingOptions && !levelsError && !subjectsError && levels.length > 0 && activeSubjects.length > 0;
 
@@ -137,7 +155,7 @@ export default function ClassSubjectsPage({ signOut }) {
         <div>
           <p className="eyebrow">Academic programme</p>
           <h1 className="page-title">Class subjects<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Build the curriculum by linking active subjects to class levels.</p>
+          <p className="mt-2 text-sm text-muted">Set which subjects every student must take and which are optional choices.</p>
         </div>
         <button className="primary-button add-user-button" onClick={() => setFormOpen(true)} disabled={!canCreate}>
           <Plus size={17} /> Link subject
@@ -188,7 +206,7 @@ export default function ClassSubjectsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table class-subject-table">
               <thead>
-                <tr><th>Class level</th><th>Subject</th><th>Subject status</th><th>Teaching assignments</th><th>Added</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Class level</th><th>Subject</th><th>Requirement</th><th>Subject status</th><th>Teaching assignments</th><th>Added</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {links.map((link) => (
@@ -204,6 +222,20 @@ export default function ClassSubjectsPage({ signOut }) {
                         <span className="class-subject-book-icon"><BookOpen size={15} /></span>
                         <div><strong>{link.subject.name}</strong><span>{link.subject.code}</span></div>
                       </div>
+                    </td>
+                    <td>
+                      <label className="sr-only" htmlFor={`class-subject-requirement-${link.id}`}>Requirement for {link.subject.name} in {link.classLevel.name}</label>
+                      <select
+                        id={`class-subject-requirement-${link.id}`}
+                        className="filter-select"
+                        value={link.isRequired ? 'required' : 'optional'}
+                        onChange={(event) => updateRequirement(link, event.target.value === 'required')}
+                        disabled={Boolean(updatingRequirementId) || Boolean(removingId)}
+                      >
+                        <option value="required">Required</option>
+                        <option value="optional">Optional</option>
+                      </select>
+                      {updatingRequirementId === link.id && <span className="sr-only">Updating requirement…</span>}
                     </td>
                     <td><span className={`subject-status subject-status-${link.subject.status.toLowerCase()}`}>{link.subject.status.toLowerCase()}</span></td>
                     <td className="text-muted">{link._count?.assignments ?? 0}</td>

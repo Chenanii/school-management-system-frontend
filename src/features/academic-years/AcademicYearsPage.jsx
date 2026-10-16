@@ -87,7 +87,7 @@ export default function AcademicYearsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table academic-year-table">
               <thead>
-                <tr><th>Academic year</th><th>Start date</th><th>End date</th><th>Grade scale</th><th>Terms</th><th>Annual results</th><th>Period</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Academic year</th><th>Start date</th><th>End date</th><th>Grading scales</th><th>Terms</th><th>Annual results</th><th>Period</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {years.map((year) => {
@@ -103,7 +103,7 @@ export default function AcademicYearsPage({ signOut }) {
                       </td>
                       <td className="whitespace-nowrap text-muted">{formatAcademicDate(year.startDate)}</td>
                       <td className="whitespace-nowrap text-muted">{formatAcademicDate(year.endDate)}</td>
-                      <td className="text-muted">{year.gradeScale ? `${year.gradeScale.name} · ${year.gradeScale.maxScore === 50 ? '/ 50' : '%'}` : <span className="text-amber-700">Not configured</span>}</td>
+                      <td className="text-muted">Selected by class level</td>
                       <td className="text-muted">{year.terms?.length ?? 0}</td>
                       <td className="text-muted">{year._count?.annualResults ?? 0}</td>
                       <td><span className={`subject-status subject-status-${status.toLowerCase().replace(' ', '-')}`}>{status}</span></td>

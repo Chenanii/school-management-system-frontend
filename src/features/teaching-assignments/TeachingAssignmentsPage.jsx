@@ -113,6 +113,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
         teacher?.email,
         assignment.classGroup?.name,
         assignment.classGroup?.classLevel?.name,
+        assignment.subjectStream?.name,
         assignment.subject?.name,
         assignment.subject?.code,
         assignment.term?.name,
@@ -147,7 +148,8 @@ export default function TeachingAssignmentsPage({ signOut }) {
   async function removeAssignment(assignment) {
     if (assignment._count?.assessments > 0) return;
     const teacherName = teacherDisplayName(teacherMap.get(assignment.teacherId));
-    if (!window.confirm(`Delete the teaching assignment for ${teacherName} in ${formatAssignmentClass(assignment.classGroup)}?`)) return;
+    const scope = assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : `${assignment.subjectStream?.classLevel?.name || 'Class level'} · ${assignment.subject?.name || 'Subject'} ${assignment.subjectStream?.name || ''}`.trim();
+    if (!window.confirm(`Delete the teaching assignment for ${teacherName} in ${scope}?`)) return;
     setNotice('');
     setBusyId(assignment.id);
     try {
@@ -170,7 +172,8 @@ export default function TeachingAssignmentsPage({ signOut }) {
         <div>
           <p className="eyebrow">Academic programme</p>
           <h1 className="page-title">Teaching assignments<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Allocate teachers to class groups, subjects, and academic terms.</p>
+          <p className="mt-2 text-sm text-muted">Teachers can be assigned to a required class subject or to a named section of an elective subject, such as Mathematics Core · A. Select students for each section under Enrollments → Subject streams.</p>
+          <p className="mt-2 text-sm text-muted">Subject sections are attached to a class level. Students keep their home class group and join a separate section for each subject.</p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}>
           <Plus size={17} /> Create assignment
@@ -228,7 +231,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table teaching-assignment-table">
               <thead>
-                <tr><th>Teacher</th><th>Class group</th><th>Subject</th><th>Term</th><th>Assessments</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Teacher</th><th>Teaching group</th><th>Subject / section</th><th>Term</th><th>Assessments</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {filteredAssignments.map((assignment) => {
@@ -242,11 +245,11 @@ export default function TeachingAssignmentsPage({ signOut }) {
                           <div><strong>{teacherDisplayName(teacher)}</strong><span>{teacher?.staffNumber || teacher?.email || 'Teacher profile'}</span></div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap text-muted">{formatAssignmentClass(assignment.classGroup)}</td>
+                      <td className="whitespace-nowrap text-muted">{assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : assignment.subjectStream?.classLevel?.name || 'Class level'}</td>
                       <td>
                         <div className="teaching-assignment-identity">
                           <span className="teaching-assignment-subject-icon"><BookOpen size={14} /></span>
-                          <div><strong>{assignment.subject?.name || 'Subject'}</strong><span>{assignment.subject?.code || '—'}</span></div>
+                          <div><strong>{assignment.subject?.name || 'Subject'}{assignment.subjectStream?.name ? ` · ${assignment.subjectStream.name}` : ''}</strong><span>{assignment.subject?.code || 'Class subject'}{assignment.subjectStream?.classLevel?.name ? ` · ${assignment.subjectStream.classLevel.name}` : ''}</span></div>
                         </div>
                       </td>
                       <td>

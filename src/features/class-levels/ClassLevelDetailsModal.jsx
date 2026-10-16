@@ -33,7 +33,7 @@ export default function ClassLevelDetailsModal({ level, signOut, onClose, onEdit
           <div>
             <p className="eyebrow">Class structure · Level {details.levelOrder}</p>
             <h2 id="class-level-details-title">{details.name}</h2>
-            <p>Review learner groups, curriculum subjects, and progression links for this level.</p>
+            <p>Review the grading system, learner groups, curriculum subjects, and progression links for this level.</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -54,6 +54,12 @@ export default function ClassLevelDetailsModal({ level, signOut, onClose, onEdit
               <div><strong>{details._count?.subjects ?? details.subjects?.length ?? 0}</strong><span>Curriculum subjects</span></div>
               <div><strong>{details._count?.previousLevels ?? details.previousLevels?.length ?? 0}</strong><span>Progress into this level</span></div>
             </div>
+            <section className="class-level-progression">
+              <div>
+                <span>Grading scale</span>
+                <strong>{details.gradeScale ? `${details.gradeScale.name} · ${details.gradeScale.maxScore === 50 ? '/ 50' : '%'}` : 'Automatic if the school has one grading scale; otherwise assign one.'}</strong>
+              </div>
+            </section>
             <section className="class-level-detail-section">
               <div className="class-level-section-title"><Users size={16} /><h3>Class groups</h3></div>
               {details.groups?.length ? (

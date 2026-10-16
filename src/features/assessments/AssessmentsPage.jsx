@@ -210,7 +210,7 @@ export default function AssessmentsPage({ user, signOut }) {
         </div>
       )}
       <div className="assessment-weight-guide">
-        <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>Coursework and mid-term contributions must add up to 40%. The final exam contributes a fixed 60%.</span></div>
+        <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>All coursework and mid-term marks are averaged together and contribute 40%. The final exam contributes 60%.</span></div>
         <div className="assessment-weight-guide-bar" aria-label="40 percent coursework and mid-term, 60 percent final exam"><span>Coursework + mid-term <b>40%</b></span><span>Final exam <b>60%</b></span></div>
       </div>
       <section className="panel directory-panel assessment-panel">
@@ -252,7 +252,7 @@ export default function AssessmentsPage({ user, signOut }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table assessment-table">
-              <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Max mark</th><th>Contribution</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {filteredAssessments.map((assessment) => {
                   const assignment = assessment.teachingAssignment;
@@ -281,8 +281,6 @@ export default function AssessmentsPage({ user, signOut }) {
                       <td className="whitespace-nowrap text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '—'}</td>
                       <td className="whitespace-nowrap text-muted">{assessmentTypeLabel(assessment.assessmentType)}</td>
                       <td className="whitespace-nowrap text-muted">{Number(assessment._count?.results ?? 0)}</td>
-                      <td className="whitespace-nowrap text-muted">{Number(assessment.maxMark)}</td>
-                      <td className="whitespace-nowrap text-muted">{Number(assessment.weightPercent)}%</td>
                       <td><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessmentStatusLabel(assessment.status)}</span></td>
                       <td>
                         <div className="assessment-actions">

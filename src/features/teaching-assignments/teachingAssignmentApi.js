@@ -36,5 +36,6 @@ export function teacherDisplayName(teacher) {
 }
 
 export function formatAssignmentClass(group) {
+  if (!group) return 'Subject section';
   return `${group.classLevel?.levelOrder ? `${group.classLevel.levelOrder}. ` : ''}${group.classLevel?.name || 'Class'} · ${group.name}`;
 }

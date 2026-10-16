@@ -54,6 +54,17 @@ export function updateEnrollmentClassGroup(id, classGroupId) {
   });
 }
 
+export function fetchSubjectStreamRoster(assignmentId) {
+  return apiRequest(`/teaching-assignments/${assignmentId}/student-streams`);
+}
+
+export function saveSubjectStreamRoster(assignmentId, enrollmentIds) {
+  return apiRequest(`/teaching-assignments/${assignmentId}/student-streams`, {
+    method: 'PUT',
+    body: JSON.stringify({ enrollmentIds }),
+  });
+}
+
 export function previewBulkEnrollment(data) {
   return apiRequest('/enrollments/bulk/preview', {
     method: 'POST',

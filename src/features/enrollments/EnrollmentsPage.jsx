@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, UsersRound } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, UsersRound } from 'lucide-react';
 import {
   createBulkEnrollments,
   createEnrollment,
@@ -11,7 +11,9 @@ import {
   previewSelectedBulkEnrollment,
   createSelectedBulkEnrollments,
   updateEnrollmentStatus,
-  updateEnrollmentClassGroup
+  updateEnrollmentClassGroup,
+  fetchSubjectStreamRoster,
+  saveSubjectStreamRoster
 } from './enrollmentApi.js';
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
@@ -40,11 +42,133 @@ function classLabel(group) {
   return [group?.classLevel?.name, group?.name].filter(Boolean).join(' · ');
 }
 
-function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
+function SubjectStreamPanel({ terms, groups, signOut, onSaved }) {
+  const [termId, setTermId] = useState('');
+  const [classLevelId, setClassLevelId] = useState('');
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentId, setAssignmentId] = useState('');
+  const [students, setStudents] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const levels = [...new Map(groups.map((group) => [group.classLevelId, group.classLevel])).values()]
+    .filter(Boolean).sort((left, right) => left.levelOrder - right.levelOrder);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAssignments([]);
+    setAssignmentId('');
+    setStudents([]);
+    if (!termId || !classLevelId) return undefined;
+    async function loadAssignments() {
+      setLoadingAssignments(true);
+      setError('');
+      try {
+        const result = await fetchAllPages('/teaching-assignments');
+        if (!cancelled) {
+          const streamsById = new Map();
+          result.filter((item) => item.termId === termId && item.subjectStream?.classLevelId === classLevelId && item.subjectStream && item.classSubject?.isRequired !== true)
+            .forEach((item) => { if (!streamsById.has(item.subjectStreamId)) streamsById.set(item.subjectStreamId, item); });
+          setAssignments([...streamsById.values()]);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause.message);
+          if (cause.status === 401) signOut();
+        }
+      } finally {
+        if (!cancelled) setLoadingAssignments(false);
+      }
+    }
+    loadAssignments();
+    return () => { cancelled = true; };
+  }, [termId, classLevelId, signOut]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStudents([]);
+    setSelectedIds([]);
+    if (!assignmentId) return undefined;
+    async function loadRoster() {
+      setLoadingStudents(true);
+      setError('');
+      try {
+        const result = await fetchSubjectStreamRoster(assignmentId);
+        if (!cancelled) {
+          const roster = result.data?.students || [];
+          setStudents(roster);
+          setSelectedIds(roster.filter((item) => item.selected).map((item) => item.enrollmentId));
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setError(cause.message);
+          if (cause.status === 401) signOut();
+        }
+      } finally {
+        if (!cancelled) setLoadingStudents(false);
+      }
+    }
+    loadRoster();
+    return () => { cancelled = true; };
+  }, [assignmentId, signOut]);
+
+  const visibleStudents = students.filter(({ student }) => [studentName(student), student?.admissionNumber].join(' ').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+
+  function toggleStudent(enrollmentId) {
+    setSelectedIds((current) => current.includes(enrollmentId)
+      ? current.filter((id) => id !== enrollmentId)
+      : [...current, enrollmentId]);
+  }
+
+  function toggleVisibleStudents() {
+    const visibleIds = visibleStudents.map((item) => item.enrollmentId);
+    const allSelected = visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds((current) => allSelected
+      ? current.filter((id) => !visibleIds.includes(id))
+      : [...new Set([...current, ...visibleIds])]);
+  }
+
+  async function saveRoster() {
+    setSaving(true);
+    setError('');
+    try {
+      await saveSubjectStreamRoster(assignmentId, selectedIds);
+      setStudents((current) => current.map((item) => ({ ...item, selected: selectedIds.includes(item.enrollmentId) })));
+      onSaved(`${selectedIds.length} student${selectedIds.length === 1 ? '' : 's'} assigned to the subject stream.`);
+    } catch (cause) {
+      setError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <section className="panel enrollment-bulk-panel">
+    <div className="enrollment-section-heading"><div><h2>Subject streams</h2><p>Streams are created for a class level. Select students from any class group at that level; their class group enrollment remains unchanged.</p></div></div>
+    <div className="enrollment-bulk-form">
+      <label className="field-label">Academic term<select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setClassLevelId(''); setAssignmentId(''); }}><option value="">Select a term</option>{terms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}</select></label>
+      <label className="field-label">Class level<select className="text-input" value={classLevelId} onChange={(event) => { setClassLevelId(event.target.value); setAssignmentId(''); }} disabled={!termId}><option value="">Select a class level</option>{levels.map((level) => <option key={level.id} value={level.id}>{level.name}</option>)}</select></label>
+      <label className="field-label">Optional subject stream<select className="text-input" value={assignmentId} onChange={(event) => setAssignmentId(event.target.value)} disabled={!classLevelId || loadingAssignments}><option value="">{loadingAssignments ? 'Loading streams…' : 'Select a subject stream'}</option>{assignments.map((item) => <option key={item.subjectStreamId} value={item.id}>{item.subject?.name} · {item.subjectStream.name} · {item.teacher?.firstName} {item.teacher?.lastName}</option>)}</select></label>
+    </div>
+    {error && <div className="notice-error m-4" role="alert">{error}</div>}
+    {classLevelId && !loadingAssignments && !assignments.length && <div className="table-message">No optional subject stream allocation was found for this class level and term. Go to Teaching assignments and assign a teacher to an optional or standalone subject. Required subjects include every active student automatically.</div>}
+    {assignmentId && <>
+      <div className="stream-roster-toolbar"><div className="relative enrollment-search"><Search size={17} className="search-icon" /><input className="search-input" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search students" /></div><span>{selectedIds.length} selected · {students.length} enrolled</span><button className="secondary-button" type="button" onClick={toggleVisibleStudents} disabled={!visibleStudents.length}>{visibleStudents.length && visibleStudents.every((item) => selectedIds.includes(item.enrollmentId)) ? 'Clear visible' : 'Select visible'}</button></div>
+      {loadingStudents ? <div className="table-message"><LoaderCircle size={18} className="animate-spin" /> Loading students…</div> : !students.length ? <div className="table-message">No active enrollments found in this class level and term.</div> : <div className="stream-roster-list">{visibleStudents.map(({ enrollmentId: id, student, classGroup }) => <label className="stream-roster-row" key={id}><input type="checkbox" checked={selectedIds.includes(id)} onChange={() => toggleStudent(id)} /><span><strong>{studentName(student)}</strong><small>{student.admissionNumber} · {classGroup?.name || 'Class group'}</small></span>{selectedIds.includes(id) && <Check size={16} />}</label>)}</div>}
+      <div className="enrollment-preview-footer"><span>Unselected students are dropped from this stream. Existing marks are retained.</span><button className="primary-button" type="button" onClick={saveRoster} disabled={saving || loadingStudents}>{saving ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}{saving ? 'Saving…' : 'Save student stream'}</button></div>
+    </>}
+  </section>;
+}
+
+function StudentEnrollmentModal({ terms, groups, classLevels, signOut, onClose, onSaved }) {
   const [studentSearch, setStudentSearch] = useState('');
   const [students, setStudents] = useState([]);
   const [studentId, setStudentId] = useState('');
   const [termId, setTermId] = useState('');
+  const [classLevelId, setClassLevelId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
   const [previousEnrollmentId, setPreviousEnrollmentId] = useState('');
   const [previousEnrollments, setPreviousEnrollments] = useState([]);
@@ -117,7 +241,8 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
       await createEnrollment({
         studentId,
         termId,
-        classGroupId,
+        classLevelId,
+        ...(classGroupId ? { classGroupId } : {}),
         ...(previousEnrollmentId ? { previousEnrollmentId } : {})
       });
       onSaved();
@@ -149,10 +274,16 @@ function StudentEnrollmentModal({ terms, groups, signOut, onClose, onSaved }) {
                 {acceptingTerms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}
               </select>
             </label>
-            <label className="field-label">Class group
-              <select className="text-input" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} required>
-                <option value="">Select a class group</option>
-                {groups.map((group) => <option key={group.id} value={group.id}>{classLabel(group)}</option>)}
+            <label className="field-label">Class level
+              <select className="text-input" value={classLevelId} onChange={(event) => { setClassLevelId(event.target.value); setClassGroupId(''); }} required>
+                <option value="">Select a class level</option>
+                {classLevels.map((level) => <option key={level.id} value={level.id}>{level.name}</option>)}
+              </select>
+            </label>
+            <label className="field-label">Home class group <span className="optional-label">Can be assigned later</span>
+              <select className="text-input" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} disabled={!classLevelId}>
+                <option value="">Leave unassigned for now</option>
+                {groups.filter((group) => group.classLevelId === classLevelId).map((group) => <option key={group.id} value={group.id}>{classLabel(group)}</option>)}
               </select>
             </label>
           </div>
@@ -487,6 +618,7 @@ export default function EnrollmentsPage({ user, signOut }) {
   const canManage = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role);
   const [terms, setTerms] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [classLevels, setClassLevels] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [pagination, setPagination] = useState(emptyPagination);
   const [page, setPage] = useState(1);
@@ -508,13 +640,15 @@ export default function EnrollmentsPage({ user, signOut }) {
     async function loadOptions() {
       setLoadingOptions(true);
       try {
-        const [termData, groupData] = await Promise.all([
+        const [termData, groupData, levelData] = await Promise.all([
           fetchAllPages('/terms'),
-          fetchAllPages('/class-groups')
+          fetchAllPages('/class-groups'),
+          fetchAllPages('/class-levels')
         ]);
         if (!cancelled) {
           setTerms(termData);
           setGroups(groupData);
+          setClassLevels(levelData);
         }
       } catch (cause) {
         if (!cancelled) {
@@ -592,7 +726,7 @@ export default function EnrollmentsPage({ user, signOut }) {
     if (nextClassGroupId === enrollment.classGroupId) return;
     const student = studentName(enrollment.student);
     const destination = groups.find((group) => group.id === nextClassGroupId);
-    if (!destination || !window.confirm(`Move ${student} from ${classLabel(enrollment.classGroup)} to ${classLabel(destination)} for this term?`)) return;
+    if (!destination || !window.confirm(`Assign ${student} from ${classLabel(enrollment.classGroup) || 'no home group'} to ${classLabel(destination)} for this term?`)) return;
     setBusyId(enrollment.id);
     setError('');
     setNotice('');
@@ -612,7 +746,7 @@ export default function EnrollmentsPage({ user, signOut }) {
     <>
       <div className="welcome-row students-welcome">
         <div><p className="eyebrow">Academic records</p><h1 className="page-title">Enrollments<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Manage student placement and progression between terms and classes.</p></div>
-        {canManage && <button className="primary-button add-user-button" onClick={() => setFormOpen(true)} disabled={loadingOptions || !terms.length || !groups.length}><Plus size={17} /> Enroll student</button>}
+        {canManage && <button className="primary-button add-user-button" onClick={() => setFormOpen(true)} disabled={loadingOptions || !terms.length || !classLevels.length}><Plus size={17} /> Enroll student</button>}
       </div>
       {error && <div className="notice-error mb-4" role="alert"><span>{error}</span><button className="text-button" onClick={() => setError('')}>Dismiss</button></div>}
       {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" onClick={() => setNotice('')}>Dismiss</button></div>}
@@ -621,10 +755,12 @@ export default function EnrollmentsPage({ user, signOut }) {
           <button className={tab === 'register' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'register'} onClick={() => setTab('register')}>Enrollment register</button>
           <button className={tab === 'bulk' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'bulk'} onClick={() => setTab('bulk')}>Bulk progression</button>
           <button className={tab === 'select' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'select'} onClick={() => setTab('select')}>Select students</button>
+          <button className={tab === 'streams' ? 'enrollment-tab enrollment-tab-active' : 'enrollment-tab'} role="tab" aria-selected={tab === 'streams'} onClick={() => setTab('streams')}>Subject streams</button>
         </div>
       )}
       {tab === 'bulk' && canManage && <BulkEnrollmentPanel terms={terms} groups={groups} signOut={signOut} onCompleted={refresh} />}
       {tab === 'select' && canManage && <ManualBulkEnrollmentPanel terms={terms} groups={groups} signOut={signOut} onCompleted={refresh} />}
+      {tab === 'streams' && canManage && <SubjectStreamPanel terms={terms} groups={groups} signOut={signOut} onSaved={(message) => { setNotice(message); setTab('streams'); }} />}
       {tab === 'register' && (
         <section className="panel enrollment-register-panel">
           <div className="enrollment-toolbar">
@@ -650,7 +786,7 @@ export default function EnrollmentsPage({ user, signOut }) {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="people-table enrollment-table">
-                    <thead><tr><th>Student</th><th>Term</th><th>Class group</th><th>Previous enrollment</th><th>Status</th><th>Created</th>{canManage && <th>Actions</th>}</tr></thead>
+                    <thead><tr><th>Student</th><th>Term</th><th>Class level</th><th>Home class group</th><th>Previous enrollment</th><th>Status</th><th>Created</th>{canManage && <th>Actions</th>}</tr></thead>
                     <tbody>{enrollments.map((enrollment) => {
                       const streamLockReason = enrollment._count?.results
                         ? 'Class group cannot be changed after assessment results have been entered.'
@@ -662,11 +798,13 @@ export default function EnrollmentsPage({ user, signOut }) {
                       return <tr key={enrollment.id}>
                         <td><div className="enrollment-student-cell"><strong>{studentName(enrollment.student)}</strong><span>{enrollment.student?.admissionNumber}</span></div></td>
                         <td className="whitespace-nowrap">{termLabel(enrollment.term)}</td>
+                        <td className="whitespace-nowrap">{enrollment.classLevel?.name || enrollment.classGroup?.classLevel?.name || '—'}</td>
                         <td className="whitespace-nowrap">{canManage
-                          ? <select className="enrollment-stream-select" aria-label={`Move ${studentName(enrollment.student)} to another class group`} title={streamLockReason || 'Move this student to another class group for the term.'} value={enrollment.classGroupId} disabled={busyId === enrollment.id || Boolean(streamLockReason)} onChange={(event) => changeStream(enrollment, event.target.value)}>
-                              {groups.filter((group) => group.classLevel?.id === enrollment.classGroup.classLevel?.id).map((group) => <option key={group.id} value={group.id}>{classLabel(group)}</option>)}
+                          ? <select className="enrollment-stream-select" aria-label={`Assign ${studentName(enrollment.student)} to a home class group`} title={streamLockReason || 'Assign or move this student to a home class group at the same class level.'} value={enrollment.classGroupId || ''} disabled={busyId === enrollment.id || Boolean(streamLockReason)} onChange={(event) => event.target.value && changeStream(enrollment, event.target.value)}>
+                              {!enrollment.classGroupId && <option value="">Assign home group</option>}
+                              {groups.filter((group) => group.classLevelId === enrollment.classLevelId).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
                             </select>
-                          : classLabel(enrollment.classGroup)}</td>
+                          : enrollment.classGroup ? classLabel(enrollment.classGroup) : 'Not assigned'}</td>
                         <td className="text-muted">{enrollment.previousEnrollment ? `${enrollment.previousEnrollment.status.toLowerCase()} · linked` : '—'}</td>
                         <td><span className={`subject-status subject-status-${enrollment.status.toLowerCase()}`}>{statusLabels[enrollment.status]}</span></td>
                         <td className="whitespace-nowrap text-muted">{new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(enrollment.createdAt))}</td>
@@ -681,7 +819,7 @@ export default function EnrollmentsPage({ user, signOut }) {
           )}
         </section>
       )}
-      {formOpen && canManage && <StudentEnrollmentModal terms={terms} groups={groups} signOut={signOut} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); setNotice('Student enrolled successfully.'); setPage(1); refresh(); }} />}
+      {formOpen && canManage && <StudentEnrollmentModal terms={terms} groups={groups} classLevels={classLevels} signOut={signOut} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); setNotice('Student enrolled successfully.'); setPage(1); refresh(); }} />}
     </>
   );
 }

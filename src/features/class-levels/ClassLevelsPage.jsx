@@ -7,7 +7,7 @@ import { fetchAllClassLevels } from './classLevelApi.js';
 
 const initialPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
 
-export default function ClassLevelsPage({ signOut }) {
+export default function ClassLevelsPage({ signOut, onNavigate }) {
   const [levels, setLevels] = useState([]);
   const [allLevels, setAllLevels] = useState([]);
   const [pagination, setPagination] = useState(initialPagination);
@@ -17,6 +17,8 @@ export default function ClassLevelsPage({ signOut }) {
   const [loadingAll, setLoadingAll] = useState(true);
   const [error, setError] = useState('');
   const [allLevelsError, setAllLevelsError] = useState('');
+  const [gradeScales, setGradeScales] = useState([]);
+  const [gradeScalesError, setGradeScalesError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [formLevel, setFormLevel] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -72,6 +74,18 @@ export default function ClassLevelsPage({ signOut }) {
     };
   }, [refreshKey, signOut]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setGradeScalesError('');
+    apiRequest('/grade-scales')
+      .then((result) => { if (!cancelled) setGradeScales(result.data || []); })
+      .catch((cause) => {
+        if (!cancelled) setGradeScalesError(cause.message);
+        if (cause.status === 401) signOut();
+      });
+    return () => { cancelled = true; };
+  }, [refreshKey, signOut]);
+
   function refresh() {
     setRefreshKey((current) => current + 1);
   }
@@ -110,6 +124,9 @@ export default function ClassLevelsPage({ signOut }) {
           <button className="text-button" onClick={refresh}>Try again</button>
         </div>
       )}
+      {gradeScalesError && <div className="notice-error mb-4" role="alert"><span>Grading scales could not be loaded: {gradeScalesError}</span><button className="text-button" onClick={refresh}>Try again</button></div>}
+      {!gradeScalesError && gradeScales.length === 0 && <div className="teaching-assignment-notice mb-4" role="status"><span>Create at least one grading scale before calculating student results.</span><button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Set up grading scales</button></div>}
+      {!gradeScalesError && gradeScales.length > 1 && allLevels.some((level) => !level.gradeScaleId) && <div className="teaching-assignment-notice mb-4" role="status"><span>Assign a grading scale to every class level. Results cannot be calculated for levels without a selected scale.</span></div>}
       <section className="panel directory-panel class-level-panel">
         <div className="class-level-toolbar">
           <div className="relative w-full sm:max-w-[320px]">
@@ -143,7 +160,7 @@ export default function ClassLevelsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table class-level-table">
               <thead>
-                <tr><th>Order</th><th>Class level</th><th>Class groups</th><th>Subjects</th><th>Previous levels</th><th>Next level</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Order</th><th>Class level</th><th>Grading scale</th><th>Class groups</th><th>Subjects</th><th>Previous levels</th><th>Next level</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {levels.map((level) => (
@@ -155,6 +172,7 @@ export default function ClassLevelsPage({ signOut }) {
                         <span className="font-medium text-ink">{level.name}</span>
                       </div>
                     </td>
+                    <td className="text-muted">{level.gradeScale ? `${level.gradeScale.name} · ${level.gradeScale.maxScore === 50 ? '/ 50' : '%'}` : gradeScales.length === 1 ? `${gradeScales[0].name} · ${gradeScales[0].maxScore === 50 ? '/ 50' : '%'} (automatic)` : <span className="text-amber-700">Not assigned</span>}</td>
                     <td className="text-muted">{level._count?.groups ?? 0}</td>
                     <td className="text-muted">{level._count?.subjects ?? 0}</td>
                     <td className="text-muted">{level._count?.previousLevels ?? 0}</td>

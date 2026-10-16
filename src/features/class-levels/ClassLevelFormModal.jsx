@@ -4,7 +4,10 @@ import { apiRequest } from '../../api.js';
 
 export default function ClassLevelFormModal({ level, levels, signOut, onClose, onSaved }) {
   const editing = Boolean(level);
-  const [form, setForm] = useState({ name: '', levelOrder: '', nextLevelId: '' });
+  const [form, setForm] = useState({ name: '', levelOrder: '', nextLevelId: '', gradeScaleId: '' });
+  const [gradeScales, setGradeScales] = useState([]);
+  const [loadingGradeScales, setLoadingGradeScales] = useState(true);
+  const [gradeScaleError, setGradeScaleError] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -12,9 +15,23 @@ export default function ClassLevelFormModal({ level, levels, signOut, onClose, o
     setForm(level ? {
       name: level.name || '',
       levelOrder: String(level.levelOrder),
-      nextLevelId: level.nextLevelId || level.nextLevel?.id || ''
-    } : { name: '', levelOrder: '', nextLevelId: '' });
+      nextLevelId: level.nextLevelId || level.nextLevel?.id || '',
+      gradeScaleId: level.gradeScaleId || level.gradeScale?.id || ''
+    } : { name: '', levelOrder: '', nextLevelId: '', gradeScaleId: '' });
   }, [level]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGradeScaleError('');
+    apiRequest('/grade-scales')
+      .then((result) => { if (!cancelled) setGradeScales(result.data || []); })
+      .catch((cause) => {
+        if (!cancelled) setGradeScaleError(cause.message);
+        if (cause.status === 401) signOut();
+      })
+      .finally(() => { if (!cancelled) setLoadingGradeScales(false); });
+    return () => { cancelled = true; };
+  }, [signOut]);
 
   const availableNextLevels = useMemo(() => {
     const currentOrder = Number(form.levelOrder);
@@ -46,7 +63,8 @@ export default function ClassLevelFormModal({ level, levels, signOut, onClose, o
     const body = {
       name: form.name.trim(),
       levelOrder: Number(form.levelOrder),
-      nextLevelId: form.nextLevelId || null
+      nextLevelId: form.nextLevelId || null,
+      ...(gradeScales.length > 1 ? { gradeScaleId: form.gradeScaleId || null } : {})
     };
 
     try {
@@ -96,10 +114,25 @@ export default function ClassLevelFormModal({ level, levels, signOut, onClose, o
             </select>
             <span className="field-hint">Only levels with a higher progression order can be selected.</span>
           </label>
+          {gradeScales.length > 1 ? (
+            <label className="field-label">
+              Grading scale
+              <select className="text-input" value={form.gradeScaleId} onChange={(event) => setForm((current) => ({ ...current, gradeScaleId: event.target.value }))} required disabled={loadingGradeScales || saving}>
+                <option value="">Select a grading scale</option>
+                {gradeScales.map((scale) => <option value={scale.id} key={scale.id}>{scale.name} · {scale.maxScore === 50 ? '/ 50' : '%'}</option>)}
+              </select>
+              <span className="field-hint">This class level will use the selected grading system in every term.</span>
+            </label>
+          ) : gradeScales.length === 1 ? (
+            <p className="field-hint">The school’s only grading scale will be applied automatically.</p>
+          ) : (
+            <p className="field-hint">Create a grading scale before calculating results.</p>
+          )}
+          {gradeScaleError && <p className="form-error" role="alert">Grading scales could not be loaded: {gradeScaleError}</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={saving}>
+            <button className="primary-button" type="submit" disabled={saving || loadingGradeScales || Boolean(gradeScaleError) || (gradeScales.length > 1 && !form.gradeScaleId)}>
               {saving && <LoaderCircle size={16} className="animate-spin" />}
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Add class level'}
             </button>

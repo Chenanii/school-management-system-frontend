@@ -4,10 +4,11 @@ export const TOKEN_KEY = 'schoolhouse.accessToken';
 export const SCHOOL_CONTEXT_KEY = 'schoolhouse.schoolId';
 
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -69,7 +70,8 @@ export async function apiRequest(path, options = {}) {
   if (!response.ok || payload.success === false) {
     throw new ApiError(
       payload.error?.message || payload.message || 'The request could not be completed.',
-      response.status
+      response.status,
+      payload.error?.code || null
     );
   }
 

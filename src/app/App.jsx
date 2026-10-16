@@ -25,12 +25,26 @@ import SubjectsPage from '../features/subjects/SubjectsPage.jsx';
 import StudentsPage from '../features/students/StudentsPage.jsx';
 import EnrollmentsPage from '../features/enrollments/EnrollmentsPage.jsx';
 import UsersPage from '../features/users/UsersPage.jsx';
+import AuditLogsPage from '../features/audit-logs/AuditLogsPage.jsx';
+import SchoolProfilePage from '../features/schools/SchoolProfilePage.jsx';
+import { sections } from '../shared/navigation.js';
+
+const pageIds = new Set(sections.map(({ id }) => id));
+
+function pageFromPath(pathname) {
+  const segment = pathname.replace(/^\/+|\/+$/g, '');
+  return pageIds.has(segment) ? segment : 'overview';
+}
+
+function pathForPage(page) {
+  return page === 'overview' ? '/' : `/${page}`;
+}
 
 export default function App() {
   const { user, signIn, signOut } = useAuth();
   const { summary, loading, error, loadSummary, selectSchool } = useDashboardData(signOut);
   const isTeacherInvitation = window.location.pathname === '/accept-invitation';
-  const [page, setPage] = useState('overview');
+  const [page, setPage] = useState(() => pageFromPath(window.location.pathname));
   const [mobileNav, setMobileNav] = useState(false);
   const [search, setSearch] = useState('');
   const [directoryPage, setDirectoryPage] = useState(1);
@@ -50,8 +64,20 @@ export default function App() {
 
   const navigate = useCallback((nextPage) => {
     setPage(nextPage);
+    const nextPath = pathForPage(nextPage);
+    if (window.location.pathname !== nextPath) window.history.pushState({ page: nextPage }, '', nextPath);
     setSearch('');
     setDirectoryPage(1);
+  }, []);
+
+  useEffect(() => {
+    function restorePageFromHistory() {
+      setPage(pageFromPath(window.location.pathname));
+      setSearch('');
+      setDirectoryPage(1);
+    }
+    window.addEventListener('popstate', restorePageFromHistory);
+    return () => window.removeEventListener('popstate', restorePageFromHistory);
   }, []);
 
   const retry = useCallback(() => {
@@ -111,39 +137,43 @@ export default function App() {
               onRetry={retry}
               onNavigate={navigate}
             />
-          ) : page === 'academic-years' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'academic-years' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <AcademicYearsPage signOut={signOut} />
-          ) : page === 'grading-scales' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'grading-scales' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <GradeScalesPage signOut={signOut} />
-          ) : page === 'terms' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'terms' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <TermsPage signOut={signOut} />
-          ) : page === 'teaching-assignments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'teaching-assignments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <TeachingAssignmentsPage signOut={signOut} />
-          ) : page === 'assessments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'TEACHER'].includes(user.role) ? (
+          ) : page === 'assessments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
             <AssessmentsPage user={user} signOut={signOut} />
           ) : page === 'term-results' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (
             <TermResultsPage user={user} onNavigate={navigate} signOut={signOut} />
           ) : page === 'report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
-            <ReportCardsPage user={user} signOut={signOut} />
+            <ReportCardsPage user={user} signOut={signOut} onNavigate={navigate} />
           ) : page === 'promotions' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role) ? (
             <PromotionsPage user={user} signOut={signOut} />
           ) : page === 'subscriptions' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
             <SubscriptionsPage user={user} signOut={signOut} />
-          ) : page === 'users' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'school-profile' && ['SCHOOL_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
+            <SchoolProfilePage signOut={signOut} />
+          ) : page === 'users' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <UsersPage signOut={signOut} />
-          ) : page === 'students' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'TEACHER'].includes(user.role) ? (
+          ) : page === 'audit-logs' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (
+            <AuditLogsPage signOut={signOut} />
+          ) : page === 'students' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'TEACHER'].includes(user.role) ? (
             <StudentsPage user={user} signOut={signOut} />
           ) : page === 'enrollments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (
             <EnrollmentsPage user={user} signOut={signOut} />
-          ) : page === 'subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <SubjectsPage signOut={signOut} />
-          ) : page === 'class-levels' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
-            <ClassLevelsPage signOut={signOut} />
-          ) : page === 'class-groups' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'class-levels' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
+            <ClassLevelsPage signOut={signOut} onNavigate={navigate} />
+          ) : page === 'class-groups' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <ClassGroupsPage signOut={signOut} />
-          ) : page === 'class-subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'class-subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <ClassSubjectsPage signOut={signOut} />
-          ) : page === 'staff' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
+          ) : page === 'staff' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <TeachersPage signOut={signOut} />
           ) : (
             <DirectoryPage

@@ -53,7 +53,7 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
                   <h3>Recent enrolments</h3>
                   {!details.enrollments?.length ? <p>No enrolments recorded yet.</p> : details.enrollments.slice(0, 5).map((enrollment) => (
                     <div className="student-history-row" key={enrollment.id}>
-                      <div><strong>{enrollment.classGroup?.classLevel?.name || 'Class'}{enrollment.classGroup?.name ? ` · ${enrollment.classGroup.name}` : ''}</strong><span>{enrollment.term?.academicYear?.name} · {enrollment.term?.name}</span></div>
+                      <div><strong>{enrollment.classLevel?.name || enrollment.classGroup?.classLevel?.name || 'Class'}{enrollment.classGroup?.name ? ` · ${enrollment.classGroup.name}` : ' · Home group not assigned'}</strong><span>{enrollment.term?.academicYear?.name} · {enrollment.term?.name}</span></div>
                       <StatusBadge status={enrollment.status} />
                     </div>
                   ))}
@@ -61,8 +61,9 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
                 {!isTeacher && <section className="student-history">
                   <h3>Parents & guardians</h3>
                   {!details.parents?.length ? <p>No parent or guardian linked yet.</p> : details.parents.map((link) => {
-                    const parent = link.parent?.user;
-                    return <div className="student-history-row" key={link.parent?.id || link.id}><div><strong>{parent ? formatName(parent) : 'Parent / guardian'}</strong><span><Mail size={12} />{parent?.email || 'Contact not provided'}</span></div></div>;
+                    const parent = link.parent;
+                    const parentName = parent?.user ? formatName(parent.user) : [parent?.firstName, parent?.lastName].filter(Boolean).join(' ') || 'Parent / guardian';
+                    return <div className="student-history-row" key={parent?.id || link.id}><div><strong>{parentName}</strong><span><Mail size={12} />{[parent?.email, parent?.phone].filter(Boolean).join(' · ') || 'Contact not provided'}</span></div></div>;
                   })}
                 </section>}
               </div>

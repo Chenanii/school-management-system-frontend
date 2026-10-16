@@ -15,11 +15,15 @@ export default function TeachingAssignmentFormModal({
 }) {
   const editing = Boolean(assignment);
   const hasAssessments = (assignment?._count?.assessments ?? 0) > 0;
+  const classLevels = [...new Map(classGroups.map((group) => [group.classLevelId, group.classLevel])).values()]
+    .filter(Boolean).sort((left, right) => left.levelOrder - right.levelOrder);
   const [form, setForm] = useState({
     teacherId: assignment?.teacherId || '',
+    classLevelId: assignment?.subjectStream?.classLevelId || assignment?.classGroup?.classLevelId || '',
     classGroupId: assignment?.classGroupId || '',
     subjectId: assignment?.subjectId || assignment?.subject?.id || '',
-    termId: assignment?.termId || ''
+    termId: assignment?.termId || '',
+    streamName: assignment?.subjectStream?.name || 'A'
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,32 +31,38 @@ export default function TeachingAssignmentFormModal({
   useEffect(() => {
     setForm({
       teacherId: assignment?.teacherId || '',
+      classLevelId: assignment?.subjectStream?.classLevelId || assignment?.classGroup?.classLevelId || '',
       classGroupId: assignment?.classGroupId || '',
       subjectId: assignment?.subjectId || assignment?.subject?.id || '',
-      termId: assignment?.termId || ''
+      termId: assignment?.termId || '',
+      streamName: assignment?.subjectStream?.name || 'A'
     });
   }, [assignment]);
 
-  const selectedGroup = classGroups.find((group) => group.id === form.classGroupId);
+  const selectedLevel = classLevels.find((level) => level.id === form.classLevelId);
+  const selectedClassSubject = classSubjects.find((link) =>
+    link.classLevelId === form.classLevelId && link.subjectId === form.subjectId
+  );
   const matchingSubjects = useMemo(() => {
     const linkedSubjectIds = new Set(classSubjects.map((link) => link.subjectId));
     const subjectsForLevel = new Set(
       classSubjects
-        .filter((link) => link.classLevelId === selectedGroup?.classLevelId)
+        .filter((link) => link.classLevelId === selectedLevel?.id)
         .map((link) => link.subjectId)
     );
     return subjects.filter((subject) =>
       subject.status === 'ACTIVE'
       && (!linkedSubjectIds.has(subject.id) || subjectsForLevel.has(subject.id))
     ).sort((left, right) => left.name.localeCompare(right.name));
-  }, [classSubjects, selectedGroup?.classLevelId, subjects]);
+  }, [classSubjects, selectedLevel?.id, subjects]);
 
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({
       ...current,
       [name]: value,
-      ...(name === 'classGroupId' ? { subjectId: '' } : {})
+      ...(name === 'classLevelId' ? { classGroupId: '', subjectId: '', streamName: 'A' } : {}),
+      ...(name === 'subjectId' ? { classGroupId: '', streamName: 'A' } : {})
     }));
   }
 
@@ -61,7 +71,9 @@ export default function TeachingAssignmentFormModal({
     setError('');
     setSaving(true);
     try {
-      await saveAssignment(assignment?.id, form);
+      const payload = { ...form };
+      delete payload.classGroupId;
+      await saveAssignment(assignment?.id, payload);
       onSaved();
     } catch (cause) {
       setError(cause.message);
@@ -80,7 +92,7 @@ export default function TeachingAssignmentFormModal({
           <div>
             <p className="eyebrow">{editing ? 'Teaching allocation' : 'New teaching allocation'}</p>
             <h2 id="teaching-assignment-form-title">{editing ? 'Edit assignment' : 'Assign a teacher'}</h2>
-            <p>{editing ? 'Update the teacher or assignment scope for this term.' : 'Connect a teacher to a class group, subject, and term. Standalone subjects are available for every class group.'}</p>
+            <p>{editing ? 'Update the teacher or assignment scope for this term.' : 'Assign a teacher to a class subject or a named subject section for this class level and term.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -95,25 +107,32 @@ export default function TeachingAssignmentFormModal({
             </select>
           </label>
           <label className="field-label">
-            Class group
-            <select className="text-input" name="classGroupId" value={form.classGroupId} onChange={updateField} required disabled={hasAssessments}>
-              <option value="">Select a class group</option>
-              {classGroups.map((group) => <option value={group.id} key={group.id}>{formatAssignmentClass(group)}</option>)}
+            Class level
+            <select className="text-input" name="classLevelId" value={form.classLevelId} onChange={updateField} required disabled={hasAssessments}>
+              <option value="">Select a class level</option>
+              {classLevels.map((level) => <option value={level.id} key={level.id}>{level.name}</option>)}
             </select>
           </label>
           <label className="field-label">
-            Subject
-            <select className="text-input" name="subjectId" value={form.subjectId} onChange={updateField} required disabled={!selectedGroup || hasAssessments}>
-              <option value="">{selectedGroup ? 'Select a subject' : 'Select a class group first'}</option>
+            Subject / stream
+            <select className="text-input" name="subjectId" value={form.subjectId} onChange={updateField} required disabled={!selectedLevel || hasAssessments}>
+              <option value="">{selectedLevel ? 'Select a subject' : 'Select a class level first'}</option>
               {matchingSubjects.map((subject) => (
                 <option value={subject.id} key={subject.id}>
                   {subject.code} · {subject.name}{subject._count?.classLinks === 0 ? ' · Standalone' : ''}
                 </option>
               ))}
             </select>
-            {!selectedGroup && !hasAssessments && <span className="field-hint">Choose a class group to see standalone subjects and subjects linked to that class level.</span>}
-            {selectedGroup && matchingSubjects.length === 0 && <span className="field-hint">There are no active standalone or class-linked subjects available.</span>}
+            {!selectedLevel && !hasAssessments && <span className="field-hint">Choose a class level to see subjects available at that level.</span>}
+            {selectedLevel && matchingSubjects.length === 0 && <span className="field-hint">There are no active standalone or class-linked subjects available.</span>}
           </label>
+          {form.subjectId && <label className="field-label">
+            Subject stream section
+            <input className="text-input" name="streamName" value={form.streamName} onChange={updateField} placeholder="A, B, C" maxLength={30} required disabled={hasAssessments} />
+            <span className="field-hint">{selectedClassSubject?.isRequired
+              ? 'Required subjects use one teaching stream for the class level; every active student is included automatically.'
+              : 'Students keep their home class group and are assigned individually to optional subject streams.'}</span>
+          </label>}
           <label className="field-label">
             Term
             <select className="text-input" name="termId" value={form.termId} onChange={updateField} required disabled={hasAssessments}>
@@ -123,11 +142,11 @@ export default function TeachingAssignmentFormModal({
               ))}
             </select>
           </label>
-          {hasAssessments && <p className="form-hint">Class group, subject, and term are locked because assessments exist. You can still change the assigned teacher.</p>}
+          {hasAssessments && <p className="form-hint">Class level, subject, and term are locked because assessments exist. You can still change the assigned teacher.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={saving || teachers.length === 0 || classGroups.length === 0 || terms.length === 0}>
+            <button className="primary-button" type="submit" disabled={saving || teachers.length === 0 || classLevels.length === 0 || terms.length === 0}>
               {saving && <LoaderCircle size={16} className="animate-spin" />}
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Create assignment'}
             </button>

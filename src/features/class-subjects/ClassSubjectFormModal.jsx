@@ -5,6 +5,7 @@ import { apiRequest } from '../../api.js';
 export default function ClassSubjectFormModal({ classLevels, subjects, signOut, onClose, onSaved }) {
   const [classLevelId, setClassLevelId] = useState('');
   const [subjectId, setSubjectId] = useState('');
+  const [isRequired, setIsRequired] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +29,7 @@ export default function ClassSubjectFormModal({ classLevels, subjects, signOut, 
     try {
       await apiRequest('/class-subjects', {
         method: 'POST',
-        body: JSON.stringify({ classLevelId, subjectId })
+        body: JSON.stringify({ classLevelId, subjectId, isRequired })
       });
       onSaved();
     } catch (cause) {
@@ -69,6 +70,14 @@ export default function ClassSubjectFormModal({ classLevels, subjects, signOut, 
             {classLevelId && availableSubjects.length === 0 && (
               <span className="field-hint">Every active subject is already linked to this class level.</span>
             )}
+          </label>
+          <label className="field-label">
+            Requirement
+            <select className="text-input" value={isRequired ? 'required' : 'optional'} onChange={(event) => setIsRequired(event.target.value === 'required')}>
+              <option value="required">Required for every student</option>
+              <option value="optional">Optional — students are assigned individually</option>
+            </select>
+            <span className="field-hint">Optional subjects only appear on a student’s report after they are assigned to that subject stream.</span>
           </label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
