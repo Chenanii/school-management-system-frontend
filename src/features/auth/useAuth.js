@@ -69,16 +69,20 @@ export default function useAuth() {
     return () => window.removeEventListener('storage', synchronizeSession);
   }, []);
 
-  const signIn = useCallback(async (email, password) => {
-    const result = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-    saveAccessToken(result.data.accessToken);
+  const acceptAuthenticatedSession = useCallback((session) => {
+    saveAccessToken(session.accessToken);
     clearSchoolContextId();
     sessionVersion.current += 1;
-    setUser(result.data.user);
+    setUser(session.user);
   }, []);
 
-  return { user, signIn, signOut };
+  const signIn = useCallback(async (identifier, password) => {
+    const result = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, password })
+    });
+    acceptAuthenticatedSession(result.data);
+  }, [acceptAuthenticatedSession]);
+
+  return { user, signIn, acceptAuthenticatedSession, signOut };
 }

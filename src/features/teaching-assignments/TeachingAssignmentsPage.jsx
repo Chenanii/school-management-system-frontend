@@ -149,12 +149,12 @@ export default function TeachingAssignmentsPage({ signOut }) {
     if (assignment._count?.assessments > 0) return;
     const teacherName = teacherDisplayName(teacherMap.get(assignment.teacherId));
     const scope = assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : `${assignment.subjectStream?.classLevel?.name || 'Class level'} · ${assignment.subject?.name || 'Subject'} ${assignment.subjectStream?.name || ''}`.trim();
-    if (!window.confirm(`Delete the teaching assignment for ${teacherName} in ${scope}?`)) return;
+    if (!window.confirm(`Delete the teaching assignment for ${teacherName} in ${scope} for the full academic year? This removes its allocations for all three terms.`)) return;
     setNotice('');
     setBusyId(assignment.id);
     try {
       await deleteAssignment(assignment.id);
-      setNotice({ message: 'Teaching assignment deleted.', error: false });
+      setNotice({ message: 'Teaching assignment deleted for the full academic year.', error: false });
       refresh();
     } catch (cause) {
       setNotice({ message: cause.message, error: true });
@@ -172,8 +172,10 @@ export default function TeachingAssignmentsPage({ signOut }) {
         <div>
           <p className="eyebrow">Academic programme</p>
           <h1 className="page-title">Teaching assignments<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Teachers can be assigned to a required class subject or to a named section of an elective subject, such as Mathematics Core · A. Select students for each section under Enrollments → Subject streams.</p>
+          <p className="mt-2 text-sm text-muted">A teacher assignment covers the academic year. If a teacher changes, the replacement takes over from the selected term onward, while earlier terms keep their teacher. Existing assessments and student subject-stream records remain term-specific.</p>
+          <p className="mt-2 text-sm text-muted">Teachers can be assigned to a required class subject or to a named section of an elective subject, such as Mathematics Core · A. Select students for each term under Enrollments → Subject streams.</p>
           <p className="mt-2 text-sm text-muted">Subject sections are attached to a class level. Students keep their home class group and join a separate section for each subject.</p>
+          <p className="mt-2 text-sm text-muted">The list shows one term allocation per row so assessment history, teacher changes, and student stream rosters stay term-specific.</p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}>
           <Plus size={17} /> Create assignment
@@ -212,7 +214,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
             <option value="">All terms</option>
             {terms.map((term) => <option value={term.id} key={term.id}>{term.academicYear?.name || 'Academic year'} · {term.sequence}. {term.name}</option>)}
           </select>
-          <span className="student-total">{pagination.total} {pagination.total === 1 ? 'assignment' : 'assignments'}</span>
+          <span className="student-total">{pagination.total} {pagination.total === 1 ? 'term allocation' : 'term allocations'}</span>
         </div>
         {error ? (
           <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
@@ -297,7 +299,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
           onClose={() => setFormOpen(false)}
           onSaved={() => {
             setFormOpen(false);
-            setNotice({ message: formAssignment ? 'Teaching assignment updated.' : 'Teaching assignment created.', error: false });
+            setNotice({ message: formAssignment ? 'Teaching assignment updated for the academic year.' : 'Teaching assignment created for all three terms.', error: false });
             refresh();
           }}
         />

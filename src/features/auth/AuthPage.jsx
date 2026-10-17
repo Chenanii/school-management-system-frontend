@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SchoolSignup from './SchoolSignup.jsx';
 import SignIn from './SignIn.jsx';
 
-export default function AuthPage({ onSignIn }) {
+export default function AuthPage({ onSignIn, onAuthenticated }) {
   const [mode, setMode] = useState('signin');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [notice, setNotice] = useState('');
@@ -23,6 +23,7 @@ export default function AuthPage({ onSignIn }) {
   return (
     <SignIn
       onSignIn={onSignIn}
+      onAuthenticated={onAuthenticated}
       onCreateAccount={() => { setNotice(''); setMode('signup'); }}
       initialEmail={registeredEmail}
       notice={notice}

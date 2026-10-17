@@ -8,5 +8,6 @@ export const userRoles = [
 ];
 
 export function roleLabel(role) {
+  if (role === 'PARENT') return 'Parent';
   return userRoles.find((item) => item.value === role)?.label || role?.replaceAll('_', ' ') || 'Unknown';
 }

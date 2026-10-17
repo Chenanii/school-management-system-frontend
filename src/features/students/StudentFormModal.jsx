@@ -28,6 +28,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
   const [classLevelId, setClassLevelId] = useState('');
   const [parents, setParents] = useState([{ ...blankParent }]);
   const [optionsLoading, setOptionsLoading] = useState(false);
+  const [parentsLoading, setParentsLoading] = useState(false);
 
   useEffect(() => {
     if (editing) return undefined;
@@ -54,6 +55,35 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
       gender: student.gender || ''
     } : blankStudent);
   }, [student]);
+
+  useEffect(() => {
+    if (!student) {
+      setParents([{ ...blankParent }]);
+      setParentsLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setParentsLoading(true);
+    apiRequest(`/students/${student.id}`)
+      .then((result) => {
+        if (cancelled) return;
+        setParents((result.data.parents || []).map((link) => ({
+          parentId: link.parent.id,
+          firstName: link.parent.firstName || '',
+          lastName: link.parent.lastName || '',
+          phone: link.parent.phone || '',
+          email: link.parent.email || '',
+          relationship: link.relationship || ''
+        })));
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(cause.message);
+      })
+      .finally(() => {
+        if (!cancelled) setParentsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [student?.id]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -83,7 +113,11 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
         relationship: parent.relationship.trim() || undefined
       }))
     };
-    if (editing) delete payload.parents;
+    if (parents.some((parent) => !parent.phone.trim() && !parent.email.trim())) {
+      setError('Add a phone number or email address for each parent or guardian.');
+      setBusy(false);
+      return;
+    }
 
     try {
       if (editing) {
@@ -164,22 +198,30 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               </select>
             </label>
           </div>}
-          {!editing && <section className="student-parent-registration">
-            <div className="student-parent-heading"><div><strong>Parent or guardian details</strong><span>Use the same email when registering siblings to link them to one parent record.</span></div><button className="text-button" type="button" onClick={() => setParents((current) => [...current, { ...blankParent }])} disabled={busy || parents.length >= 5}>Add another</button></div>
-            {parents.map((parent, index) => <div className="student-parent-fields" key={index}>
-              <label className="field-label">First name<input className="text-input" value={parent.firstName} onChange={(event) => updateParent(index, 'firstName', event.target.value)} required maxLength={80} disabled={busy} /></label>
-              <label className="field-label">Last name<input className="text-input" value={parent.lastName} onChange={(event) => updateParent(index, 'lastName', event.target.value)} required maxLength={80} disabled={busy} /></label>
-              <label className="field-label">Phone<input className="text-input" type="tel" value={parent.phone} onChange={(event) => updateParent(index, 'phone', event.target.value)} required maxLength={30} disabled={busy} /></label>
-              <label className="field-label">Email <span className="optional-label">Optional</span><input className="text-input" type="email" value={parent.email} onChange={(event) => updateParent(index, 'email', event.target.value)} maxLength={254} disabled={busy} /></label>
-              <label className="field-label">Relationship <span className="optional-label">Optional</span><input className="text-input" value={parent.relationship} onChange={(event) => updateParent(index, 'relationship', event.target.value)} placeholder="Parent, guardian…" maxLength={40} disabled={busy} /></label>
-              {parents.length > 1 && <button className="text-button student-parent-remove" type="button" onClick={() => setParents((current) => current.filter((_, parentIndex) => parentIndex !== index))} disabled={busy}>Remove</button>}
+          <section className="student-parent-registration">
+            <div className="student-parent-heading">
+              <div>
+                <strong>Parent or guardian details</strong>
+                <span>{editing ? 'Add or update contacts here. Shared parent records apply to every linked sibling.' : 'Use the same email when registering siblings to link them to one parent record.'}</span>
+              </div>
+              <button className="text-button" type="button" onClick={() => setParents((current) => [...current, { ...blankParent }])} disabled={busy || parentsLoading || parents.length >= 5}>Add another</button>
+            </div>
+            {parentsLoading ? <p className="field-hint">Loading parent or guardian contacts…</p> : parents.length === 0 ? (
+              <p className="field-hint">No parent or guardian is linked yet. Add one to record their contact details.</p>
+            ) : parents.map((parent, index) => <div className="student-parent-fields" key={parent.parentId || index}>
+              <label className="field-label">First name<input className="text-input" value={parent.firstName} onChange={(event) => updateParent(index, 'firstName', event.target.value)} required maxLength={80} disabled={busy || parentsLoading} /></label>
+              <label className="field-label">Last name<input className="text-input" value={parent.lastName} onChange={(event) => updateParent(index, 'lastName', event.target.value)} required maxLength={80} disabled={busy || parentsLoading} /></label>
+              <label className="field-label">Phone <span className="optional-label">Optional if email is provided</span><input className="text-input" type="tel" value={parent.phone} onChange={(event) => updateParent(index, 'phone', event.target.value)} required={!parent.email.trim()} maxLength={30} disabled={busy || parentsLoading} /></label>
+              <label className="field-label">Email <span className="optional-label">Optional if phone is provided</span><input className="text-input" type="email" value={parent.email} onChange={(event) => updateParent(index, 'email', event.target.value)} required={!parent.phone.trim()} maxLength={254} disabled={busy || parentsLoading} /></label>
+              <label className="field-label">Relationship <span className="optional-label">Optional</span><input className="text-input" value={parent.relationship} onChange={(event) => updateParent(index, 'relationship', event.target.value)} placeholder="Parent, guardian…" maxLength={40} disabled={busy || parentsLoading} /></label>
+              <button className="text-button student-parent-remove" type="button" onClick={() => setParents((current) => current.filter((_, parentIndex) => parentIndex !== index))} disabled={busy || parentsLoading}>Remove</button>
             </div>)}
-          </section>}
+          </section>
           {!editing && <p className="field-hint">The student, term enrollment, and parent contacts are saved together. Assign a home class group later from Enrollments; if any save fails, registration is rolled back.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={busy || optionsLoading || (!editing && (!terms.length || !classLevels.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || !parent.phone.trim())))}>
+            <button className="primary-button" type="submit" disabled={busy || optionsLoading || parentsLoading || (!editing && (!terms.length || !classLevels.length || !parents.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || !parent.phone.trim())))}>
               {busy && <LoaderCircle size={16} className="animate-spin" />}
               {busy ? 'Saving…' : editing ? 'Save changes' : 'Register and enroll'}
             </button>

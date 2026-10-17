@@ -19,6 +19,7 @@ export default function UserFormModal({ user, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const teacherRole = form.role === 'TEACHER' || form.role === 'FORM_TUTOR';
+  const parentAccount = user?.role === 'PARENT';
 
   useEffect(() => {
     if (user) {
@@ -80,7 +81,7 @@ export default function UserFormModal({ user, onClose, onSaved }) {
           <div>
             <p className="eyebrow">{editing ? 'Update account' : 'New account'}</p>
             <h2 id="user-form-title">{editing ? 'Edit user' : 'Add a user'}</h2>
-            <p>{editing ? 'Update this staff account’s details and access.' : 'Create a login for a member of your school staff.'}</p>
+            <p>{editing ? 'Update this user account’s details and access.' : 'Create a login for a member of your school community.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -97,12 +98,14 @@ export default function UserFormModal({ user, onClose, onSaved }) {
           </div>
           <label className="field-label">
             Email address
-            <input className="text-input" name="email" type="email" autoComplete="email" value={form.email} onChange={updateField} required />
+            <input className="text-input" name="email" type="email" autoComplete="email" value={form.email} onChange={updateField} required disabled={parentAccount} />
+            {parentAccount && <span className="field-hint">Parent email addresses must be changed through verified account setup.</span>}
           </label>
           <div className="user-name-grid">
             <label className="field-label">
               Role
-              <select className="text-input" name="role" value={form.role} onChange={updateField} required>
+              <select className="text-input" name="role" value={form.role} onChange={updateField} required disabled={parentAccount}>
+                {parentAccount && <option value="PARENT">Parent</option>}
                 {userRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>

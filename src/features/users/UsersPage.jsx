@@ -28,7 +28,7 @@ export default function UsersPage({ signOut }) {
         <div>
           <p className="eyebrow">People & permissions</p>
           <h1 className="page-title">User management<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Manage staff accounts, roles, and access to your school workspace.</p>
+          <p className="mt-2 text-sm text-muted">Manage user accounts, roles, and access to your school workspace.</p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add user</button>
       </div>

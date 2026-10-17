@@ -27,13 +27,14 @@ import EnrollmentsPage from '../features/enrollments/EnrollmentsPage.jsx';
 import UsersPage from '../features/users/UsersPage.jsx';
 import AuditLogsPage from '../features/audit-logs/AuditLogsPage.jsx';
 import SchoolProfilePage from '../features/schools/SchoolProfilePage.jsx';
+import ParentPortalPage from '../features/parent-portal/ParentPortalPage.jsx';
 import { sections } from '../shared/navigation.js';
 import { workspacePath, workspaceRoute } from './workspace-routing.js';
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
 export default function App() {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn, acceptAuthenticatedSession, signOut } = useAuth();
   const { summary, loading, error, loadSummary, selectSchool, updateCurrentSchool } = useDashboardData(signOut);
   const isTeacherInvitation = window.location.pathname === '/accept-invitation';
   const [page, setPage] = useState(() => workspaceRoute(window.location.pathname, pageIds).page);
@@ -51,7 +52,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (user) loadSummary(user);
+    if (user && user.role !== 'PARENT') loadSummary(user);
   }, [user, loadSummary]);
 
   useEffect(() => {
@@ -93,7 +94,8 @@ export default function App() {
   }, [page, directory.retry, loadSummary, user]);
 
   if (isTeacherInvitation) return <TeacherInvitationPage />;
-  if (!user) return <AuthPage onSignIn={signIn} />;
+  if (!user) return <AuthPage onSignIn={signIn} onAuthenticated={acceptAuthenticatedSession} />;
+  if (user.role === 'PARENT') return <ParentPortalPage user={user} onSignOut={signOut} />;
 
   return (
     <div className="app-shell">
