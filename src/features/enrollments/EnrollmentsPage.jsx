@@ -615,7 +615,7 @@ function BulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
 }
 
 export default function EnrollmentsPage({ user, signOut }) {
-  const canManage = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role);
+  const canManage = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
   const [terms, setTerms] = useState([]);
   const [groups, setGroups] = useState([]);
   const [classLevels, setClassLevels] = useState([]);

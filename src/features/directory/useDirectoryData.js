@@ -9,7 +9,7 @@ export default function useDirectoryData({ user, page, search, directoryPage, sc
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!user || page === 'overview' || page === 'academic-years' || page === 'terms' || page === 'teaching-assignments' || page === 'assessments' || page === 'term-results' || page === 'report-cards' || page === 'enrollments' || page === 'promotions' || page === 'subscriptions' || page === 'users' || page === 'students' || page === 'subjects' || page === 'class-levels' || page === 'class-subjects' || page === 'class-groups' || page === 'staff') return undefined;
+    if (!user || page === 'overview' || page === 'academic-years' || page === 'terms' || page === 'teaching-assignments' || page === 'assessments' || page === 'term-results' || page === 'report-cards' || page === 'enrollments' || page === 'promotions' || page === 'subscriptions' || page === 'users' || page === 'students' || page === 'subjects' || page === 'class-levels' || page === 'class-subjects' || page === 'class-groups' || page === 'report-cards' || page === 'mid-term-report-cards' || page === 'staff') return undefined;
     if (user.role === 'SUPER_ADMIN' && !schoolId) return undefined;
     let cancelled = false;
     const timeout = window.setTimeout(async () => {

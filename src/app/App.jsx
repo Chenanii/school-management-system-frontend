@@ -17,6 +17,7 @@ import TermsPage from '../features/terms/TermsPage.jsx';
 import AssessmentsPage from '../features/assessments/AssessmentsPage.jsx';
 import TermResultsPage from '../features/term-results/TermResultsPage.jsx';
 import ReportCardsPage from '../features/report-cards/ReportCardsPage.jsx';
+import MidTermReportCardsPage from '../features/mid-term-report-cards/MidTermReportCardPage.jsx';
 import PromotionsPage from '../features/promotions/PromotionsPage.jsx';
 import SubscriptionsPage from '../features/subscriptions/SubscriptionsPage.jsx';
 import TeacherInvitationPage from '../features/teachers/TeacherInvitationPage.jsx';
@@ -157,10 +158,16 @@ export default function App() {
           ) : page === 'assessments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
             <AssessmentsPage user={user} signOut={signOut} />
           ) : page === 'term-results' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (
-            <TermResultsPage user={user} onNavigate={navigate} signOut={signOut} />
+          
+
+          <TermResultsPage user={user} onNavigate={navigate} signOut={signOut} />
+          ) : page === 'mid-term-report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
+            <MidTermReportCardsPage user={user} signOut={signOut} onNavigate={navigate} />
           ) : page === 'report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
             <ReportCardsPage user={user} signOut={signOut} onNavigate={navigate} />
           ) : page === 'promotions' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role) ? (
+
+
             <PromotionsPage user={user} signOut={signOut} />
           ) : page === 'subscriptions' && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? (
             <SubscriptionsPage user={user} signOut={signOut} />

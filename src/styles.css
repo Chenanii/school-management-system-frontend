@@ -17,6 +17,7 @@
   --app-text-subtle: #647168;
   --app-border: #dfe5e0;
   --app-accent: #216b49;
+
   font-family: var(--font-sans);
   color: var(--app-text-primary);
   background: #f4f6f5;

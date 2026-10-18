@@ -168,7 +168,7 @@ export default function PromotionsPage({ user, signOut }) {
   const [approving, setApproving] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [batchLoadingId, setBatchLoadingId] = useState('');
-  const canManagePolicies = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER'].includes(user.role);
+  const canManagePolicies = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER','ACADEMIC_ADMIN'].includes(user.role);
 
   useEffect(() => {
     let cancelled = false;
