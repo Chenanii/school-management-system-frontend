@@ -31,6 +31,9 @@ import SchoolProfilePage from '../features/schools/SchoolProfilePage.jsx';
 import ParentPortalPage from '../features/parent-portal/ParentPortalPage.jsx';
 import { sections } from '../shared/navigation.js';
 import { workspacePath, workspaceRoute } from './workspace-routing.js';
+import SchoolAppearancePage from '../features/school-themes/SchoolAppearancePage.jsx';
+import { fetchSchoolTheme } from '../features/school-themes/schoolThemeApi.js';
+import { applySchoolTheme } from '../features/school-themes/schoolThemeRuntime.js';
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
@@ -64,6 +67,38 @@ export default function App() {
       window.history.replaceState({ page: route.page }, '', nextPath);
     }
   }, [isTeacherInvitation, summary.school?.slug]);
+
+  useEffect(() => {
+  if (
+    !user ||
+    user.role === 'PARENT' ||
+    !summary.school?.id
+  ) {
+    return undefined;
+  }
+
+  let cancelled = false;
+
+  function handleThemeUpdate(event) {
+    applySchoolTheme(event.detail);
+  }
+
+  window.addEventListener('school-theme-updated', handleThemeUpdate);
+
+  fetchSchoolTheme()
+    .then((theme) => {
+      if (!cancelled) applySchoolTheme(theme);
+    })
+    .catch((cause) => {
+      if (!cancelled && cause.status === 401) signOut();
+      // Theme loading should not prevent the rest of the dashboard from opening.
+    });
+
+  return () => {
+    cancelled = true;
+    window.removeEventListener('school-theme-updated', handleThemeUpdate);
+  };
+}, [user?.id, user?.role, summary.school?.id, signOut]);
 
   const navigate = useCallback((nextPage) => {
     setPage(nextPage);
@@ -189,6 +224,11 @@ export default function App() {
             <ClassGroupsPage signOut={signOut} />
           ) : page === 'class-subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <ClassSubjectsPage signOut={signOut} />
+          
+          ) : page === 'school-appearance' &&
+            ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
+            <SchoolAppearancePage signOut={signOut} user={user} />
+            
           ) : page === 'staff' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <TeachersPage signOut={signOut} />
           ) : (
