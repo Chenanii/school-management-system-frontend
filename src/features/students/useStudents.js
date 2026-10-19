@@ -8,6 +8,9 @@ export default function useStudents({ enabled, signOut }) {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [academicYearId, setAcademicYearId] = useState('');
+  const [classLevelId, setClassLevelId] = useState('');
+  const [classGroupId, setClassGroupId] = useState('');
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -21,6 +24,9 @@ export default function useStudents({ enabled, signOut }) {
         const params = new URLSearchParams({ page: String(page), limit: '20' });
         if (search.trim()) params.set('search', search.trim());
         if (status) params.set('status', status);
+        if (academicYearId) params.set('academicYearId', academicYearId);
+        if (classLevelId) params.set('classLevelId', classLevelId);
+        if (classGroupId) params.set('classGroupId', classGroupId);
         const result = await apiRequest(`/students?${params}`);
         if (!cancelled) {
           setStudents(result.data || []);
@@ -40,7 +46,7 @@ export default function useStudents({ enabled, signOut }) {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [enabled, page, search, status, refreshKey, signOut]);
+  }, [enabled, page, search, status, academicYearId, classLevelId, classGroupId, refreshKey, signOut]);
 
   const refresh = useCallback(() => setRefreshKey((current) => current + 1), []);
   const updateSearch = useCallback((value) => {
@@ -51,6 +57,19 @@ export default function useStudents({ enabled, signOut }) {
     setStatus(value);
     setPage(1);
   }, []);
+  const updateClassLevel = useCallback((value) => {
+    setClassLevelId(value);
+    setClassGroupId('');
+    setPage(1);
+  }, []);
+  const updateAcademicYear = useCallback((value) => {
+    setAcademicYearId(value);
+    setPage(1);
+  }, []);
+  const updateClassGroup = useCallback((value) => {
+    setClassGroupId(value);
+    setPage(1);
+  }, []);
 
   return {
     students,
@@ -59,10 +78,16 @@ export default function useStudents({ enabled, signOut }) {
     error,
     search,
     status,
+    academicYearId,
+    classLevelId,
+    classGroupId,
     page,
     setPage,
     setSearch: updateSearch,
     setStatus: updateStatus,
+    setAcademicYearId: updateAcademicYear,
+    setClassLevelId: updateClassLevel,
+    setClassGroupId: updateClassGroup,
     refresh
   };
 }

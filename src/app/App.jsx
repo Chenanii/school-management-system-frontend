@@ -32,6 +32,7 @@ import ParentPortalPage from '../features/parent-portal/ParentPortalPage.jsx';
 import { sections } from '../shared/navigation.js';
 import { workspacePath, workspaceRoute } from './workspace-routing.js';
 import SchoolAppearancePage from '../features/school-themes/SchoolAppearancePage.jsx';
+import ClassAttendancePage from '../features/attendance/ClassAttendancePage.jsx';
 import { fetchSchoolTheme } from '../features/school-themes/schoolThemeApi.js';
 import { applySchoolTheme } from '../features/school-themes/schoolThemeRuntime.js';
 
@@ -148,7 +149,7 @@ export default function App() {
         onClose={() => setMobileNav(false)}
       />
       <main className="main-area">
-        <Header page={page} onMenu={() => setMobileNav(true)} user={user} schoolId={summary.school?.id} />
+        <Header page={page} onMenu={() => setMobileNav(true)} user={user} schoolId={summary.school?.id} onNavigate={navigate} />
         <div className="page-content" key={user.role === 'SUPER_ADMIN' ? summary.school?.id || 'no-school-context' : 'school-workspace'}>
           {user.role === 'SUPER_ADMIN' && !summary.school ? (
             loading ? (
@@ -196,7 +197,7 @@ export default function App() {
           
 
           <TermResultsPage user={user} onNavigate={navigate} signOut={signOut} />
-          ) : page === 'mid-term-report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
+          ) : page === 'mid-term-report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER', 'FORM_TUTOR'].includes(user.role) ? (
             <MidTermReportCardsPage user={user} signOut={signOut} onNavigate={navigate} />
           ) : page === 'report-cards' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) ? (
             <ReportCardsPage user={user} signOut={signOut} onNavigate={navigate} />
@@ -216,6 +217,8 @@ export default function App() {
             <StudentsPage user={user} signOut={signOut} />
           ) : page === 'enrollments' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) ? (
             <EnrollmentsPage user={user} signOut={signOut} />
+          ) : page === 'attendance' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER', 'FORM_TUTOR'].includes(user.role) ? (
+            <ClassAttendancePage user={user} signOut={signOut} />
           ) : page === 'subjects' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (
             <SubjectsPage signOut={signOut} />
           ) : page === 'class-levels' && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER'].includes(user.role) ? (

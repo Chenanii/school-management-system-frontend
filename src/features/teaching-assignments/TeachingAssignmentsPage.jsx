@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, LoaderCircle, Plus, Search, Trash2, Users } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import TeachingAssignmentFormModal from './TeachingAssignmentFormModal.jsx';
+import FormTutorAssignmentsModal from './FormTutorAssignmentsModal.jsx';
 import {
   deleteAssignment,
   fetchAllPages,
@@ -32,6 +33,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [formAssignment, setFormAssignment] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [formTutorModalOpen, setFormTutorModalOpen] = useState(false);
   const [busyId, setBusyId] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
 
@@ -177,9 +179,10 @@ export default function TeachingAssignmentsPage({ signOut }) {
           <p className="mt-2 text-sm text-muted">Subject sections are attached to a class level. Students keep their home class group and join a separate section for each subject.</p>
           <p className="mt-2 text-sm text-muted">The list shows one term allocation per row so assessment history, teacher changes, and student stream rosters stay term-specific.</p>
         </div>
-        <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}>
-          <Plus size={17} /> Create assignment
-        </button>
+        <div className="teaching-assignment-header-actions">
+          <button className="secondary-button" type="button" onClick={() => setFormTutorModalOpen(true)} disabled={loadingOptions || Boolean(optionsError)}>Form tutor assignments</button>
+          <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}><Plus size={17} /> Create assignment</button>
+        </div>
       </div>
       {optionsError && (
         <div className="notice-error" role="alert">
@@ -304,6 +307,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
           }}
         />
       )}
+      {formTutorModalOpen && <FormTutorAssignmentsModal teachers={teachers} terms={terms} signOut={signOut} onNotice={setNotice} onClose={() => setFormTutorModalOpen(false)} />}
     </>
   );
 }

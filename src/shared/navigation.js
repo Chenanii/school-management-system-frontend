@@ -80,6 +80,13 @@ export const sections = [
     roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"],
   },
   {
+    id: "attendance",
+    label: "Class attendance",
+    group: "Students",
+    icon: ClipboardCheck,
+    roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER", "ACADEMIC_ADMIN", "EXAMS_OFFICER", "TEACHER", "FORM_TUTOR"],
+  },
+  {
     id: "assessments",
     label: "Assessments",
     group: "Teaching & results",
@@ -179,6 +186,7 @@ export const sections = [
       "ACADEMIC_ADMIN",
       "EXAMS_OFFICER",
       "TEACHER",
+      "FORM_TUTOR",
     ],
   },
   {

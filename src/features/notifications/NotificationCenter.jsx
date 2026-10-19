@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell, CheckCheck, ClipboardCheck, FileCheck2, X } from 'lucide-react';
+import { ArrowUpRight, Bell, CheckCheck, ClipboardCheck, FileCheck2, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 
 const pageSize = 20;
@@ -8,6 +8,21 @@ function notificationIcon(type) {
   if (type === 'TERM_RESULT_PUBLISHED') return FileCheck2;
   if (type === 'ASSESSMENT_SUBMITTED') return CheckCheck;
   return ClipboardCheck;
+}
+
+function notificationDestination(type, userRole) {
+  if (type === 'ASSESSMENT_OPENED') {
+    if (userRole === 'PARENT') return 'parent-progress';
+    return ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'EXAMS_OFFICER', 'TEACHER'].includes(userRole) ? 'assessments' : null;
+  }
+  if (type === 'ASSESSMENT_SUBMITTED') {
+    return ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(userRole) ? 'assessments' : null;
+  }
+  if (type === 'TERM_RESULT_PUBLISHED') {
+    if (userRole === 'PARENT') return 'parent-term-results';
+    return ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(userRole) ? 'term-results' : null;
+  }
+  return null;
 }
 
 function formatNotificationTime(value) {
@@ -22,7 +37,7 @@ function formatNotificationTime(value) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
 }
 
-export default function NotificationCenter({ schoolId }) {
+export default function NotificationCenter({ schoolId, userRole, onNavigate }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -116,6 +131,13 @@ export default function NotificationCenter({ schoolId }) {
     }
   }
 
+  async function openNotification(notification) {
+    if (!notification.readAt) await markRead(notification);
+    const destination = notificationDestination(notification.type, userRole);
+    setOpen(false);
+    if (destination) onNavigate?.(destination);
+  }
+
   async function markAllRead() {
     if (!unreadCount || markingAll) return;
     setMarkingAll(true);
@@ -195,8 +217,9 @@ export default function NotificationCenter({ schoolId }) {
                       <button
                         className={`notification-item ${notification.readAt ? '' : 'notification-item-unread'}`}
                         type="button"
-                        onClick={() => markRead(notification)}
+                        onClick={() => openNotification(notification)}
                         disabled={markingId === notification.id}
+                        aria-label={`${notification.title}. Open related page.`}
                       >
                         <span className={`notification-item-icon notification-icon-${notification.type.toLowerCase()}`}>
                           <Icon size={16} />
@@ -209,6 +232,7 @@ export default function NotificationCenter({ schoolId }) {
                           </time>
                         </span>
                         {!notification.readAt && <span className="notification-unread-dot" aria-label="Unread" />}
+                        {notificationDestination(notification.type, userRole) && <ArrowUpRight className="notification-open-icon" size={15} aria-hidden="true" />}
                       </button>
                     </li>
                   );

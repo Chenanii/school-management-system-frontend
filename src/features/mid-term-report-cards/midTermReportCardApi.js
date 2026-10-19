@@ -16,3 +16,7 @@ export function fetchMidTermReportCard(enrollmentId, options) {
 export function fetchClassGroupMidTermReportCards(termId, classGroupId, options) {
   return apiRequest(withOptions(`${BASE_PATH}/terms/${termId}/class-groups/${classGroupId}`, options));
 }
+
+export function fetchFormTutorAttendanceClasses(termId) {
+  return apiRequest(`/attendance/classes?${new URLSearchParams({ termId })}`);
+}

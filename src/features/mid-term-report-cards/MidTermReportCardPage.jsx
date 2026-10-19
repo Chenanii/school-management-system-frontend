@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FileText, ListChecks, LoaderCircle, Printer } from 'lucide-react';
 // import { fetchAllPages } from './reportCardApi.js';
 import { fetchAllPages } from '../report-cards/reportCardApi.js';
-import { fetchClassGroupMidTermReportCards } from './midTermReportCardApi.js';
+import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses } from './midTermReportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 
 function studentName(student) {
@@ -149,12 +149,14 @@ function MissingItemsPanel({ reportCards }) {
 export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
   const [terms, setTerms] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [formTutorGroups, setFormTutorGroups] = useState([]);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
   const [termId, setTermId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
   const [batchReportCards, setBatchReportCards] = useState(null);
   const [missingReportCards, setMissingReportCards] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [loadingAssignedGroups, setLoadingAssignedGroups] = useState(false);
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [loadingMissing, setLoadingMissing] = useState(false);
   const [error, setError] = useState('');
@@ -166,12 +168,17 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       setLoadingOptions(true);
       setError('');
       try {
-        if (user.role === 'TEACHER') {
-          const assignments = await fetchAllPages('/teaching-assignments');
+        if (['TEACHER', 'FORM_TUTOR'].includes(user.role)) {
+          const [assignments, termData] = await Promise.all([
+            user.role === 'TEACHER' ? fetchAllPages('/teaching-assignments') : Promise.resolve([]),
+            fetchAllPages('/terms')
+          ]);
           if (!cancelled) {
             const uniqueById = (items) => [...new Map(items.map((item) => [item.id, item])).values()];
             setTeacherAssignments(assignments);
-            setTerms(uniqueById(assignments.map((assignment) => assignment.term).filter(Boolean)));
+            setTerms(user.role === 'TEACHER'
+              ? uniqueById([...assignments.map((assignment) => assignment.term), ...termData].filter(Boolean))
+              : termData);
             setGroups(uniqueById(assignments.map((assignment) => assignment.classGroup).filter(Boolean)));
           }
           return;
@@ -197,8 +204,32 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
     return () => { cancelled = true; };
   }, [signOut, user.role]);
 
-  const availableGroups = user.role === 'TEACHER'
-    ? groups.filter((group) => teacherAssignments.some((assignment) => assignment.classGroupId === group.id && assignment.termId === termId))
+  useEffect(() => {
+    if (!['TEACHER', 'FORM_TUTOR'].includes(user.role) || !termId) {
+      setFormTutorGroups([]);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoadingAssignedGroups(true);
+    fetchFormTutorAttendanceClasses(termId)
+      .then((result) => {
+        if (!cancelled) setFormTutorGroups((result.data || []).map((item) => item.classGroup));
+      })
+      .catch((cause) => {
+        if (!cancelled) {
+          setError(cause.message);
+          if (cause.status === 401) signOut();
+        }
+      })
+      .finally(() => { if (!cancelled) setLoadingAssignedGroups(false); });
+    return () => { cancelled = true; };
+  }, [termId, signOut, user.role]);
+
+  const availableGroups = ['TEACHER', 'FORM_TUTOR'].includes(user.role)
+    ? [...new Map([
+        ...groups.filter((group) => teacherAssignments.some((assignment) => assignment.classGroupId === group.id && assignment.termId === termId)),
+        ...formTutorGroups
+      ].map((group) => [group.id, group])).values()]
     : groups;
 
   function clearResults() {
@@ -278,7 +309,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
             </select>
           </label>
           <label className="field-label">Class group
-            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); clearResults(); }} required disabled={!termId}>
+            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); clearResults(); }} required disabled={!termId || loadingAssignedGroups}>
               <option value="">Select a class group</option>
               {availableGroups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}
             </select>

@@ -34,6 +34,7 @@ export function applySchoolTheme(theme = DEFAULTS) {
 
   root.style.setProperty('--app-background', effective.pageBackground);
   root.style.setProperty('--app-surface', effective.surfaceColor);
+  root.style.setProperty('--app-surface-muted', `color-mix(in srgb, ${effective.surfaceColor} 55%, ${effective.pageBackground})`);
   root.style.setProperty('--app-text-primary', effective.textColor);
   root.style.setProperty('--app-text-secondary', effective.mutedTextColor);
   root.style.setProperty('--app-text-subtle', effective.mutedTextColor);

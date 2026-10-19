@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, LoaderCircle, Printer } from 'lucide-react';
+import { FileText, ListChecks, LoaderCircle, Printer } from 'lucide-react';
 import { fetchAllPages, fetchClassGroupReportCards } from './reportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 
@@ -44,6 +44,28 @@ function ReportCardPaper({ reportCard }) {
   );
 }
 
+function ReadinessPanel({ reportCards }) {
+  const incomplete = reportCards.filter((card) => !card.complete);
+  const rows = incomplete.flatMap((card) => card.summary.requiredSubjects === 0
+    ? [{ key: `${card.enrollment.id}-subjects`, student: studentName(card.student), admissionNumber: card.student?.admissionNumber, subject: '—', issue: 'No required subjects are configured for this class.' }]
+    : card.missingSubjects.map((subject) => ({
+        key: `${card.enrollment.id}-${subject.subjectId}`,
+        student: studentName(card.student),
+        admissionNumber: card.student?.admissionNumber,
+        subject: subject.subjectName,
+        issue: 'Published result is missing'
+      })));
+
+  return (
+    <section className="panel report-card-selection no-print">
+      <div className="report-card-selection-heading"><div><h2>End-of-term report readiness</h2><p>{incomplete.length} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} need attention. Required subject results must be published before reports can be generated.</p></div></div>
+      {incomplete.length === 0
+        ? <div className="table-message">Every student is ready. Select “View / download all reports” to generate the reports.</div>
+        : <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Student</th><th>Subject</th><th>What is missing</th></tr></thead><tbody>{rows.map((row) => <tr key={row.key}><td><strong>{row.student}</strong><span className="report-card-subject-code">{row.admissionNumber}</span></td><td>{row.subject}</td><td>{row.issue}</td></tr>)}</tbody></table></div>}
+    </section>
+  );
+}
+
 export default function ReportCardsPage({ user, signOut, onNavigate }) {
   const [terms, setTerms] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -51,8 +73,10 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
   const [termId, setTermId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
   const [batchReportCards, setBatchReportCards] = useState(null);
+  const [readinessReportCards, setReadinessReportCards] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingBatch, setLoadingBatch] = useState(false);
+  const [loadingReadiness, setLoadingReadiness] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
   const canPublishResults = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
@@ -102,6 +126,7 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
     if (!termId || !classGroupId) return;
     setLoadingBatch(true);
     setBatchReportCards(null);
+    setReadinessReportCards(null);
     setError('');
     setErrorCode('');
     try {
@@ -116,6 +141,23 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
     }
   }
 
+  async function loadReadiness() {
+    if (!termId || !classGroupId) return;
+    setLoadingReadiness(true);
+    setError('');
+    setErrorCode('');
+    try {
+      const result = await fetchClassGroupReportCards(termId, classGroupId, { allowIncomplete: true });
+      setReadinessReportCards(result.data || []);
+    } catch (cause) {
+      setError(cause.message);
+      setErrorCode(cause.code || '');
+      if (cause.status === 401) signOut();
+    } finally {
+      setLoadingReadiness(false);
+    }
+  }
+
   return (
     <>
       <div className="welcome-row students-welcome report-card-page-header">
@@ -125,19 +167,19 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
           <p className="mt-2 text-sm text-muted">Select an academic term and class group to view and download every student report together.</p>
         </div>
       </div>
-      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && (canPublishResults ? <button className="text-button" type="button" onClick={() => onNavigate('term-results')}>Go to Term results to publish</button> : <span>Ask an Exams Officer or school administrator to publish these results.</span>)}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
+      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && (canPublishResults ? <button className="text-button" type="button" onClick={() => onNavigate('term-results')}>Go to Term results to publish</button> : <span>Ask an Exams Officer or school administrator to publish these results.</span>)}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading"><div><h2>Generate class report batch</h2><p>All active student reports for the selected term and class group will appear together.</p></div></div>
         <div className="report-card-filters">
           <label className="field-label">Academic term
-            <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setClassGroupId(''); setBatchReportCards(null); setError(''); setErrorCode(''); }} required disabled={loadingOptions}>
+            <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setClassGroupId(''); setBatchReportCards(null); setReadinessReportCards(null); setError(''); setErrorCode(''); }} required disabled={loadingOptions}>
               <option value="">Select a term</option>
               {terms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}
             </select>
           </label>
           <label className="field-label">Class group
-            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); setBatchReportCards(null); setError(''); setErrorCode(''); }} required disabled={!termId}>
+            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); setBatchReportCards(null); setReadinessReportCards(null); setError(''); setErrorCode(''); }} required disabled={!termId}>
               <option value="">Select a class group</option>
               {availableGroups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}
             </select>
@@ -146,8 +188,13 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
             {loadingBatch ? <LoaderCircle size={16} className="animate-spin" /> : <FileText size={16} />}
             {loadingBatch ? 'Loading class reports…' : 'View / download all reports'}
           </button>}
+          {termId && classGroupId && !batchReportCards && <button className="secondary-button" type="button" onClick={loadReadiness} disabled={loadingReadiness || loadingBatch}>
+            {loadingReadiness ? <LoaderCircle size={16} className="animate-spin" /> : <ListChecks size={16} />}
+            {loadingReadiness ? 'Checking readiness…' : 'Check readiness'}
+          </button>}
         </div>
       </section>
+      {readinessReportCards && !batchReportCards && <ReadinessPanel reportCards={readinessReportCards} />}
       {batchReportCards && <section className="report-card-preview report-card-batch">
         <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. All required subject results are published.</span><button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button></div>
         {!batchReportCards.length ? <div className="panel table-message"><span>No active student enrollments found in this class group and term.</span></div> : batchReportCards.map((card) => <ReportCardPaper key={card.enrollment.id} reportCard={card} />)}

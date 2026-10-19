@@ -3,7 +3,7 @@ import { initials } from '../../shared/utils/people.js';
 import { sections } from '../../shared/navigation.js';
 import NotificationCenter from '../../features/notifications/NotificationCenter.jsx';
 
-export default function Header({ page, onMenu, user, schoolId }) {
+export default function Header({ page, onMenu, user, schoolId, onNavigate }) {
   const title = sections.find((item) => item.id === page)?.label || 'Overview';
   const today = new Intl.DateTimeFormat('en', {
     weekday: 'long',
@@ -22,7 +22,7 @@ export default function Header({ page, onMenu, user, schoolId }) {
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="topbar-date"><CalendarDays size={15} /><span>{today}</span></div>
-        <NotificationCenter key={schoolId || 'no-school-context'} schoolId={schoolId} />
+        <NotificationCenter key={schoolId || 'no-school-context'} schoolId={schoolId} userRole={user.role} onNavigate={onNavigate} />
         <div className="topbar-profile">{initials(user) || 'A'}</div>
       </div>
     </header>

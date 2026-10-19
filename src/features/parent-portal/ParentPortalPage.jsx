@@ -77,6 +77,11 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const annualResults = student?.annualResults || [];
   const annualGroups = useMemo(() => groupAnnualResults(annualResults), [annualResults]);
 
+  function openNotificationDestination(destination) {
+    const targetId = destination === 'parent-term-results' ? 'parent-term-results' : 'parent-progress';
+    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   if (loading && !overview) {
     return <main className="parent-portal-page"><div className="parent-portal-loading" role="status">Loading your family portal...</div></main>;
   }
@@ -106,14 +111,14 @@ export default function ParentPortalPage({ user, onSignOut }) {
           </div>
         </div>
         <div className="parent-portal-account">
-          <NotificationCenter schoolId={overview?.school?.id || user.schoolId} />
+          <NotificationCenter schoolId={overview?.school?.id || user.schoolId} userRole={user.role} onNavigate={openNotificationDestination} />
           <span>{initials(user) || 'P'}</span>
           <div><strong>{user.firstName} {user.lastName}</strong><small>Parent / guardian</small></div>
           <button className="parent-signout-button" type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out"><LogOut size={18} /></button>
         </div>
       </header>
 
-      <section className="parent-portal-content">
+      <section className="parent-portal-content" id="parent-progress">
         <div className="parent-portal-welcome">
           <div>
             <p className="eyebrow">Your family</p>
@@ -167,7 +172,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
                   </div>
                 </section>
 
-                <section className="parent-results-section">
+                <section className="parent-results-section" id="parent-term-results">
                   <div className="parent-section-heading">
                     <div>
                       <span className="parent-section-icon"><BookOpen size={18} /></span>

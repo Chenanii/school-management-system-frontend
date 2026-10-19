@@ -31,6 +31,15 @@ export function deleteAssignment(id) {
   return apiRequest(`/teaching-assignments/${id}`, { method: 'DELETE' });
 }
 
+export function fetchFormTutorAssignments(academicYearId) {
+  const params = new URLSearchParams({ academicYearId });
+  return apiRequest(`/teaching-assignments/form-tutors?${params}`);
+}
+
+export function saveFormTutorAssignment(data) {
+  return apiRequest('/teaching-assignments/form-tutors', { method: 'PUT', body: JSON.stringify(data) });
+}
+
 export function teacherDisplayName(teacher) {
   return [teacher?.firstName, teacher?.lastName].filter(Boolean).join(' ') || teacher?.email || 'Teacher';
 }

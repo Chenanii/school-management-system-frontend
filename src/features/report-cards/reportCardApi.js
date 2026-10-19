@@ -28,6 +28,7 @@ export function fetchReportCard(enrollmentId) {
   return apiRequest(`/report-cards/enrollments/${enrollmentId}`);
 }
 
-export function fetchClassGroupReportCards(termId, classGroupId) {
-  return apiRequest(`/report-cards/terms/${termId}/class-groups/${classGroupId}`);
+export function fetchClassGroupReportCards(termId, classGroupId, { allowIncomplete = false } = {}) {
+  const path = `/report-cards/terms/${termId}/class-groups/${classGroupId}`;
+  return apiRequest(allowIncomplete ? `${path}?allowIncomplete=true` : path);
 }
