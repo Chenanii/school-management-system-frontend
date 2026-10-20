@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search } from 'lucide-react';
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import {
   assessmentStatusLabel,
   assessmentStatuses,
@@ -33,6 +34,7 @@ export default function AssessmentsPage({ user, signOut }) {
   const [formOpen, setFormOpen] = useState(false);
   const [resultsAssessment, setResultsAssessment] = useState(null);
   const [busyId, setBusyId] = useState('');
+  const [pendingReset, setPendingReset] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,10 +155,6 @@ export default function AssessmentsPage({ user, signOut }) {
   }
 
   async function reopenAssessment(assessment) {
-    const confirmed = window.confirm(
-      `Reset “${assessment.title}” to Open? Existing assessment marks will be kept. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`,
-    );
-    if (!confirmed) return;
     setActionError('');
     setNotice('');
     setBusyId(assessment.id);
@@ -293,7 +291,7 @@ export default function AssessmentsPage({ user, signOut }) {
                             </button>
                           )}
                           {canReset && (
-                            <button className="table-action assessment-reset-action" onClick={() => reopenAssessment(assessment)} disabled={busyId === assessment.id} title="Reopen this assessment and keep its marks">
+                            <button className="table-action assessment-reset-action" onClick={() => setPendingReset(assessment)} disabled={busyId === assessment.id} title="Reopen this assessment and keep its marks">
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <RotateCcw size={14} />}
                               Reset
                             </button>
@@ -330,6 +328,13 @@ export default function AssessmentsPage({ user, signOut }) {
           onSaved={() => refresh()}
         />
       )}
+      {pendingReset && <ConfirmActionModal
+        title="Reset assessment to open?"
+        message={`Existing marks for “${pendingReset.title}” will be kept. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`}
+        confirmLabel="Reset assessment"
+        onCancel={() => setPendingReset(null)}
+        onConfirm={() => { const assessment = pendingReset; setPendingReset(null); reopenAssessment(assessment); }}
+      />}
     </>
   );
 }

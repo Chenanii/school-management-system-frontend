@@ -15,7 +15,8 @@ const emptySummary = {
   students: [],
   teachers: [],
   studentCount: null,
-  teacherCount: null
+  teacherCount: null,
+  classDistribution: null
 };
 
 export default function useDashboardData(signOut) {
@@ -31,7 +32,8 @@ export default function useDashboardData(signOut) {
         ...current,
         school,
         studentCount: school?._count?.students ?? null,
-        teacherCount: school?._count?.teachers ?? null
+        teacherCount: school?._count?.teachers ?? null,
+        classDistribution: null
       }));
     }
 
@@ -57,13 +59,15 @@ export default function useDashboardData(signOut) {
           students: [],
           teachers: [],
           studentCount: school?._count?.students ?? null,
-          teacherCount: school?._count?.teachers ?? null
+          teacherCount: school?._count?.teachers ?? null,
+          classDistribution: school ? (await apiRequest('/students/distribution').catch(() => null))?.data || null : null
         });
       } else if (user.role === 'SCHOOL_ADMIN') {
-        const [studentsResult, teachersResult, schoolResult] = await Promise.all([
+        const [studentsResult, teachersResult, schoolResult, distributionResult] = await Promise.all([
           apiRequest('/students?limit=5'),
           apiRequest('/teachers?limit=5'),
-          apiRequest('/schools/current')
+          apiRequest('/schools/current'),
+          apiRequest('/students/distribution').catch(() => null)
         ]);
         setSummary({
           user,
@@ -72,7 +76,8 @@ export default function useDashboardData(signOut) {
           students: studentsResult.data || [],
           teachers: teachersResult.data || [],
           studentCount: studentsResult.pagination?.total ?? 0,
-          teacherCount: teachersResult.pagination?.total ?? 0
+          teacherCount: teachersResult.pagination?.total ?? 0,
+          classDistribution: distributionResult?.data || null
         });
       } else {
         const schoolResult = user.schoolId
@@ -105,10 +110,14 @@ export default function useDashboardData(signOut) {
       ...current,
       school,
       studentCount: school._count?.students ?? null,
-      teacherCount: school._count?.teachers ?? null
+      teacherCount: school._count?.teachers ?? null,
+      classDistribution: null
     }));
     setError('');
-  }, [summary.schools]);
+    apiRequest('/students/distribution')
+      .then((result) => setSummary((current) => current.school?.id === school.id ? { ...current, classDistribution: result.data } : current))
+      .catch((cause) => { if (cause.status === 401) signOut(); });
+  }, [summary.schools, signOut]);
 
   const updateCurrentSchool = useCallback((school) => {
     setSummary((current) => ({

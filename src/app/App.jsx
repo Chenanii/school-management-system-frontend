@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import Header from '../components/layout/Header.jsx';
 import Sidebar from '../components/layout/Sidebar.jsx';
 import AuthPage from '../features/auth/AuthPage.jsx';
@@ -46,6 +47,12 @@ export default function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [search, setSearch] = useState('');
   const [directoryPage, setDirectoryPage] = useState(1);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const requestSignOut = useCallback(() => setConfirmingSignOut(true), []);
+  const confirmSignOut = useCallback(() => {
+    setConfirmingSignOut(false);
+    signOut();
+  }, [signOut]);
 
   const directory = useDirectoryData({
     user,
@@ -132,7 +139,12 @@ export default function App() {
 
   if (isTeacherInvitation) return <TeacherInvitationPage />;
   if (!user) return <AuthPage onSignIn={signIn} onAuthenticated={acceptAuthenticatedSession} />;
-  if (user.role === 'PARENT') return <ParentPortalPage user={user} onSignOut={signOut} />;
+  if (user.role === 'PARENT') return (
+    <>
+      <ParentPortalPage user={user} onSignOut={requestSignOut} />
+      {confirmingSignOut && <SignOutConfirmation onCancel={() => setConfirmingSignOut(false)} onConfirm={confirmSignOut} />}
+    </>
+  );
 
   return (
     <div className="app-shell">
@@ -144,7 +156,7 @@ export default function App() {
         schools={summary.schools}
         schoolLoading={loading}
         onSchoolChange={selectSchool}
-        onSignOut={signOut}
+        onSignOut={requestSignOut}
         open={mobileNav}
         onClose={() => setMobileNav(false)}
       />
@@ -250,6 +262,27 @@ export default function App() {
           )}
         </div>
       </main>
+      {confirmingSignOut && <SignOutConfirmation onCancel={() => setConfirmingSignOut(false)} onConfirm={confirmSignOut} />}
+    </div>
+  );
+}
+
+function SignOutConfirmation({ onCancel, onConfirm }) {
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+      <section className="user-modal signout-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="signout-confirm-title" aria-describedby="signout-confirm-description">
+        <div className="modal-heading">
+          <div>
+            <p className="eyebrow">Sign out</p>
+            <h2 id="signout-confirm-title">Are you sure?</h2>
+            <p id="signout-confirm-description">You’ll need to sign in again to return to your school portal.</p>
+          </div>
+        </div>
+        <div className="modal-actions signout-confirm-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>Cancel</button>
+          <button className="primary-button" type="button" onClick={onConfirm}><LogOut size={15} /> Sign out</button>
+        </div>
+      </section>
     </div>
   );
 }

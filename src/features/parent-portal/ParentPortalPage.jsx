@@ -6,12 +6,14 @@ import {
   ChevronDown,
   GraduationCap,
   LogOut,
+  Printer,
   RefreshCw,
   UserRound,
 } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import NotificationCenter from '../notifications/NotificationCenter.jsx';
+import { ReportCardPaper } from '../report-cards/ReportCardsPage.jsx';
 
 function markLabel(value) {
   return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
@@ -39,6 +41,9 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const [selectedEnrollmentId, setSelectedEnrollmentId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reportCard, setReportCard] = useState(null);
+  const [downloadingEnrollmentId, setDownloadingEnrollmentId] = useState('');
+  const [reportCardError, setReportCardError] = useState('');
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -76,6 +81,23 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const termResults = enrollment?.termResults || [];
   const annualResults = student?.annualResults || [];
   const annualGroups = useMemo(() => groupAnnualResults(annualResults), [annualResults]);
+  const endOfTermPublished = ['PUBLISHED', 'CLOSED'].includes(enrollment?.term?.status);
+
+  async function downloadReportCard() {
+    if (!enrollment || !endOfTermPublished || termResults.length === 0) return;
+    setDownloadingEnrollmentId(enrollment.id);
+    setReportCardError('');
+    setReportCard(null);
+    try {
+      const response = await apiRequest(`/parent-portal/enrollments/${enrollment.id}/report-card`);
+      setReportCard(response.data);
+      window.setTimeout(() => window.print(), 100);
+    } catch (cause) {
+      setReportCardError(cause.message || 'Could not prepare this report card.');
+    } finally {
+      setDownloadingEnrollmentId('');
+    }
+  }
 
   function openNotificationDestination(destination) {
     const targetId = destination === 'parent-term-results' ? 'parent-term-results' : 'parent-progress';
@@ -193,9 +215,16 @@ export default function ParentPortalPage({ user, onSignOut }) {
                       </label>
                     )}
                   </div>
+                  {reportCardError && <div className="parent-portal-inline-error" role="alert">{reportCardError}</div>}
+                  {enrollment && endOfTermPublished && <div className="parent-results-actions no-print">
+                    <button className="secondary-button" type="button" onClick={downloadReportCard} disabled={!termResults.length || downloadingEnrollmentId === enrollment.id}>
+                      <Printer size={16} /> {downloadingEnrollmentId === enrollment.id ? 'Preparing report card…' : 'Download end-of-term report card'}
+                    </button>
+                  </div>}
                   {!enrollment ? (
                     <div className="parent-results-empty">No enrollment history is available for this student.</div>
                   ) : termResults.length ? (
+                    <>
                     <div className="parent-results-table-wrap">
                       <table className="parent-results-table">
                         <thead><tr><th>Subject</th><th>Mark</th><th>Grade</th><th>Teacher comment</th></tr></thead>
@@ -211,6 +240,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
                         </tbody>
                       </table>
                     </div>
+                    </>
                   ) : (
                     <div className="parent-results-empty"><BookOpen size={18} /><span>No results have been published for {enrollment.term?.name || 'this term'} yet. They’ll appear here once the school publishes them.</span></div>
                   )}
@@ -254,6 +284,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
         )}
         <footer className="parent-portal-footer">For attendance, fee statements, or other school services, please contact the school office.</footer>
       </section>
+      {reportCard && <div className="parent-report-card-print"><ReportCardPaper reportCard={reportCard} /></div>}
     </main>
   );
 }

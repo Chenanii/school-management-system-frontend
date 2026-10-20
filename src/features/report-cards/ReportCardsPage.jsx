@@ -19,7 +19,7 @@ function termLabel(term) {
   return `${term.academicYear?.name || 'Academic year'} · ${term.sequence}. ${term.name}`;
 }
 
-function ReportCardPaper({ reportCard }) {
+export function ReportCardPaper({ reportCard }) {
   const school = reportCard.school;
   return (
     <article className="report-card-paper">

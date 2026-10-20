@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, Plus, Trash2, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import { fetchAllPages } from './subjectApi.js';
 
 export default function SubjectDetailsModal({ subject, signOut, onClose, onChanged }) {
@@ -10,6 +11,7 @@ export default function SubjectDetailsModal({ subject, signOut, onClose, onChang
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState('');
+  const [pendingClassRemoval, setPendingClassRemoval] = useState(null);
   const [error, setError] = useState('');
 
   const loadDetails = useCallback(async () => {
@@ -61,7 +63,6 @@ export default function SubjectDetailsModal({ subject, signOut, onClose, onChang
   }
 
   async function removeClassLevel(link) {
-    if (!window.confirm(`Remove ${link.classLevel.name} from ${subject.name}? Existing teaching assignments may prevent removal.`)) return;
     setError('');
     setRemovingId(link.id);
     try {
@@ -149,7 +150,7 @@ export default function SubjectDetailsModal({ subject, signOut, onClose, onChang
                         className="table-action subject-remove-link"
                         type="button"
                         disabled={Boolean(removingId) || saving || (link._count?.assignments ?? 0) > 0}
-                        onClick={() => removeClassLevel(link)}
+                        onClick={() => setPendingClassRemoval(link)}
                         aria-label={`Remove ${link.classLevel.name}`}
                         title={(link._count?.assignments ?? 0) > 0 ? 'Remove or reassign its teaching assignments first' : 'Remove class level'}
                       >
@@ -172,6 +173,13 @@ export default function SubjectDetailsModal({ subject, signOut, onClose, onChang
           <button className="secondary-button" type="button" onClick={onClose}>Close</button>
         </div>
       </section>
+      {pendingClassRemoval && <ConfirmActionModal
+        title="Remove class level?"
+        message={`This will unlink ${pendingClassRemoval.classLevel.name} from ${subject.name}. Existing teaching assignments may prevent removal.`}
+        confirmLabel="Remove class level"
+        onCancel={() => setPendingClassRemoval(null)}
+        onConfirm={() => { const link = pendingClassRemoval; setPendingClassRemoval(null); removeClassLevel(link); }}
+      />}
     </div>
   );
 }

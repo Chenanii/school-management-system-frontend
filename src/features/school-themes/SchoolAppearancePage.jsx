@@ -15,6 +15,7 @@ import {
 import { fetchSchoolTheme, saveSchoolTheme } from "./schoolThemeApi.js";
 import "./school-themes.css";
 import { applySchoolTheme } from "./schoolThemeRuntime.js";
+import ConfirmActionModal from "../../components/ConfirmActionModal.jsx";
 
 const DEFAULT_THEME = {
   primaryColor: "#216b49",
@@ -211,6 +212,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingConfirmation, setPendingConfirmation] = useState("");
   const canEdit = ["SUPER_ADMIN", "SCHOOL_ADMIN"].includes(user?.role);
   const dirty = useMemo(() => !sameTheme(saved, draft), [saved, draft]);
   const selectedTheme = THEMES.find((theme) =>
@@ -272,12 +274,6 @@ export default function SchoolAppearancePage({ signOut, user }) {
   async function handleResetDefault() {
     if (!canEdit || saving) return;
 
-    const confirmed = window.confirm(
-      "Reset the school appearance to the default theme? This will replace the currently saved theme.",
-    );
-
-    if (!confirmed) return;
-
     setSaving(true);
     setError("");
     setNotice("");
@@ -307,8 +303,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
     }
   }
 
-  async function handleSave(event) {
-    event.preventDefault();
+  async function handleSave() {
     if (!canEdit || !dirty || saving) return;
 
     setSaving(true);
@@ -336,6 +331,35 @@ export default function SchoolAppearancePage({ signOut, user }) {
     }
   }
 
+  async function confirmAppearanceAction() {
+    const action = pendingConfirmation;
+    setPendingConfirmation("");
+    if (action === "save") await handleSave();
+    if (action === "default") await handleResetDefault();
+    if (action === "discard") resetChanges();
+  }
+
+  const confirmationCopy = {
+    save: {
+      title: "Save appearance changes?",
+      message: "Your new theme will be saved and applied across the school portal.",
+      confirmLabel: "Save changes",
+      tone: "primary",
+    },
+    default: {
+      title: "Reset to default theme?",
+      message: "This will replace the currently saved school appearance with the default theme.",
+      confirmLabel: "Reset to default",
+      tone: "danger",
+    },
+    discard: {
+      title: "Discard unsaved changes?",
+      message: "Your current preview changes will be discarded and the saved appearance will be restored.",
+      confirmLabel: "Discard changes",
+      tone: "danger",
+    },
+  }[pendingConfirmation];
+
   if (loading) {
     return (
       <div className="panel">
@@ -348,6 +372,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
   }
 
   return (
+    <>
     <div className="appearance-page">
       <div className="appearance-heading">
         <div>
@@ -366,7 +391,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
           <button
             type="button"
             className="secondary-button"
-            onClick={resetChanges}
+            onClick={() => setPendingConfirmation("discard")}
             disabled={!dirty || saving}
           >
             <RotateCcw size={16} />
@@ -376,7 +401,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
           <button
             type="button"
             className="secondary-button"
-            onClick={handleResetDefault}
+            onClick={() => setPendingConfirmation("default")}
             disabled={!canEdit || saving}
           >
             Reset to Default
@@ -385,7 +410,7 @@ export default function SchoolAppearancePage({ signOut, user }) {
           <button
             type="button"
             className="primary-button"
-            onClick={handleSave}
+            onClick={() => setPendingConfirmation("save")}
             disabled={!canEdit || !dirty || saving}
           >
             {saving ? (
@@ -804,5 +829,14 @@ export default function SchoolAppearancePage({ signOut, user }) {
         </aside>
       </div>
     </div>
+    {confirmationCopy && <ConfirmActionModal
+      title={confirmationCopy.title}
+      message={confirmationCopy.message}
+      confirmLabel={confirmationCopy.confirmLabel}
+      tone={confirmationCopy.tone}
+      onCancel={() => setPendingConfirmation("")}
+      onConfirm={confirmAppearanceAction}
+    />}
+    </>
   );
 }

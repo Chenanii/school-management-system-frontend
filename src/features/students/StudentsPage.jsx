@@ -6,6 +6,7 @@ import StudentDetailsModal from './StudentDetailsModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
 import useStudents from './useStudents.js';
 import { apiRequest } from '../../api.js';
+import ClassDistributionPanel from './ClassDistributionPanel.jsx';
 
 const statuses = [
   { value: '', label: 'All statuses' },
@@ -26,6 +27,8 @@ export default function StudentsPage({ user, signOut }) {
   const [detailStudent, setDetailStudent] = useState(null);
   const [updatingStudentId, setUpdatingStudentId] = useState('');
   const [actionError, setActionError] = useState('');
+  const [classDistribution, setClassDistribution] = useState(null);
+  const [loadingDistribution, setLoadingDistribution] = useState(!isTeacher);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +52,16 @@ export default function StudentsPage({ user, signOut }) {
     loadClassGroups();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (isTeacher) return undefined;
+    let cancelled = false;
+    apiRequest('/students/distribution')
+      .then((result) => { if (!cancelled) setClassDistribution(result.data); })
+      .catch((cause) => { if (!cancelled) setActionError(cause.message); })
+      .finally(() => { if (!cancelled) setLoadingDistribution(false); });
+    return () => { cancelled = true; };
+  }, [isTeacher]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,6 +179,7 @@ export default function StudentsPage({ user, signOut }) {
         {!isTeacher && <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Register student</button>}
       </div>
       {actionError && <div className="notice-error" role="alert"><span>{actionError}</span><button className="text-button" onClick={() => setActionError('')}>Dismiss</button></div>}
+      {!isTeacher && <ClassDistributionPanel distribution={classDistribution} loading={loadingDistribution} />}
       <section className="panel directory-panel student-directory-panel">
         <div className="student-toolbar">
           <div className="relative w-full sm:max-w-[320px]">

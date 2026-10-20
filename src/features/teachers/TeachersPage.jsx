@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, LoaderCircle, Mail, Plus, Search, Users, XCircle } from 'lucide-react';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import TeacherFormModal from './TeacherFormModal.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import { fetchTeachers, resendInvitation, revokeInvitation, teacherInvitationStatus } from './teacherApi.js';
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
@@ -18,6 +19,7 @@ export default function TeachersPage({ signOut }) {
   const [formTeacher, setFormTeacher] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [busyId, setBusyId] = useState('');
+  const [pendingRevocation, setPendingRevocation] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,17 +62,32 @@ export default function TeachersPage({ signOut }) {
   }
 
   async function handleInvitationAction(teacher, action) {
+    if (action === 'revoke') {
+      setPendingRevocation(teacher);
+      return;
+    }
     setBusyId(teacher.id);
     setNotice('');
     try {
-      if (action === 'revoke') {
-        if (!window.confirm(`Revoke the pending invitation for ${formatName(teacher)}?`)) return;
-        await revokeInvitation(teacher.id);
-        setNotice(`Pending invitation revoked for ${formatName(teacher)}.`);
-      } else {
-        await resendInvitation(teacher.id);
-        setNotice(`A new invitation was sent to ${teacher.email}.`);
-      }
+      await resendInvitation(teacher.id);
+      setNotice(`A new invitation was sent to ${teacher.email}.`);
+      refresh();
+    } catch (cause) {
+      setNotice(cause.message);
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function confirmRevocation() {
+    const teacher = pendingRevocation;
+    if (!teacher) return;
+    setPendingRevocation(null);
+    setBusyId(teacher.id);
+    setNotice('');
+    try {
+      await revokeInvitation(teacher.id);
+      setNotice(`Pending invitation revoked for ${formatName(teacher)}.`);
       refresh();
     } catch (cause) {
       setNotice(cause.message);
@@ -194,6 +211,13 @@ export default function TeachersPage({ signOut }) {
           }}
         />
       )}
+      {pendingRevocation && <ConfirmActionModal
+        title="Revoke invitation?"
+        message={`The pending invitation for ${formatName(pendingRevocation)} will be revoked.`}
+        confirmLabel="Revoke invitation"
+        onCancel={() => setPendingRevocation(null)}
+        onConfirm={confirmRevocation}
+      />}
     </>
   );
 }

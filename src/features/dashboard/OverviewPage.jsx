@@ -3,6 +3,7 @@ import StatCard from './StatCard.jsx';
 import PeopleTable from '../directory/PeopleTable.jsx';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import { formatName, initials } from '../../shared/utils/people.js';
+import ClassDistributionPanel from '../students/ClassDistributionPanel.jsx';
 
 export default function OverviewPage({ summary, loading, error, onRetry, onNavigate }) {
   const recent = summary.students.slice(0, 5);
@@ -43,6 +44,7 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
           </div>
         )}
       </div>
+      {canSeeSchoolRecords && summary.school && <ClassDistributionPanel distribution={summary.classDistribution} loading={loading || !summary.classDistribution} compact />}
       {canSeeSchoolRecords && summary.user.role !== 'SUPER_ADMIN' && <div className="content-grid">
         <PeopleTable people={recent} type="students" loading={loading} error={error} onRetry={onRetry} compact onViewAll={() => onNavigate('students')} />
         <section className="panel staff-panel">

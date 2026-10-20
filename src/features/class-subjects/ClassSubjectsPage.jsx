@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Boxes, ChevronLeft, ChevronRight, LoaderCircle, Network, Plus, Search, Trash2 } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import ClassSubjectFormModal from './ClassSubjectFormModal.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import { fetchAllPages } from './classSubjectApi.js';
 
 const initialPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
@@ -36,6 +37,7 @@ export default function ClassSubjectsPage({ signOut }) {
   const [formOpen, setFormOpen] = useState(false);
   const [removingId, setRemovingId] = useState('');
   const [updatingRequirementId, setUpdatingRequirementId] = useState('');
+  const [pendingRemoval, setPendingRemoval] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +117,6 @@ export default function ClassSubjectsPage({ signOut }) {
 
   async function removeLink(link) {
     const label = `${link.classLevel.name} — ${link.subject.name}`;
-    if (!window.confirm(`Remove ${link.subject.name} from ${link.classLevel.name}?`)) return;
     setActionError('');
     setRemovingId(link.id);
     try {
@@ -244,7 +245,7 @@ export default function ClassSubjectsPage({ signOut }) {
                       <button
                         className="table-action class-subject-remove"
                         type="button"
-                        onClick={() => removeLink(link)}
+                        onClick={() => setPendingRemoval(link)}
                         disabled={Boolean(removingId) || (link._count?.assignments ?? 0) > 0}
                         aria-label={`Remove ${link.subject.name} from ${link.classLevel.name}`}
                         title={(link._count?.assignments ?? 0) > 0 ? 'Remove or reassign teaching assignments first' : 'Remove curriculum link'}
@@ -281,6 +282,13 @@ export default function ClassSubjectsPage({ signOut }) {
           }}
         />
       )}
+      {pendingRemoval && <ConfirmActionModal
+        title="Remove subject from class?"
+        message={`This will remove ${pendingRemoval.subject.name} from ${pendingRemoval.classLevel.name}.`}
+        confirmLabel="Remove subject"
+        onCancel={() => setPendingRemoval(null)}
+        onConfirm={() => { const link = pendingRemoval; setPendingRemoval(null); removeLink(link); }}
+      />}
     </>
   );
 }

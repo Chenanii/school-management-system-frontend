@@ -3,6 +3,7 @@ import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Loade
 import { apiRequest } from '../../api.js';
 import TeachingAssignmentFormModal from './TeachingAssignmentFormModal.jsx';
 import FormTutorAssignmentsModal from './FormTutorAssignmentsModal.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import {
   deleteAssignment,
   fetchAllPages,
@@ -36,6 +37,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
   const [formTutorModalOpen, setFormTutorModalOpen] = useState(false);
   const [busyId, setBusyId] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
+  const [pendingDeleteAssignment, setPendingDeleteAssignment] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,9 +151,6 @@ export default function TeachingAssignmentsPage({ signOut }) {
 
   async function removeAssignment(assignment) {
     if (assignment._count?.assessments > 0) return;
-    const teacherName = teacherDisplayName(teacherMap.get(assignment.teacherId));
-    const scope = assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : `${assignment.subjectStream?.classLevel?.name || 'Class level'} · ${assignment.subject?.name || 'Subject'} ${assignment.subjectStream?.name || ''}`.trim();
-    if (!window.confirm(`Delete the teaching assignment for ${teacherName} in ${scope} for the full academic year? This removes its allocations for all three terms.`)) return;
     setNotice('');
     setBusyId(assignment.id);
     try {
@@ -267,7 +266,7 @@ export default function TeachingAssignmentsPage({ signOut }) {
                       <td>
                         <div className="teaching-assignment-actions">
                           <button className="table-action" onClick={() => openEdit(assignment)}>Edit</button>
-                          <button className="table-action teaching-assignment-delete" onClick={() => removeAssignment(assignment)} disabled={assessments > 0 || busyId === assignment.id} title={assessments > 0 ? 'Cannot delete while assessments exist' : 'Delete assignment'}>
+                          <button className="table-action teaching-assignment-delete" onClick={() => setPendingDeleteAssignment(assignment)} disabled={assessments > 0 || busyId === assignment.id} title={assessments > 0 ? 'Cannot delete while assessments exist' : 'Delete assignment'}>
                             {busyId === assignment.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
                             Delete
                           </button>
@@ -308,6 +307,13 @@ export default function TeachingAssignmentsPage({ signOut }) {
         />
       )}
       {formTutorModalOpen && <FormTutorAssignmentsModal teachers={teachers} terms={terms} signOut={signOut} onNotice={setNotice} onClose={() => setFormTutorModalOpen(false)} />}
+      {pendingDeleteAssignment && <ConfirmActionModal
+        title="Delete teaching assignment?"
+        message={`This will delete the academic-year assignment for ${teacherDisplayName(teacherMap.get(pendingDeleteAssignment.teacherId))} and remove its allocations for all three terms.`}
+        confirmLabel="Delete assignment"
+        onCancel={() => setPendingDeleteAssignment(null)}
+        onConfirm={() => { const assignment = pendingDeleteAssignment; setPendingDeleteAssignment(null); removeAssignment(assignment); }}
+      />}
     </>
   );
 }

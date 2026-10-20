@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Building2, LoaderCircle, Save, Trash2 } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 
 const emptyProfile = {
   name: '',
@@ -26,6 +27,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [confirmLogoRemoval, setConfirmLogoRemoval] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +158,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
                 <input className="text-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={selectLogo} disabled={saving} />
                 <span className="field-hint">PNG, JPEG, or WebP; maximum 512 KB.</span>
               </label>
-              {profile.logoDataUrl && <button className="table-action" type="button" onClick={() => setProfile((current) => ({ ...current, logoDataUrl: '' }))} disabled={saving}><Trash2 size={14} /> Remove logo</button>}
+              {profile.logoDataUrl && <button className="table-action" type="button" onClick={() => setConfirmLogoRemoval(true)} disabled={saving}><Trash2 size={14} /> Remove logo</button>}
             </div>
           </div>
           <div className="school-profile-fields">
@@ -182,6 +184,13 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
           </div>
         </form>
       </section>
+      {confirmLogoRemoval && <ConfirmActionModal
+        title="Remove school logo?"
+        message="The logo will be removed from the school profile when you save your changes."
+        confirmLabel="Remove logo"
+        onCancel={() => setConfirmLogoRemoval(false)}
+        onConfirm={() => { setProfile((current) => ({ ...current, logoDataUrl: '' })); setConfirmLogoRemoval(false); }}
+      />}
     </>
   );
 }
