@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { FileText, ListChecks, LoaderCircle, Printer } from 'lucide-react';
 // import { fetchAllPages } from './reportCardApi.js';
 import { fetchAllPages } from '../report-cards/reportCardApi.js';
-import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses } from './midTermReportCardApi.js';
+import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, publishClassGroupMidTermReportCards } from './midTermReportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -25,13 +26,7 @@ function formatPercent(value) {
   return value === null || value === undefined ? '—' : `${value}%`;
 }
 
-function assessmentResultText(line) {
-  if (line.status === 'ABSENT') return 'Absent';
-  if (line.status === 'EXEMPT') return 'Exempt';
-  return line.mark === null ? '—' : `${line.mark} / ${line.maxMark}`;
-}
-
-function MidTermReportCardPaper({ reportCard }) {
+export function MidTermReportCardPaper({ reportCard }) {
   const school = reportCard.school;
   return (
     <article className="report-card-paper">
@@ -51,7 +46,7 @@ function MidTermReportCardPaper({ reportCard }) {
       <div className="report-card-student-summary">
         <div><span>Student name</span><strong>{studentName(reportCard.student)}</strong></div>
         <div><span>Admission number</span><strong>{reportCard.student?.admissionNumber || '—'}</strong></div>
-        <div><span>Class</span><strong>{reportCard.classLevel?.name || reportCard.classGroup?.classLevel?.name || '—'}{reportCard.classGroup?.name ? ` · ${reportCard.classGroup.name}` : ''}</strong></div>
+        <div><span>Class level</span><strong>{reportCard.classLevel?.name || reportCard.classGroup?.classLevel?.name || '—'}</strong></div>
         <div><span>Academic year</span><strong>{reportCard.academicYear?.name}</strong></div>
       </div>
 
@@ -63,8 +58,6 @@ function MidTermReportCardPaper({ reportCard }) {
             <tr>
               <th>#</th>
               <th>Subject</th>
-              <th>Assessments</th>
-              <th>Assessment avg</th>
               <th>Mid-term exam</th>
               <th>Average</th>
               <th>Mark</th>
@@ -77,12 +70,6 @@ function MidTermReportCardPaper({ reportCard }) {
               <tr key={subject.subjectId}>
                 <td>{index + 1}</td>
                 <td><strong>{subject.subjectName}</strong><span className="report-card-subject-code">{subject.subjectCode}</span></td>
-                <td>
-                  {subject.assessments.filter((line) => line.locked && !line.isMidTermExam).map((line) => (
-                    <div className="report-card-subject-code" key={line.assessmentId}>{line.title} · {assessmentResultText(line)}</div>
-                  ))}
-                </td>
-                <td>{formatPercent(subject.continuousAssessment.averagePercent)}</td>
                 <td>{subject.midTermExam.absent ? 'Absent' : formatPercent(subject.midTermExam.percent)}</td>
                 <td>{formatPercent(subject.averagePercent)}</td>
                 <td className="report-card-mark">{formatAcademicMark(subject.finalMark, reportCard.scoreOutOf)}</td>
@@ -105,7 +92,7 @@ function MidTermReportCardPaper({ reportCard }) {
         <div><span>Headteacher</span><strong>{school?.headteacherSignerName || ''}</strong><i /></div>
         <div><span>Date issued</span><strong>{formatDate(new Date())}</strong></div>
       </footer>
-      <p className="report-card-generated">Each subject grade is the average of all approved and locked assessments, including the mid-term exam · {formatDate(new Date())}</p>
+      <p className="report-card-generated">Each subject grade averages approved and locked coursework and mid-term exams; absences count as zero · {formatDate(new Date())}</p>
     </article>
   );
 }
@@ -125,7 +112,7 @@ function MissingItemsPanel({ reportCards }) {
       <div className="report-card-selection-heading">
         <div>
           <h2>Missing before mid-term reports can be finalised</h2>
-          <p>{incompleteStudents} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} still need attention. Every subject needs at least 2 assessments and the mid-term exam, all approved and locked, with a calculated grade.</p>
+          <p>{incompleteStudents} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} still need attention. Every subject needs at least 2 coursework assessments plus the mid-term exam, all approved and locked, with recorded results and a calculated grade.</p>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -155,12 +142,17 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
   const [classGroupId, setClassGroupId] = useState('');
   const [batchReportCards, setBatchReportCards] = useState(null);
   const [missingReportCards, setMissingReportCards] = useState(null);
+  const [publication, setPublication] = useState(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingAssignedGroups, setLoadingAssignedGroups] = useState(false);
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [loadingMissing, setLoadingMissing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  const [notice, setNotice] = useState('');
+  const canPublish = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,8 +227,10 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
   function clearResults() {
     setBatchReportCards(null);
     setMissingReportCards(null);
+    setPublication(null);
     setError('');
     setErrorCode('');
+    setNotice('');
   }
 
   async function loadBatchReportCards() {
@@ -246,6 +240,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
     try {
       const result = await fetchClassGroupMidTermReportCards(termId, classGroupId);
       setBatchReportCards(result.data || []);
+      setPublication(result.publication || null);
     } catch (cause) {
       setError(cause.message);
       setErrorCode(cause.code || '');
@@ -260,12 +255,34 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
     try {
       const result = await fetchClassGroupMidTermReportCards(termId, classGroupId, { allowIncomplete: true });
       setMissingReportCards(result.data || []);
+      setPublication(result.publication || null);
     } catch (cause) {
       setError(cause.message);
       setErrorCode(cause.code || '');
       if (cause.status === 401) signOut();
     } finally {
       setLoadingMissing(false);
+    }
+  }
+
+  async function publishMidTermReports() {
+    if (!termId || !classGroupId || !canPublish) return;
+    setPublishing(true);
+    setError('');
+    setErrorCode('');
+    setNotice('');
+    try {
+      const result = await publishClassGroupMidTermReportCards(termId, classGroupId);
+      setPublication(result.data);
+      setNotice('Mid-term reports published for the whole class. Students and parents have been notified.');
+      await loadMissingItems();
+    } catch (cause) {
+      setError(cause.message);
+      setErrorCode(cause.code || '');
+      if (cause.status === 401) signOut();
+    } finally {
+      setPublishing(false);
+      setShowPublishConfirmation(false);
     }
   }
 
@@ -293,6 +310,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
           <button className="text-button" type="button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button>
         </div>
       )}
+      {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading">
@@ -330,9 +348,11 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       </section>
 
       {missingReportCards && !batchReportCards && (
-        missingReportCards.some((card) => !card.complete)
-          ? <MissingItemsPanel reportCards={missingReportCards} />
-          : <div className="panel table-message no-print"><span>Every subject is ready. Select “View / download all reports” to generate the reports.</span></div>
+        missingReportCards.length === 0
+          ? <div className="panel table-message no-print"><span>No active student enrollments were found, so readiness could not be checked.</span></div>
+          : missingReportCards.every((card) => card.complete && (card.incompleteSubjects?.length ?? 0) === 0)
+            ? <div className="panel table-message no-print report-readiness-success" role="status"><span>{publication ? `Mid-term reports were published ${new Date(publication.publishedAt).toLocaleString()}.` : 'Every subject is ready for mid-term publication.'} Select “View / download all reports” to preview or print them.</span>{canPublish && !publication && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishing}>{publishing ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishing ? 'Publishing mid-term reports…' : 'Publish mid-term reports for class'}</button>}</div>
+            : <MissingItemsPanel reportCards={missingReportCards} />
       )}
 
       {batchReportCards && (
@@ -350,6 +370,16 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       {!error && !loadingOptions && !terms.length && (
         <div className="panel table-message"><span>{user.role === 'TEACHER' ? 'No teaching assignments are available for your account.' : 'No academic terms are available.'}</span></div>
       )}
+      {showPublishConfirmation && <ConfirmActionModal
+        title="Publish mid-term reports?"
+        message="This releases mid-term reports for every active student in the selected class and term. Students and parents will be notified."
+        confirmationText="PUBLISH MID-TERM"
+        confirmLabel={publishing ? 'Publishing…' : 'Publish class reports'}
+        tone="primary"
+        confirmDisabled={publishing}
+        onCancel={() => setShowPublishConfirmation(false)}
+        onConfirm={publishMidTermReports}
+      />}
     </>
   );
 }

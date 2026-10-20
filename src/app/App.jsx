@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { LoaderCircle, LogOut } from 'lucide-react';
 import Header from '../components/layout/Header.jsx';
 import Sidebar from '../components/layout/Sidebar.jsx';
 import AuthPage from '../features/auth/AuthPage.jsx';
@@ -36,6 +36,9 @@ import SchoolAppearancePage from '../features/school-themes/SchoolAppearancePage
 import ClassAttendancePage from '../features/attendance/ClassAttendancePage.jsx';
 import { fetchSchoolTheme } from '../features/school-themes/schoolThemeApi.js';
 import { applySchoolTheme } from '../features/school-themes/schoolThemeRuntime.js';
+import SchoolSetupWizard from '../features/onboarding/SchoolSetupWizard.jsx';
+import { fetchSchoolSetupStatus } from '../features/onboarding/schoolSetupApi.js';
+import ResetPasswordPage from '../features/auth/ResetPasswordPage.jsx';
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
@@ -43,11 +46,15 @@ export default function App() {
   const { user, signIn, acceptAuthenticatedSession, signOut } = useAuth();
   const { summary, loading, error, loadSummary, selectSchool, updateCurrentSchool } = useDashboardData(signOut);
   const isTeacherInvitation = window.location.pathname === '/accept-invitation';
+  const isPasswordReset = window.location.pathname === '/reset-password';
   const [page, setPage] = useState(() => workspaceRoute(window.location.pathname, pageIds).page);
   const [mobileNav, setMobileNav] = useState(false);
   const [search, setSearch] = useState('');
   const [directoryPage, setDirectoryPage] = useState(1);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const [schoolSetup, setSchoolSetup] = useState(null);
+  const [schoolSetupLoading, setSchoolSetupLoading] = useState(false);
+  const [schoolSetupError, setSchoolSetupError] = useState('');
   const requestSignOut = useCallback(() => setConfirmingSignOut(true), []);
   const confirmSignOut = useCallback(() => {
     setConfirmingSignOut(false);
@@ -67,6 +74,27 @@ export default function App() {
     if (user && user.role !== 'PARENT') loadSummary(user);
   }, [user, loadSummary]);
 
+  const loadSchoolSetup = useCallback(async () => {
+    if (user?.role !== 'SCHOOL_ADMIN' || !user.schoolId) {
+      setSchoolSetup(null);
+      setSchoolSetupLoading(false);
+      setSchoolSetupError('');
+      return;
+    }
+    setSchoolSetupLoading(true);
+    setSchoolSetupError('');
+    try {
+      setSchoolSetup(await fetchSchoolSetupStatus());
+    } catch (cause) {
+      setSchoolSetupError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setSchoolSetupLoading(false);
+    }
+  }, [user?.id, user?.role, user?.schoolId, signOut]);
+
+  useEffect(() => { loadSchoolSetup(); }, [loadSchoolSetup]);
+
   useEffect(() => {
     if (isTeacherInvitation || !summary.school?.slug) return;
     const route = workspaceRoute(window.location.pathname, pageIds);
@@ -77,11 +105,8 @@ export default function App() {
   }, [isTeacherInvitation, summary.school?.slug]);
 
   useEffect(() => {
-  if (
-    !user ||
-    user.role === 'PARENT' ||
-    !summary.school?.id
-  ) {
+  const schoolId = summary.school?.id || user?.schoolId;
+  if (!user || !schoolId) {
     return undefined;
   }
 
@@ -91,22 +116,32 @@ export default function App() {
     applySchoolTheme(event.detail);
   }
 
-  window.addEventListener('school-theme-updated', handleThemeUpdate);
-
-  fetchSchoolTheme()
-    .then((theme) => {
+  async function refreshSchoolTheme() {
+    try {
+      const theme = await fetchSchoolTheme();
       if (!cancelled) applySchoolTheme(theme);
-    })
-    .catch((cause) => {
+    } catch (cause) {
       if (!cancelled && cause.status === 401) signOut();
       // Theme loading should not prevent the rest of the dashboard from opening.
-    });
+    }
+  }
+
+  function refreshWhenVisible() {
+    if (document.visibilityState === 'visible') refreshSchoolTheme();
+  }
+
+  window.addEventListener('school-theme-updated', handleThemeUpdate);
+  window.addEventListener('focus', refreshWhenVisible);
+  document.addEventListener('visibilitychange', refreshWhenVisible);
+  refreshSchoolTheme();
 
   return () => {
     cancelled = true;
     window.removeEventListener('school-theme-updated', handleThemeUpdate);
+    window.removeEventListener('focus', refreshWhenVisible);
+    document.removeEventListener('visibilitychange', refreshWhenVisible);
   };
-}, [user?.id, user?.role, summary.school?.id, signOut]);
+}, [user?.id, user?.schoolId, summary.school?.id, signOut]);
 
   const navigate = useCallback((nextPage) => {
     setPage(nextPage);
@@ -138,6 +173,7 @@ export default function App() {
   }, [page, directory.retry, loadSummary, user]);
 
   if (isTeacherInvitation) return <TeacherInvitationPage />;
+  if (isPasswordReset) return <ResetPasswordPage />;
   if (!user) return <AuthPage onSignIn={signIn} onAuthenticated={acceptAuthenticatedSession} />;
   if (user.role === 'PARENT') return (
     <>
@@ -145,6 +181,21 @@ export default function App() {
       {confirmingSignOut && <SignOutConfirmation onCancel={() => setConfirmingSignOut(false)} onConfirm={confirmSignOut} />}
     </>
   );
+  if (user.role === 'SCHOOL_ADMIN' && user.schoolId && (schoolSetupLoading || !schoolSetup)) {
+    return <main className="school-setup-loading-screen">
+      {schoolSetupError ? <section role="alert"><p>{schoolSetupError}</p><button className="primary-button" type="button" onClick={loadSchoolSetup}>Try again</button></section> : <><span className="school-setup-mark"><LoaderCircle size={20} className="animate-spin" /></span><p>Preparing your school workspace…</p></>}
+    </main>;
+  }
+  if (user.role === 'SCHOOL_ADMIN' && user.schoolId && schoolSetup && !schoolSetup.complete) {
+    return <SchoolSetupWizard
+      user={user}
+      signOut={signOut}
+      onComplete={() => {
+        setSchoolSetup({ ...schoolSetup, complete: true });
+        loadSummary(user);
+      }}
+    />;
+  }
 
   return (
     <div className="app-shell">

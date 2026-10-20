@@ -5,7 +5,7 @@ import { apiRequest } from '../../api.js';
 const pageSize = 20;
 
 function notificationIcon(type) {
-  if (type === 'TERM_RESULT_PUBLISHED') return FileCheck2;
+  if (type === 'TERM_RESULT_PUBLISHED' || type === 'MID_TERM_REPORT_PUBLISHED') return FileCheck2;
   if (type === 'ASSESSMENT_SUBMITTED') return CheckCheck;
   return ClipboardCheck;
 }
@@ -21,6 +21,12 @@ function notificationDestination(type, userRole) {
   if (type === 'TERM_RESULT_PUBLISHED') {
     if (userRole === 'PARENT') return 'parent-term-results';
     return ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(userRole) ? 'term-results' : null;
+  }
+  if (type === 'MID_TERM_REPORT_PUBLISHED') {
+    if (userRole === 'PARENT') return 'parent-term-results';
+    return ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER', 'FORM_TUTOR'].includes(userRole)
+      ? 'mid-term-report-cards'
+      : null;
   }
   return null;
 }

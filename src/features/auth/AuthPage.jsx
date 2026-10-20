@@ -13,7 +13,7 @@ export default function AuthPage({ onSignIn, onAuthenticated }) {
         onBack={() => setMode('signin')}
         onCreated={(email) => {
           setRegisteredEmail(email);
-          setNotice('Your school is registered. Sign in with the administrator email and password you created.');
+          setNotice('Your school is registered. Sign in with your administrator account to start the guided school setup.');
           setMode('signin');
         }}
       />

@@ -51,6 +51,10 @@ export function saveAssessment(id, data) {
   });
 }
 
+export function deleteAssessment(id) {
+  return apiRequest(`/assessments/${id}`, { method: 'DELETE' });
+}
+
 export function transitionAssessment(id) {
   return apiRequest(`/assessments/${id}/transition`, { method: 'POST' });
 }

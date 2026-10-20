@@ -1,4 +1,4 @@
-import { apiRequest } from '../../api.js';
+import { API_BASE_URL, apiRequest, getAccessToken, getSchoolContextId } from '../../api.js';
 
 async function fetchAllPages(path) {
   const params = new URLSearchParams({ page: '1', limit: '100' });
@@ -28,4 +28,39 @@ export function fetchAttendanceSheet({ termId, classGroupId, date }) {
 
 export function saveAttendanceSheet(data) {
   return apiRequest('/attendance/sheet', { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export function fetchAttendanceReport({ termId, classGroupId, studentId }) {
+  const params = new URLSearchParams({ termId });
+  if (classGroupId) params.set('classGroupId', classGroupId);
+  if (studentId) params.set('studentId', studentId);
+  return apiRequest(`/attendance/reports?${params}`);
+}
+
+export async function downloadAttendanceReport({ termId, classGroupId, studentId, format }) {
+  const params = new URLSearchParams({ termId, format });
+  if (classGroupId) params.set('classGroupId', classGroupId);
+  if (studentId) params.set('studentId', studentId);
+  const headers = new Headers();
+  const token = getAccessToken();
+  const schoolId = getSchoolContextId();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (schoolId) headers.set('X-School-ID', schoolId);
+  const response = await fetch(`${API_BASE_URL}/attendance/reports?${params}`, { headers });
+  if (!response.ok) {
+    let message = 'The report could not be downloaded.';
+    try { message = (await response.json()).error?.message || message; } catch { /* keep fallback */ }
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || `attendance-report.${format === 'excel' ? 'xls' : 'pdf'}`;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GraduationCap, LoaderCircle, ShieldCheck } from 'lucide-react';
 import Brand from '../../components/layout/Brand.jsx';
 import { apiRequest } from '../../api.js';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, initialEmail = '', notice = '' }) {
   const [mode, setMode] = useState('signin');
@@ -11,6 +12,8 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
   const [code, setCode] = useState('');
   const [challengeId, setChallengeId] = useState('');
   const [parentNotice, setParentNotice] = useState('');
+  const [recoveryNotice, setRecoveryNotice] = useState('');
+  const [developmentResetUrl, setDevelopmentResetUrl] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -18,6 +21,8 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
     setMode(nextMode);
     setError('');
     setParentNotice('');
+    setRecoveryNotice('');
+    setDevelopmentResetUrl('');
     setChallengeId('');
     setCode('');
     setPassword('');
@@ -30,6 +35,26 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
     setBusy(true);
     try {
       await onSignIn(identifier, password);
+    } catch (cause) {
+      setError(cause.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestPasswordReset(event) {
+    event.preventDefault();
+    setError('');
+    setRecoveryNotice('');
+    setDevelopmentResetUrl('');
+    setBusy(true);
+    try {
+      const result = await apiRequest('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: identifier })
+      });
+      setRecoveryNotice(result.data?.message || 'If an active account uses that email, password reset instructions will be sent shortly.');
+      setDevelopmentResetUrl(result.data?.resetUrl || '');
     } catch (cause) {
       setError(cause.message);
     } finally {
@@ -76,6 +101,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
   }
 
   const parentSetup = mode === 'parent';
+  const forgotPassword = mode === 'forgot';
   const enteringCode = Boolean(challengeId);
 
   return (
@@ -83,13 +109,15 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
       <div className="signin-card">
         <Brand />
         <div className="mt-12">
-          <p className="eyebrow">{parentSetup ? 'Family access' : 'Welcome back'}</p>
+          <p className="eyebrow">{parentSetup ? 'Family access' : forgotPassword ? 'Account recovery' : 'Welcome back'}</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
-            {parentSetup ? 'Create parent account' : 'Sign in to your school'}
+            {parentSetup ? 'Create parent account' : forgotPassword ? 'Reset your password' : 'Sign in to your school'}
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted">
             {parentSetup
               ? 'Verify the email address or phone number the school has on your child’s record, then choose your password.'
+              : forgotPassword
+                ? 'Enter the email address on your account. We’ll send a link to reset your password.'
               : 'Your school day, thoughtfully organized.'}
           </p>
         </div>
@@ -97,15 +125,15 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
         <form
           onSubmit={parentSetup
             ? (enteringCode ? createParentAccount : requestParentCode)
-            : handleSignIn}
+            : forgotPassword ? requestPasswordReset : handleSignIn}
           className="mt-8 space-y-5"
         >
           <label className="field-label">
-            {parentSetup ? 'Email address or phone number linked to your child' : 'Email address or phone number'}
+            {parentSetup ? 'Email address or phone number linked to your child' : forgotPassword ? 'Email address' : 'Email address or phone number'}
             <input
               className="text-input"
-              type="text"
-              autoComplete="username"
+              type={forgotPassword ? 'email' : 'text'}
+              autoComplete={forgotPassword ? 'email' : 'username'}
               placeholder={parentSetup ? 'Use the contact registered with the school' : 'you@school.edu or +265...'}
               value={identifier}
               onChange={(event) => {
@@ -117,11 +145,13 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
               disabled={parentSetup && enteringCode}
             />
           </label>
-          {!parentSetup ? (
+          {!parentSetup && !forgotPassword ? (
             <label className="field-label">
               Password
-              <input className="text-input" type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <PasswordInput autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
             </label>
+          ) : forgotPassword ? (
+            <p className="parent-access-help">For security, this page will give the same confirmation whether or not the email is registered.</p>
           ) : enteringCode ? (
             <>
               {parentNotice && <p className="parent-access-notice" role="status">{parentNotice}</p>}
@@ -131,12 +161,12 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
               </label>
               <label className="field-label">
                 Create a password
-                <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
+                <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
                 <span className="parent-access-help">Use at least 12 characters.</span>
               </label>
               <label className="field-label">
                 Confirm password
-                <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
+                <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
               </label>
               {password !== confirmation && confirmation && <p className="form-error" role="alert">Passwords do not match.</p>}
             </>
@@ -144,6 +174,9 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
             <p className="parent-access-help">We’ll send a one-time code to the email or phone number already linked to your child’s school record.</p>
           )}
           {error && <p className="form-error" role="alert">{error}</p>}
+          {recoveryNotice && <p className="form-success" role="status">{recoveryNotice}</p>}
+          {developmentResetUrl && <p className="form-hint"><a href={developmentResetUrl}>Open the password reset link</a></p>}
+          {!parentSetup && !forgotPassword && <div className="signin-forgot-password"><button className="text-button" type="button" onClick={() => changeMode('forgot')}>Forgot password?</button></div>}
           <button
             className="primary-button w-full justify-center"
             type="submit"
@@ -154,6 +187,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
               ? 'Please wait…'
               : parentSetup
                 ? enteringCode ? 'Create parent account' : 'Send verification code'
+                : forgotPassword ? 'Send reset link'
                 : 'Sign in'}
           </button>
           {parentSetup && enteringCode && (
@@ -168,14 +202,15 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
         </div>
         {!parentSetup ? (
           <>
-            <p className="mt-6 text-center text-sm text-muted">
+            {!forgotPassword && <p className="mt-6 text-center text-sm text-muted">
               New to Schoolhouse?{' '}
               <button className="text-button" type="button" onClick={onCreateAccount}>Register your school</button>
-            </p>
-            <p className="mt-3 text-center text-sm text-muted">
+            </p>}
+            {!forgotPassword && <p className="mt-3 text-center text-sm text-muted">
               Parent or guardian?{' '}
               <button className="text-button" type="button" onClick={() => changeMode('parent')}>Create your parent account</button>
-            </p>
+            </p>}
+            {forgotPassword && <p className="mt-6 text-center text-sm text-muted">Remembered your password? <button className="text-button" type="button" onClick={() => changeMode('signin')}>Back to sign in</button></p>}
           </>
         ) : (
           <p className="mt-6 text-center text-sm text-muted">

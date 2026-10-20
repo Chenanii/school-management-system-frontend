@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, UsersRound } from 'lucide-react';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import {
   assignClassGroupBulk,
   createBulkEnrollments,
@@ -95,6 +96,7 @@ function AssignClassGroupPanel({ terms, groups, classLevels, signOut, onComplete
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [skipped, setSkipped] = useState([]);
+  const [confirmingAssign, setConfirmingAssign] = useState(false);
 
   const acceptingTerms = terms.filter((term) => openTermStatuses.includes(term.status));
   const levelGroups = groups.filter((group) => group.classLevelId === classLevelId);
@@ -144,7 +146,6 @@ function AssignClassGroupPanel({ terms, groups, classLevels, signOut, onComplete
 
   async function assign() {
     if (!targetGroup || !selectedIds.length) return;
-    if (!window.confirm(`Assign ${selectedIds.length} student${selectedIds.length === 1 ? '' : 's'} to ${classLabel(targetGroup)}?`)) return;
     const rowsById = new Map(rows.map((row) => [row.id, row]));
     setSaving(true);
     setError('');
@@ -169,6 +170,7 @@ function AssignClassGroupPanel({ terms, groups, classLevels, signOut, onComplete
   }
 
   return (
+    <>
     <section className="panel enrollment-bulk-panel">
       <div className="enrollment-section-heading"><div><h2>Assign class groups</h2><p>Registered students are already enrolled in a term and class level. Select one or more and place them in a class group.</p></div></div>
       <Notices error={error} notice={notice} onClearError={() => setError('')} onClearNotice={() => { setNotice(''); setSkipped([]); }} />
@@ -211,12 +213,22 @@ function AssignClassGroupPanel({ terms, groups, classLevels, signOut, onComplete
           ))}</div>}
         <div className="enrollment-preview-footer">
           <span>Students with assessment results are skipped. Up to {MAX_BATCH} per batch.</span>
-          <button className="primary-button" type="button" onClick={assign} disabled={saving || loading || !classGroupId || !selectedIds.length}>
+          <button className="primary-button" type="button" onClick={() => setConfirmingAssign(true)} disabled={saving || loading || !classGroupId || !selectedIds.length}>
             {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}{saving ? 'Assigning…' : `Assign ${selectedIds.length || ''} to class group`.replace('  ', ' ')}
           </button>
         </div>
       </>}
     </section>
+    {confirmingAssign && <ConfirmActionModal
+      title="Assign students to this class group?"
+      message={`Assign ${selectedIds.length} student${selectedIds.length === 1 ? '' : 's'} to ${classLabel(targetGroup)}?`}
+      confirmLabel="Assign students"
+      tone="primary"
+      confirmDisabled={saving}
+      onCancel={() => setConfirmingAssign(false)}
+      onConfirm={() => { setConfirmingAssign(false); assign(); }}
+    />}
+    </>
   );
 }
 
@@ -539,6 +551,7 @@ function ManualBulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [confirmingEnrollment, setConfirmingEnrollment] = useState(false);
 
   const acceptingTerms = terms.filter((term) => openTermStatuses.includes(term.status));
   const selectedStudents = Object.values(selected);
@@ -623,7 +636,6 @@ function ManualBulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
 
   async function confirmEnrollment() {
     if (!preview?.summary.eligible) return;
-    if (!window.confirm(`Enroll ${preview.summary.eligible} selected students in ${preview.destination.classLevel} · ${preview.destination.classGroupName}?`)) return;
     setWorking(true);
     setError('');
     try {
@@ -643,6 +655,7 @@ function ManualBulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
   }
 
   return (
+    <>
     <section className="panel enrollment-bulk-panel">
       <div className="enrollment-section-heading"><div><h2>Enroll selected students</h2><p>For students who are not yet enrolled in the chosen term, such as learners joining mid-year. Newly registered students are already enrolled, so use Assign class groups for them.</p></div></div>
       <Notices error={error} notice={notice} onClearError={() => setError('')} onClearNotice={() => setNotice('')} />
@@ -688,9 +701,19 @@ function ManualBulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
         <div className="enrollment-preview-heading"><div><strong>{preview.destination.classLevel} · {preview.destination.classGroupName}</strong><span>{preview.destination.termName}, {preview.destination.academicYear}</span></div><div className="enrollment-preview-stats"><span>{preview.summary.eligible} eligible</span><span>{preview.summary.skipped} skipped</span></div></div>
         {preview.eligible.length > 0 && <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Student</th><th>Admission no.</th></tr></thead><tbody>{preview.eligible.map((student) => <tr key={student.studentId}><td>{studentName(student)}</td><td>{student.admissionNumber}</td></tr>)}</tbody></table></div>}
         {preview.skipped.length > 0 && <details className="enrollment-skipped-details"><summary>Review {preview.skipped.length} skipped</summary><ul>{preview.skipped.map((student) => <li key={student.studentId}>{studentName(student)} · {reasonLabel(student.reason)}</li>)}</ul></details>}
-        <div className="enrollment-preview-footer"><span>The server checks eligibility again before enrolling.</span><button className="primary-button" type="button" onClick={confirmEnrollment} disabled={working || !preview.summary.eligible}>{working ? 'Enrolling…' : `Enroll ${preview.summary.eligible} students`}</button></div>
+        <div className="enrollment-preview-footer"><span>The server checks eligibility again before enrolling.</span><button className="primary-button" type="button" onClick={() => setConfirmingEnrollment(true)} disabled={working || !preview.summary.eligible}>{working ? 'Enrolling…' : `Enroll ${preview.summary.eligible} students`}</button></div>
       </div>}
     </section>
+    {confirmingEnrollment && preview && <ConfirmActionModal
+      title="Enroll selected students?"
+      message={`Enroll ${preview.summary.eligible} selected students in ${preview.destination.classLevel} · ${preview.destination.classGroupName}?`}
+      confirmLabel="Enroll students"
+      tone="primary"
+      confirmDisabled={working}
+      onCancel={() => setConfirmingEnrollment(false)}
+      onConfirm={() => { setConfirmingEnrollment(false); confirmEnrollment(); }}
+    />}
+    </>
   );
 }
 
@@ -708,6 +731,7 @@ function BulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [confirmingBulk, setConfirmingBulk] = useState(false);
   const sourceTerms = terms.filter((term) => term.status !== 'DRAFT');
   const targetTerms = terms.filter((term) => openTermStatuses.includes(term.status));
   const payload = { sourceTermId, sourceClassGroupId, targetTermId, targetClassGroupId };
@@ -739,7 +763,6 @@ function BulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
 
   async function confirmBulk() {
     if (!preview?.summary.eligible) return;
-    if (!window.confirm(`Enroll ${preview.summary.eligible} eligible students in ${preview.destination.termName}, ${preview.destination.academicYear}?`)) return;
     setCreating(true);
     setError('');
     setNotice('');
@@ -757,6 +780,7 @@ function BulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
   }
 
   return (
+    <>
     <section className="panel enrollment-bulk-panel">
       <div className="enrollment-section-heading"><div><h2>Bulk progression</h2><p>Preview students moving between terms and classes before enrolling them.</p></div></div>
       <Notices error={error} notice={notice} onClearError={() => setError('')} onClearNotice={() => setNotice('')} />
@@ -806,13 +830,23 @@ function BulkEnrollmentPanel({ terms, groups, signOut, onCompleted }) {
           </details>}
           <div className="enrollment-preview-footer">
             <span>The server rechecks eligibility when you confirm. Existing destination enrollments will not be duplicated.</span>
-            <button className="primary-button" type="button" onClick={confirmBulk} disabled={creating || !preview.summary.eligible}>
+            <button className="primary-button" type="button" onClick={() => setConfirmingBulk(true)} disabled={creating || !preview.summary.eligible}>
               {creating && <LoaderCircle size={15} className="animate-spin" />}{creating ? 'Creating enrollments…' : `Enroll ${preview.summary.eligible} eligible`}
             </button>
           </div>
         </div>
       )}
     </section>
+    {confirmingBulk && preview && <ConfirmActionModal
+      title="Confirm bulk enrollment"
+      message={`Enroll ${preview.summary.eligible} eligible students in ${preview.destination.termName}, ${preview.destination.academicYear}?`}
+      confirmLabel="Enroll students"
+      tone="primary"
+      confirmDisabled={creating}
+      onCancel={() => setConfirmingBulk(false)}
+      onConfirm={() => { setConfirmingBulk(false); confirmBulk(); }}
+    />}
+    </>
   );
 }
 
@@ -840,6 +874,7 @@ export default function EnrollmentsPage({ user, signOut }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [busyId, setBusyId] = useState('');
+  const [pendingConfirmation, setPendingConfirmation] = useState(null);
 
   const activeTab = canManage ? tab : 'register';
 
@@ -918,7 +953,17 @@ export default function EnrollmentsPage({ user, signOut }) {
   async function changeStatus(enrollment, nextStatus) {
     if (nextStatus === enrollment.status) return;
     const student = studentName(enrollment.student);
-    if (!window.confirm(`Change ${student}'s enrollment status from ${statusLabels[enrollment.status]} to ${statusLabels[nextStatus]}?`)) return;
+    setPendingConfirmation({
+      title: 'Change enrollment status?',
+      message: `Change ${student}'s enrollment status from ${statusLabels[enrollment.status]} to ${statusLabels[nextStatus]}?`,
+      confirmLabel: 'Update status',
+      tone: nextStatus === 'WITHDRAWN' ? 'danger' : 'primary',
+      action: () => updateStatus(enrollment, nextStatus)
+    });
+  }
+
+  async function updateStatus(enrollment, nextStatus) {
+    const student = studentName(enrollment.student);
     setBusyId(enrollment.id);
     setError('');
     setNotice('');
@@ -938,7 +983,18 @@ export default function EnrollmentsPage({ user, signOut }) {
     if (nextClassGroupId === enrollment.classGroupId) return;
     const student = studentName(enrollment.student);
     const destination = groups.find((group) => group.id === nextClassGroupId);
-    if (!destination || !window.confirm(`Assign ${student} from ${classLabel(enrollment.classGroup) || 'no home group'} to ${classLabel(destination)} for this term?`)) return;
+    if (!destination) return;
+    setPendingConfirmation({
+      title: 'Change home class group?',
+      message: `Assign ${student} from ${classLabel(enrollment.classGroup) || 'no home group'} to ${classLabel(destination)} for this term?`,
+      confirmLabel: 'Move student',
+      tone: 'primary',
+      action: () => updateClassGroup(enrollment, nextClassGroupId, destination)
+    });
+  }
+
+  async function updateClassGroup(enrollment, nextClassGroupId, destination) {
+    const student = studentName(enrollment.student);
     setBusyId(enrollment.id);
     setError('');
     setNotice('');
@@ -1041,6 +1097,19 @@ export default function EnrollmentsPage({ user, signOut }) {
         </section>
       )}
       {formOpen && canManage && <StudentEnrollmentModal terms={terms} groups={groups} classLevels={classLevels} signOut={signOut} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); setNotice('Student enrolled successfully.'); setPage(1); refresh(); }} />}
+      {pendingConfirmation && <ConfirmActionModal
+        title={pendingConfirmation.title}
+        message={pendingConfirmation.message}
+        confirmLabel={pendingConfirmation.confirmLabel}
+        tone={pendingConfirmation.tone}
+        confirmDisabled={Boolean(busyId)}
+        onCancel={() => setPendingConfirmation(null)}
+        onConfirm={() => {
+          const action = pendingConfirmation.action;
+          setPendingConfirmation(null);
+          action();
+        }}
+      />}
     </>
   );
 }

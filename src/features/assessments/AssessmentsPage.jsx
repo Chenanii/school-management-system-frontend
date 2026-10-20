@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
@@ -9,7 +9,9 @@ import {
   assessmentTransitions,
   assessmentTypeLabel,
   assessmentTypes,
+  deleteAssessment,
   fetchAllPages,
+  fetchAssessmentResults,
   fetchAssessments,
   resetAssessment,
   transitionAssessment
@@ -35,6 +37,7 @@ export default function AssessmentsPage({ user, signOut }) {
   const [resultsAssessment, setResultsAssessment] = useState(null);
   const [busyId, setBusyId] = useState('');
   const [pendingReset, setPendingReset] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +121,7 @@ export default function AssessmentsPage({ user, signOut }) {
   }, [assessments, search, termMap]);
 
   const availableAssignments = useMemo(() => assignments.filter((assignment) =>
-    assignment.term && ['DRAFT', 'OPEN'].includes(assignment.term.status)
+    assignment.term?.status === 'OPEN' && assignment.term.academicYear?.isCurrent === true
   ), [assignments]);
 
   function refresh() {
@@ -143,6 +146,32 @@ export default function AssessmentsPage({ user, signOut }) {
     setNotice('');
     setBusyId(assessment.id);
     try {
+      if (nextStatus === 'SUBMITTED') {
+        const resultResponse = await fetchAssessmentResults(assessment.id);
+        const resultRows = resultResponse.data || [];
+        if (resultRows.length === 0) {
+          setActionError('Assessment was not submitted to admins: there are no active student enrollments for this assessment.');
+          return;
+        }
+        const maxMark = Number(assessment.maxMark);
+        const incompleteResults = resultRows.filter((result) => {
+          if (result.status !== 'PRESENT' || result.mark == null || String(result.mark).trim() === '') return true;
+          const mark = Number(result.mark);
+          return !Number.isFinite(mark) || mark < 0 || mark > maxMark;
+        });
+        if (incompleteResults.length > 0) {
+          const names = incompleteResults.slice(0, 3).map((result) => (
+            [result.student?.firstName, result.student?.lastName].filter(Boolean).join(' ')
+              || result.student?.admissionNumber
+              || 'student'
+          ));
+          const extraCount = incompleteResults.length - names.length;
+          setActionError(
+            `Assessment was not submitted to admins: ${incompleteResults.length} student${incompleteResults.length === 1 ? '' : 's'} do not have a valid numeric mark. Mark every active student PRESENT and enter a mark from 0 to ${maxMark}; absent/exempt results do not satisfy the submission requirement${names.length ? ` (${names.join(', ')}${extraCount > 0 ? `, and ${extraCount} more` : ''})` : ''}.`,
+          );
+          return;
+        }
+      }
       await transitionAssessment(assessment.id);
       setNotice(`${assessment.title} moved to ${assessmentStatusLabel(nextStatus)}.`);
       refresh();
@@ -162,6 +191,22 @@ export default function AssessmentsPage({ user, signOut }) {
       const result = await resetAssessment(assessment.id);
       const invalidated = result.data?.invalidatedDraftTermResults ?? 0;
       setNotice(`${assessment.title} is open for editing. Existing marks were kept.${invalidated ? ` ${invalidated} draft term result(s) need recalculation.` : ''}`);
+      refresh();
+    } catch (cause) {
+      setActionError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function removeAssessment(assessment) {
+    setActionError('');
+    setNotice('');
+    setBusyId(assessment.id);
+    try {
+      await deleteAssessment(assessment.id);
+      setNotice(`${assessment.title} was deleted.`);
       refresh();
     } catch (cause) {
       setActionError(cause.message);
@@ -259,7 +304,8 @@ export default function AssessmentsPage({ user, signOut }) {
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
-                  const canEdit = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
+                  const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && (assessment._count?.results ?? 0) === 0;
+                  const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
                   const canReset = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
                     && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
                   return (
@@ -283,7 +329,8 @@ export default function AssessmentsPage({ user, signOut }) {
                       <td>
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Enter or review marks">Results</button>
-                          <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment' : 'Only a draft assessment without results can be edited'}>Edit</button>
+                          <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment' : 'Only draft or open assessments without results can be edited'}>Edit</button>
+                          {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete draft assessment"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (
                             <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`Move to ${assessmentStatusLabel(nextStatus)}`}>
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
@@ -334,6 +381,14 @@ export default function AssessmentsPage({ user, signOut }) {
         confirmLabel="Reset assessment"
         onCancel={() => setPendingReset(null)}
         onConfirm={() => { const assessment = pendingReset; setPendingReset(null); reopenAssessment(assessment); }}
+      />}
+      {pendingDelete && <ConfirmActionModal
+        title="Delete this assessment?"
+        message={`“${pendingDelete.title}” will be permanently deleted. Only draft assessments without saved results can be deleted.`}
+        confirmLabel={busyId === pendingDelete.id ? 'Deleting…' : 'Delete assessment'}
+        confirmDisabled={busyId === pendingDelete.id}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => { const assessment = pendingDelete; setPendingDelete(null); removeAssessment(assessment); }}
       />}
     </>
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, LoaderCircle, MailCheck } from 'lucide-react';
 import { acceptInvitation } from './teacherApi.js';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 export default function TeacherInvitationPage() {
   const [token] = useState(() => new URLSearchParams(window.location.search).get('token') || '');
@@ -51,12 +52,12 @@ export default function TeacherInvitationPage() {
               <form className="user-form" onSubmit={handleSubmit}>
                 <label className="field-label">
                   Password
-                  <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
+                  <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
                   <span className="field-hint">Use at least 12 characters.</span>
                 </label>
                 <label className="field-label">
                   Confirm password
-                  <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
+                  <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
                 </label>
                 {error && <p className="form-error" role="alert">{error}</p>}
                 <button className="primary-button w-full justify-center" type="submit" disabled={busy}>

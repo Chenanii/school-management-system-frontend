@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { FileText, ListChecks, LoaderCircle, Printer } from 'lucide-react';
 import { fetchAllPages, fetchClassGroupReportCards } from './reportCardApi.js';
+import { publishAllClassGroupTermResults } from '../term-results/termResultApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -53,7 +55,7 @@ function ReadinessPanel({ reportCards }) {
         student: studentName(card.student),
         admissionNumber: card.student?.admissionNumber,
         subject: subject.subjectName,
-        issue: 'Published result is missing'
+        issue: subject.issue || 'Result has not been published'
       })));
 
   return (
@@ -77,8 +79,11 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [loadingReadiness, setLoadingReadiness] = useState(false);
+  const [publishingClassResults, setPublishingClassResults] = useState(false);
+  const [showPublishConfirmation, setShowPublishConfirmation] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  const [notice, setNotice] = useState('');
   const canPublishResults = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
 
   useEffect(() => {
@@ -158,6 +163,28 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
     }
   }
 
+  async function publishClassResults() {
+    if (!termId || !classGroupId || !canPublishResults) return;
+    setPublishingClassResults(true);
+    setError('');
+    setErrorCode('');
+    setNotice('');
+    try {
+      const result = await publishAllClassGroupTermResults(termId, classGroupId);
+      setNotice(result.data.alreadyPublished
+        ? 'All end-of-term results for this class and term are already published.'
+        : `${result.data.count} student subject results published across ${result.data.subjectCount} subjects.`);
+      await loadReadiness();
+    } catch (cause) {
+      setError(cause.message);
+      setErrorCode(cause.code || '');
+      if (cause.status === 401) signOut();
+    } finally {
+      setPublishingClassResults(false);
+      setShowPublishConfirmation(false);
+    }
+  }
+
   return (
     <>
       <div className="welcome-row students-welcome report-card-page-header">
@@ -167,7 +194,8 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
           <p className="mt-2 text-sm text-muted">Select an academic term and class group to view and download every student report together.</p>
         </div>
       </div>
-      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && (canPublishResults ? <button className="text-button" type="button" onClick={() => onNavigate('term-results')}>Go to Term results to publish</button> : <span>Ask an Exams Officer or school administrator to publish these results.</span>)}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
+      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'REPORT_RESULTS_NOT_PUBLISHED' && (canPublishResults ? <button className="text-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults}>Publish all end-of-term results</button> : <span>Ask an Exams Officer or school administrator to publish these results.</span>)}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
+      {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading"><div><h2>Generate class report batch</h2><p>All active student reports for the selected term and class group will appear together.</p></div></div>
@@ -192,6 +220,10 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
             {loadingReadiness ? <LoaderCircle size={16} className="animate-spin" /> : <ListChecks size={16} />}
             {loadingReadiness ? 'Checking readiness…' : 'Check readiness'}
           </button>}
+          {termId && classGroupId && canPublishResults && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults || loadingBatch || loadingReadiness}>
+            {publishingClassResults ? <LoaderCircle size={16} className="animate-spin" /> : <FileText size={16} />}
+            {publishingClassResults ? 'Publishing class results…' : 'Publish all end-of-term results'}
+          </button>}
         </div>
       </section>
       {readinessReportCards && !batchReportCards && <ReadinessPanel reportCards={readinessReportCards} />}
@@ -199,6 +231,16 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
         <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. All required subject results are published.</span><button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button></div>
         {!batchReportCards.length ? <div className="panel table-message"><span>No active student enrollments found in this class group and term.</span></div> : batchReportCards.map((card) => <ReportCardPaper key={card.enrollment.id} reportCard={card} />)}
       </section>}
+      {showPublishConfirmation && <ConfirmActionModal
+        title="Publish end-of-term results?"
+        message="This releases every finalized subject result for the selected class and term to students and parents. The system will publish nothing if any required result is incomplete."
+        confirmationText="PUBLISH END-OF-TERM"
+        confirmLabel={publishingClassResults ? 'Publishing…' : 'Publish all results'}
+        tone="primary"
+        confirmDisabled={publishingClassResults}
+        onCancel={() => setShowPublishConfirmation(false)}
+        onConfirm={publishClassResults}
+      />}
       {!error && !loadingOptions && !terms.length && (
         <div className="panel table-message"><span>{user.role === 'TEACHER' ? 'No teaching assignments are available for your account.' : 'No academic terms are available.'}</span></div>
       )}

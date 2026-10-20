@@ -116,7 +116,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           <div>
             <p className="eyebrow">Results entry · Maximum {Number(assessment.maxMark)}</p>
             <h2 id="assessment-results-title">{assessment.title}</h2>
-            <p>{assessment.teachingAssignment?.subjectStream?.classLevel?.name || assessment.teachingAssignment?.classGroup?.classLevel?.name} · {assessment.subject?.name}{assessment.teachingAssignment?.subjectStream?.name ? ` · Stream ${assessment.teachingAssignment.subjectStream.name}` : ''}</p>
+            <p>{assessment.teachingAssignment?.subjectStream?.classLevel?.name || assessment.teachingAssignment?.classGroup?.classLevel?.name || assessment.teachingAssignment?.classSubject?.classLevel?.name || 'Class'} · {assessment.subject?.name}{assessment.teachingAssignment?.subjectStream?.name ? ` · Stream ${assessment.teachingAssignment.subjectStream.name}` : ''}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close" disabled={saving}><X size={19} /></button>
         </div>
@@ -141,7 +141,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           <>
             <div className="assessment-results-count">{rows.length} active enrolments · {dirtyRows.length} unsaved changes</div>
             {error && <p className="form-error mt-3" role="alert">{error}</p>}
-            <div className="overflow-x-auto assessment-results-scroll">
+            <div className="assessment-results-scroll">
               <table className="people-table assessment-results-table">
                 <thead><tr><th>Student</th><th>Result status</th><th>Mark</th><th>Teacher comment</th></tr></thead>
                 <tbody>
@@ -150,7 +150,6 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
                       <td>
                         <div className="assessment-student-name">
                           <strong>{[row.student.firstName, row.student.middleName, row.student.lastName].filter(Boolean).join(' ')}</strong>
-                          <span>{row.student.admissionNumber}</span>
                         </div>
                       </td>
                       <td>

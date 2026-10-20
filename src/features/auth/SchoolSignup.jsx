@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, LoaderCircle, ShieldCheck } from 'lucide-react';
 import Brand from '../../components/layout/Brand.jsx';
 import { apiRequest } from '../../api.js';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 function formatPrice(plan) {
   const formatter = new Intl.NumberFormat(undefined, {
@@ -131,12 +132,12 @@ export default function SchoolSignup({ onBack, onCreated }) {
             </label>
             <label className="field-label">
               Password
-              <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="At least 12 characters" value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} required />
+              <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} placeholder="At least 12 characters" value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} required />
               <span className="field-hint">Use at least 12 characters.</span>
             </label>
             <label className="field-label">
               Confirm password
-              <input className="text-input" type="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="Enter your password again" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+              <PasswordInput autoComplete="new-password" minLength={12} maxLength={128} placeholder="Enter your password again" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
             </label>
           </div>
           <div className="signup-section">

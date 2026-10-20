@@ -14,6 +14,8 @@ import { apiRequest } from '../../api.js';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import NotificationCenter from '../notifications/NotificationCenter.jsx';
 import { ReportCardPaper } from '../report-cards/ReportCardsPage.jsx';
+import { MidTermReportCardPaper } from '../mid-term-report-cards/MidTermReportCardPage.jsx';
+import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 
 function markLabel(value) {
   return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
@@ -42,6 +44,9 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reportCard, setReportCard] = useState(null);
+  const [midTermReportCard, setMidTermReportCard] = useState(null);
+  const [midTermPortalReport, setMidTermPortalReport] = useState(null);
+  const [loadingMidTermPortalReport, setLoadingMidTermPortalReport] = useState(false);
   const [downloadingEnrollmentId, setDownloadingEnrollmentId] = useState('');
   const [reportCardError, setReportCardError] = useState('');
 
@@ -81,19 +86,60 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const termResults = enrollment?.termResults || [];
   const annualResults = student?.annualResults || [];
   const annualGroups = useMemo(() => groupAnnualResults(annualResults), [annualResults]);
-  const endOfTermPublished = ['PUBLISHED', 'CLOSED'].includes(enrollment?.term?.status);
+  const endOfTermPublished = Boolean(enrollment?.endOfTermPublishedAt)
+    || ['PUBLISHED', 'CLOSED'].includes(enrollment?.term?.status);
+
+  useEffect(() => {
+    let cancelled = false;
+    setMidTermPortalReport(null);
+    setReportCardError('');
+    if (!enrollment?.midTermPublishedAt) {
+      setLoadingMidTermPortalReport(false);
+      return () => { cancelled = true; };
+    }
+    setLoadingMidTermPortalReport(true);
+    apiRequest(`/parent-portal/enrollments/${enrollment.id}/mid-term-report-card`)
+      .then((response) => {
+        if (!cancelled) setMidTermPortalReport({ enrollmentId: enrollment.id, reportCard: response.data });
+      })
+      .catch((cause) => {
+        if (!cancelled) setReportCardError(cause.message || 'Could not load this mid-term report.');
+      })
+      .finally(() => { if (!cancelled) setLoadingMidTermPortalReport(false); });
+    return () => { cancelled = true; };
+  }, [enrollment?.id, enrollment?.midTermPublishedAt]);
 
   async function downloadReportCard() {
     if (!enrollment || !endOfTermPublished || termResults.length === 0) return;
     setDownloadingEnrollmentId(enrollment.id);
     setReportCardError('');
     setReportCard(null);
+    setMidTermReportCard(null);
     try {
       const response = await apiRequest(`/parent-portal/enrollments/${enrollment.id}/report-card`);
       setReportCard(response.data);
       window.setTimeout(() => window.print(), 100);
     } catch (cause) {
       setReportCardError(cause.message || 'Could not prepare this report card.');
+    } finally {
+      setDownloadingEnrollmentId('');
+    }
+  }
+
+  async function downloadMidTermReportCard() {
+    if (!enrollment?.midTermPublishedAt) return;
+    setDownloadingEnrollmentId(enrollment.id);
+    setReportCardError('');
+    setReportCard(null);
+    setMidTermReportCard(null);
+    try {
+      const cachedReport = midTermPortalReport?.enrollmentId === enrollment.id
+        ? midTermPortalReport.reportCard
+        : (await apiRequest(`/parent-portal/enrollments/${enrollment.id}/mid-term-report-card`)).data;
+      setMidTermReportCard(cachedReport);
+      window.setTimeout(() => window.print(), 100);
+    } catch (cause) {
+      setReportCardError(cause.message || 'Could not prepare this mid-term report card.');
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -221,6 +267,28 @@ export default function ParentPortalPage({ user, onSignOut }) {
                       <Printer size={16} /> {downloadingEnrollmentId === enrollment.id ? 'Preparing report card…' : 'Download end-of-term report card'}
                     </button>
                   </div>}
+                  {enrollment?.midTermPublishedAt && <div className="parent-results-actions no-print">
+                    <button className="secondary-button" type="button" onClick={downloadMidTermReportCard} disabled={downloadingEnrollmentId === enrollment.id}>
+                      <Printer size={16} /> {downloadingEnrollmentId === enrollment.id ? 'Preparing report card…' : 'Download mid-term report card'}
+                    </button>
+                  </div>}
+                  {enrollment?.midTermPublishedAt && (loadingMidTermPortalReport
+                    ? <div className="parent-results-empty" role="status">Loading published mid-term results…</div>
+                    : midTermPortalReport?.enrollmentId === enrollment.id && <div className="parent-results-table-wrap">
+                      <table className="parent-results-table">
+                        <caption className="parent-midterm-results-caption">Published mid-term results</caption>
+                        <thead><tr><th>Subject</th><th>Mid-term exam</th><th>Average mark</th><th>Grade</th><th>Grade description</th></tr></thead>
+                        <tbody>{midTermPortalReport.reportCard.subjects.map((result) => (
+                          <tr key={result.subjectId}>
+                            <td><strong>{result.subjectName}</strong><small>{result.subjectCode}</small></td>
+                            <td>{result.midTermExam.absent ? 'Absent' : result.midTermExam.percent == null ? '—' : `${result.midTermExam.percent}%`}</td>
+                            <td>{formatAcademicMark(result.finalMark, midTermPortalReport.reportCard.scoreOutOf)}</td>
+                            <td><span className="parent-grade-chip">{result.grade || '—'}</span></td>
+                            <td>{result.gradeDescription || '—'}</td>
+                          </tr>
+                        ))}</tbody>
+                      </table>
+                    </div>)}
                   {!enrollment ? (
                     <div className="parent-results-empty">No enrollment history is available for this student.</div>
                   ) : termResults.length ? (
@@ -242,7 +310,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
                     </div>
                     </>
                   ) : (
-                    <div className="parent-results-empty"><BookOpen size={18} /><span>No results have been published for {enrollment.term?.name || 'this term'} yet. They’ll appear here once the school publishes them.</span></div>
+                    <div className="parent-results-empty"><BookOpen size={18} /><span>No end-of-term subject results have been published for {enrollment.term?.name || 'this term'} yet.{enrollment.midTermPublishedAt ? ' Published mid-term results are shown below.' : ' Published results will appear here once the school releases them.'}</span></div>
                   )}
                 </section>
 
@@ -284,7 +352,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
         )}
         <footer className="parent-portal-footer">For attendance, fee statements, or other school services, please contact the school office.</footer>
       </section>
-      {reportCard && <div className="parent-report-card-print"><ReportCardPaper reportCard={reportCard} /></div>}
+      {(reportCard || midTermReportCard) && <div className="parent-report-card-print">{reportCard ? <ReportCardPaper reportCard={reportCard} /> : <MidTermReportCardPaper reportCard={midTermReportCard} />}</div>}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Calculator, Check, LoaderCircle, Megaphone, RefreshCw } from 'lucide-react';
-import { calculateTermResults, fetchAllPages, fetchTermResults, updateTermResultsStatus } from './termResultApi.js';
+import { BookOpenCheck, Calculator, Check, LoaderCircle, RefreshCw } from 'lucide-react';
+import { calculateTermResults, fetchAllPages, fetchTermResults, finalizeTermSubjectResults } from './termResultApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 
 function studentName(student) {
@@ -124,16 +124,15 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
     }
   }
 
-  async function changeStatus(status) {
-    const action = status === 'FINALIZED' ? 'finalize' : 'publish';
-    if (!window.confirm(`${status === 'FINALIZED' ? 'Finalize' : 'Publish'} all ${resultSet.resultCount} results for this subject?`)) return;
-    setBusyAction(action);
+  async function changeStatus() {
+    if (!window.confirm(`Finalize all ${resultSet.resultCount} results for this subject?`)) return;
+    setBusyAction('finalize');
     setError('');
     setErrorCode('');
     setNotice('');
     try {
-      const result = await updateTermResultsStatus({ termId, classGroupId, subjectId, status });
-      setNotice(`${result.count} results ${status === 'FINALIZED' ? 'finalized' : 'published'} successfully.`);
+      const result = await finalizeTermSubjectResults({ termId, classGroupId, subjectId });
+      setNotice(`${result.count} results finalized successfully.`);
       await loadResults();
     } catch (cause) {
       setError(cause.message);
@@ -211,10 +210,7 @@ export default function TermResultsPage({ user, onNavigate, signOut }) {
                 {busyAction === 'finalize' ? <LoaderCircle size={15} className="animate-spin" /> : <Check size={15} />}
                 Finalize
               </button>
-              <button className="primary-button" type="button" onClick={() => changeStatus('PUBLISHED')} disabled={!allFinalized || Boolean(busyAction)}>
-                {busyAction === 'publish' ? <LoaderCircle size={15} className="animate-spin" /> : <Megaphone size={15} />}
-                Publish
-              </button>
+              {allFinalized && <span className="term-results-hint">Publish all subjects together from Report cards.</span>}
             </div>
           </div>
           {missingEnrollments.length > 0 && (

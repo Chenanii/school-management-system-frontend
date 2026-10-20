@@ -22,9 +22,12 @@ export function calculateTermResults({ termId, classGroupId, subjectId }) {
   return apiRequest(`/assessments/terms/${termId}/results/calculate?${params}`, { method: 'POST' });
 }
 
-export function updateTermResultsStatus({ termId, classGroupId, subjectId, status }) {
-  const action = status === 'FINALIZED' ? 'finalize' : 'publish';
-  return apiRequest(`/term-results/terms/${termId}/classes/${classGroupId}/subjects/${subjectId}/${action}`, {
+export function finalizeTermSubjectResults({ termId, classGroupId, subjectId }) {
+  return apiRequest(`/term-results/terms/${termId}/classes/${classGroupId}/subjects/${subjectId}/finalize`, {
     method: 'POST'
   });
+}
+
+export function publishAllClassGroupTermResults(termId, classGroupId) {
+  return apiRequest(`/term-results/terms/${termId}/classes/${classGroupId}/publish-all`, { method: 'POST' });
 }

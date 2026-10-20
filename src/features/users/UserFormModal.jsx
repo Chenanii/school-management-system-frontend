@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import PasswordInput from '../../components/PasswordInput.jsx';
 import { userRoles } from './userRoles.js';
 
 const blankForm = {
@@ -133,7 +134,7 @@ export default function UserFormModal({ user, onClose, onSaved }) {
           {!editing && (
             <label className="field-label">
               Temporary password
-              <input className="text-input" name="password" type="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="At least 12 characters" value={form.password} onChange={updateField} required />
+              <PasswordInput name="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="At least 12 characters" value={form.password} onChange={updateField} required />
               <span className="field-hint">Share this temporary password securely with the user.</span>
             </label>
           )}

@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { assessmentAssignmentLabel, assessmentTypes, saveAssessment } from './assessmentApi.js';
 
+function termContextLabel(term) {
+  if (!term) return 'Term information unavailable';
+  const year = term.academicYear?.name || 'Academic year unavailable';
+  return `${term.name} · ${year}`;
+}
+
 export default function AssessmentFormModal({ assessment, assignments, terms, signOut, onClose, onSaved }) {
   const editing = Boolean(assessment);
   const [form, setForm] = useState({
@@ -14,7 +20,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
   const selectedAssignment = assignments.find((item) => item.id === form.teachingAssignmentId);
   const selectedTerm = terms.find((item) => item.id === (selectedAssignment?.termId || assessment?.termId));
   const canCreateForSelectedTerm = !selectedTerm || ['DRAFT', 'OPEN'].includes(selectedTerm.status);
-  const canEdit = !editing || assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
+  const canEdit = !editing || ['DRAFT', 'OPEN'].includes(assessment.status) && (assessment._count?.results ?? 0) === 0;
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -53,7 +59,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
           <div>
             <p className="eyebrow">{editing ? 'Assessment setup' : 'New assessment'}</p>
             <h2 id="assessment-form-title">{editing ? 'Edit assessment' : 'Create an assessment'}</h2>
-            <p>{editing ? 'Only draft assessments without results can be edited.' : 'Choose a teaching assignment to set the class, subject, and term. Marks are entered out of 100.'}</p>
+            <p>{editing ? 'Draft or open assessments without saved results can be edited.' : 'Choose a teaching assignment to set the class, subject, and term. Marks are entered out of 100.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -75,11 +81,12 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
                 <option value="">Select assignment</option>
                 {assignments.map((assignment) => (
                   <option value={assignment.id} key={assignment.id}>
-                    {assessmentAssignmentLabel(assignment)} · {assignment.term?.name}
+                    {assessmentAssignmentLabel(assignment)} · {termContextLabel(assignment.term)}
                   </option>
                 ))}
               </select>
-              {assignments.length === 0 && <span className="field-hint">No assignments are available in terms that accept assessments.</span>}
+              {selectedAssignment && <span className="field-hint">Selected term: {termContextLabel(selectedAssignment.term)}</span>}
+              {assignments.length === 0 && <span className="field-hint">No teaching assignments are available for the current open term and academic year.</span>}
             </label>
           )}
           <label className="field-label">
@@ -89,7 +96,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
             </select>
           </label>
           {!canCreateForSelectedTerm && !editing && <p className="form-error" role="alert">The selected teaching assignment belongs to a term that does not accept new assessments.</p>}
-          {!canEdit && <p className="form-hint">This assessment cannot be edited after leaving draft status or after results have been recorded.</p>}
+          {!canEdit && <p className="form-hint">This assessment cannot be edited after submission or after results have been recorded.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
