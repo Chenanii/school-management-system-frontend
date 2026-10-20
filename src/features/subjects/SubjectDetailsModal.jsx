@@ -165,7 +165,7 @@ export default function SubjectDetailsModal({ subject, signOut, onClose, onChang
             </section>
             <div className="subject-usage-note">
               <strong>Academic records</strong>
-              <span>{details._count?.assessments ?? 0} assessments · {details._count?.termResults ?? 0} term results · {details._count?.annualResults ?? 0} annual results</span>
+              <span>{details._count?.assessments ?? 0} assessments · {details._count?.annualResults ?? 0} annual results</span>
             </div>
           </div>
         )}

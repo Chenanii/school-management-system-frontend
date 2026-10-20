@@ -153,7 +153,7 @@ export default function SubjectsPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table subject-table">
               <thead>
-                <tr><th>Subject</th><th>Code</th><th>Class levels</th><th>Assessments</th><th>Term results</th><th>Annual results</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Subject</th><th>Code</th><th>Class levels</th><th>Assessments</th><th>Annual results</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {subjects.map((subject) => (
@@ -167,7 +167,6 @@ export default function SubjectsPage({ signOut }) {
                     <td><span className="subject-code">{subject.code}</span></td>
                     <td className="text-muted">{subject._count?.classLinks ?? 0}</td>
                     <td className="text-muted">{subject._count?.assessments ?? 0}</td>
-                    <td className="text-muted">{subject._count?.termResults ?? 0}</td>
                     <td className="text-muted">{subject._count?.annualResults ?? 0}</td>
                     <td><span className={`subject-status subject-status-${subject.status.toLowerCase()}`}>{subject.status.toLowerCase()}</span></td>
                     <td>

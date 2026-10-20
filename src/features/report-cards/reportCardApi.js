@@ -32,3 +32,11 @@ export function fetchClassGroupReportCards(termId, classGroupId, { allowIncomple
   const path = `/report-cards/terms/${termId}/class-groups/${classGroupId}`;
   return apiRequest(allowIncomplete ? `${path}?allowIncomplete=true` : path);
 }
+
+export function publishClassGroupEndOfTermReports(termId, classGroupId) {
+  return apiRequest(`/report-cards/terms/${termId}/class-groups/${classGroupId}/publish`, { method: 'POST' });
+}
+
+export function unpublishClassGroupEndOfTermReports(termId, classGroupId) {
+  return apiRequest(`/report-cards/terms/${termId}/class-groups/${classGroupId}/unpublish`, { method: 'POST' });
+}

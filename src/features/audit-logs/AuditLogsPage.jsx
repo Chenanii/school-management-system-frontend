@@ -66,7 +66,7 @@ export default function AuditLogsPage({ signOut }) {
           <div className="relative enrollment-search"><Search size={17} className="search-icon" /><input className="search-input" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search user, action, or record" aria-label="Search audit log" /></div>
           <select className="filter-select" aria-label="Filter by record type" value={entityType} onChange={(event) => { setEntityType(event.target.value); setPage(1); }}>
             <option value="">All record types</option>
-            {['Student', 'Enrollment', 'Teacher', 'User', 'Assessment', 'AssessmentResult', 'TermSubjectResult', 'AcademicYear', 'Term', 'ClassLevel', 'ClassGroup', 'ClassSubject', 'Subject', 'TeachingAssignment', 'PromotionBatch', 'AdminApiRequest'].map((type) => <option key={type} value={type}>{type.replaceAll(/([A-Z])/g, ' $1').trim()}</option>)}
+            {['Student', 'Enrollment', 'Teacher', 'User', 'Assessment', 'AssessmentResult', 'ReportPublication', 'AcademicYear', 'Term', 'ClassLevel', 'ClassGroup', 'ClassSubject', 'Subject', 'TeachingAssignment', 'PromotionBatch', 'AdminApiRequest'].map((type) => <option key={type} value={type}>{type.replaceAll(/([A-Z])/g, ' $1').trim()}</option>)}
           </select>
           <label className="audit-date-filter">From<input className="filter-select" type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} /></label>
           <label className="audit-date-filter">To<input className="filter-select" type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} /></label>

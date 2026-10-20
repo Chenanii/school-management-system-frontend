@@ -13,7 +13,6 @@ import {
   UsersRound,
   UserRoundCog,
   Users,
-  FileCheck2,
   Files,
   UserRoundPlus,
   History,
@@ -97,19 +96,6 @@ export const sections = [
       "HEADTEACHER",
       "EXAMS_OFFICER",
       "TEACHER",
-    ],
-  },
-  {
-    id: "term-results",
-    label: "Term results",
-    group: "Teaching & results",
-    icon: FileCheck2,
-    roles: [
-      "SCHOOL_ADMIN",
-      "SUPER_ADMIN",
-      "HEADTEACHER",
-      "ACADEMIC_ADMIN",
-      "EXAMS_OFFICER",
     ],
   },
   {

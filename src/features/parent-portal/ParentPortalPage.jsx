@@ -6,6 +6,9 @@ import {
   ChevronDown,
   GraduationCap,
   LogOut,
+  Mail,
+  MapPin,
+  Phone,
   Printer,
   RefreshCw,
   UserRound,
@@ -21,12 +24,14 @@ function markLabel(value) {
   return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
 }
 
+function averageMark(results) {
+  const marks = results.filter(({ finalMark }) => finalMark != null).map(({ finalMark }) => Number(finalMark)).filter(Number.isFinite);
+  return marks.length ? marks.reduce((total, mark) => total + mark, 0) / marks.length : null;
+}
+
 function displayClass(enrollment) {
   if (!enrollment) return 'No class placement';
-  return [
-    enrollment.classLevel?.name || 'Class',
-    enrollment.classGroup?.name,
-  ].filter(Boolean).join(' · ');
+  return enrollment.classLevel?.name || 'Class';
 }
 
 function groupAnnualResults(results) {
@@ -84,6 +89,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
     [enrollments, selectedEnrollmentId, student],
   );
   const termResults = enrollment?.termResults || [];
+  const termAverage = averageMark(termResults);
+  const termScoreOutOf = termResults[0]?.scoreOutOf || 100;
   const annualResults = student?.annualResults || [];
   const annualGroups = useMemo(() => groupAnnualResults(annualResults), [annualResults]);
   const endOfTermPublished = Boolean(enrollment?.endOfTermPublishedAt)
@@ -197,6 +204,18 @@ export default function ParentPortalPage({ user, onSignOut }) {
         </div>
 
         {error && <div className="parent-portal-inline-error" role="alert">{error}<button type="button" onClick={loadOverview}>Refresh</button></div>}
+        <section className="parent-school-info" aria-labelledby="parent-school-info-title">
+          <div className="parent-school-info-heading">
+            <span className="parent-school-info-icon"><GraduationCap size={19} /></span>
+            <div><h2 id="parent-school-info-title">School information</h2><p>Contact the school using these details.</p></div>
+          </div>
+          <div className="parent-school-info-grid">
+            {overview?.school.address && <div><MapPin size={17} /><span><small>Address</small><strong>{overview.school.address}</strong></span></div>}
+            {overview?.school.phone && <div><Phone size={17} /><span><small>Phone</small><a href={`tel:${overview.school.phone}`}>{overview.school.phone}</a></span></div>}
+            {overview?.school.email && <div><Mail size={17} /><span><small>Email</small><a href={`mailto:${overview.school.email}`}>{overview.school.email}</a></span></div>}
+            {!overview?.school.address && !overview?.school.phone && !overview?.school.email && <p>Contact information has not been added yet. Please contact the school office.</p>}
+          </div>
+        </section>
         {!overview?.students.length ? (
           <section className="parent-portal-empty">
             <div><GraduationCap size={24} /></div>
@@ -262,22 +281,19 @@ export default function ParentPortalPage({ user, onSignOut }) {
                     )}
                   </div>
                   {reportCardError && <div className="parent-portal-inline-error" role="alert">{reportCardError}</div>}
-                  {enrollment && endOfTermPublished && <div className="parent-results-actions no-print">
-                    <button className="secondary-button" type="button" onClick={downloadReportCard} disabled={!termResults.length || downloadingEnrollmentId === enrollment.id}>
-                      <Printer size={16} /> {downloadingEnrollmentId === enrollment.id ? 'Preparing report card…' : 'Download end-of-term report card'}
-                    </button>
-                  </div>}
-                  {enrollment?.midTermPublishedAt && <div className="parent-results-actions no-print">
-                    <button className="secondary-button" type="button" onClick={downloadMidTermReportCard} disabled={downloadingEnrollmentId === enrollment.id}>
-                      <Printer size={16} /> {downloadingEnrollmentId === enrollment.id ? 'Preparing report card…' : 'Download mid-term report card'}
-                    </button>
-                  </div>}
                   {enrollment?.midTermPublishedAt && (loadingMidTermPortalReport
                     ? <div className="parent-results-empty" role="status">Loading published mid-term results…</div>
-                    : midTermPortalReport?.enrollmentId === enrollment.id && <div className="parent-results-table-wrap">
-                      <table className="parent-results-table">
-                        <caption className="parent-midterm-results-caption">Published mid-term results</caption>
-                        <thead><tr><th>Subject</th><th>Mid-term exam</th><th>Average mark</th><th>Grade</th><th>Grade description</th></tr></thead>
+                    : midTermPortalReport?.enrollmentId === enrollment.id && <section className="parent-result-group" aria-labelledby="parent-midterm-heading">
+                      <div className="parent-result-group-heading">
+                        <div><span className="parent-result-type">Mid-term</span><h3 id="parent-midterm-heading">Mid-term results</h3><p>Exam mark and calculated subject result</p></div>
+                        <div className="parent-result-heading-actions"><span className="parent-result-published">Published</span><button className="secondary-button no-print" type="button" onClick={downloadMidTermReportCard} disabled={downloadingEnrollmentId === enrollment.id}><Printer size={15} />{downloadingEnrollmentId === enrollment.id ? 'Preparing…' : 'Download mid-term report'}</button></div>
+                      </div>
+                      <div className="parent-result-summary">
+                        <div><span>Subjects</span><strong>{midTermPortalReport.reportCard.subjects.length}</strong></div>
+                        <div><span>Average</span><strong>{formatAcademicMark(midTermPortalReport.reportCard.summary.averageMark, midTermPortalReport.reportCard.scoreOutOf)}</strong></div>
+                      </div>
+                      <div className="parent-results-table-wrap"><table className="parent-results-table">
+                        <thead><tr><th>Subject</th><th>Mid-term exam</th><th>Subject result</th><th>Grade</th><th>Grade description</th></tr></thead>
                         <tbody>{midTermPortalReport.reportCard.subjects.map((result) => (
                           <tr key={result.subjectId}>
                             <td><strong>{result.subjectName}</strong><small>{result.subjectCode}</small></td>
@@ -287,27 +303,35 @@ export default function ParentPortalPage({ user, onSignOut }) {
                             <td>{result.gradeDescription || '—'}</td>
                           </tr>
                         ))}</tbody>
-                      </table>
-                    </div>)}
+                      </table></div>
+                    </section>)}
                   {!enrollment ? (
                     <div className="parent-results-empty">No enrollment history is available for this student.</div>
                   ) : termResults.length ? (
                     <>
-                    <div className="parent-results-table-wrap">
-                      <table className="parent-results-table">
-                        <thead><tr><th>Subject</th><th>Mark</th><th>Grade</th><th>Teacher comment</th></tr></thead>
+                    <section className="parent-result-group" aria-labelledby="parent-endterm-heading">
+                      <div className="parent-result-group-heading">
+                        <div><span className="parent-result-type">End of term</span><h3 id="parent-endterm-heading">End-of-term results</h3><p>Final subject marks from coursework, mid-term, and final exams</p></div>
+                        <div className="parent-result-heading-actions"><span className="parent-result-published">Published</span>{endOfTermPublished && <button className="secondary-button no-print" type="button" onClick={downloadReportCard} disabled={downloadingEnrollmentId === enrollment.id}><Printer size={15} />{downloadingEnrollmentId === enrollment.id ? 'Preparing…' : 'Download end-of-term report'}</button>}</div>
+                      </div>
+                      <div className="parent-result-summary">
+                        <div><span>Subjects</span><strong>{termResults.length}</strong></div>
+                        <div><span>Average mark</span><strong>{formatAcademicMark(termAverage, termScoreOutOf)}</strong></div>
+                      </div>
+                      <div className="parent-results-table-wrap"><table className="parent-results-table">
+                        <thead><tr><th>Subject</th><th>Final mark</th><th>Grade</th><th>Teacher comment</th></tr></thead>
                         <tbody>
                           {termResults.map((result) => (
                             <tr key={result.id}>
                               <td><strong>{result.subject.name}</strong><small>{result.subject.code}</small></td>
-                              <td>{markLabel(result.finalMark)}</td>
+                              <td>{formatAcademicMark(result.finalMark, result.scoreOutOf || termScoreOutOf)}</td>
                               <td><span className="parent-grade-chip">{result.grade || '—'}</span></td>
                               <td>{result.teacherComment || result.gradeDescription || '—'}</td>
                             </tr>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
+                      </table></div>
+                    </section>
                     </>
                   ) : (
                     <div className="parent-results-empty"><BookOpen size={18} /><span>No end-of-term subject results have been published for {enrollment.term?.name || 'this term'} yet.{enrollment.midTermPublishedAt ? ' Published mid-term results are shown below.' : ' Published results will appear here once the school releases them.'}</span></div>

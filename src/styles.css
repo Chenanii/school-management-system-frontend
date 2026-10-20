@@ -680,23 +680,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .promotion-policy-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--app-border); padding-top:12px; }
 .promotion-batch-meta { display:flex; gap:20px; border-top:1px solid var(--app-border); padding:12px 19px; color:#768179; font-size:12px; }
 .promotion-modal { width:min(850px,100%); max-height:calc(100vh - 40px); overflow:auto; }.promotion-modal .modal-heading > div > p:last-child { display:flex; align-items:center; gap:5px; margin-top:5px; color:#859087; font-size:12px; }
-.term-results-scope,.term-results-panel { margin-bottom:17px; }
-.term-results-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:17px 19px; }
-.term-results-heading h2 { color:var(--app-text-primary); font-size:16px; font-weight:650; }
-.term-results-heading p { margin-top:4px; color:var(--app-text-secondary); font-size:12px; }
-.term-results-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) auto; align-items:end; gap:13px; border-top:1px solid var(--app-border); padding:17px 19px; }
-.term-results-filters .primary-button { min-height:40px; white-space:nowrap; }
-.term-results-hint { margin:0 19px 17px; border-radius:8px; padding:10px 12px; color:#806d49; background:#fbf6e9; font-size:12px; }
-.term-results-table-heading { border-bottom:1px solid var(--app-border); }
-.term-results-table-heading h2 { margin-top:5px; }
-.term-results-actions { display:flex; flex-wrap:wrap; gap:7px; }
-.term-results-actions .primary-button,.term-results-actions .secondary-button { padding:8px 10px; font-size:12px; }
-.term-results-missing,.term-results-warning { display:flex; flex-direction:column; gap:3px; margin:13px 18px; border-radius:8px; padding:10px 12px; color:#995d3f; background:#fff2eb; font-size:12px; }
-.term-results-missing span { color:#936c58; }
-.term-results-warning { display:block; color:#806d49; background:#fbf6e9; }
-.term-result-mark { color:#2f7550; font-weight:650; white-space:nowrap; }
-.term-results-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--app-border); padding:12px 18px; color:var(--app-text-secondary); font-size:11px; }
-.term-results-footer .text-button { display:inline-flex; flex:0 0 auto; align-items:center; gap:5px; }
 .report-card-selection,.report-card-preview { margin-bottom:17px; }
 .report-card-selection-heading { padding:17px 19px; }
 .report-card-selection-heading h2 { color:var(--app-text-primary); font-size:16px; font-weight:650; }
@@ -822,8 +805,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .report-card-paper,.report-card-paper * { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
   .parent-report-card-print { display:block; }
 }
-@media (max-width:900px) { .term-results-filters { grid-template-columns:1fr 1fr; }.term-results-table-heading { align-items:flex-start; flex-direction:column; } }
-@media (max-width:600px) { .term-results-filters { grid-template-columns:1fr; }.term-results-actions { width:100%; }.term-results-actions button { flex:1; justify-content:center; }.term-results-footer { align-items:flex-start; flex-direction:column; } }
 @media (max-width:900px) { .report-card-student-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }.report-card-paper { padding:23px; } }
 @media (max-width:600px) { .report-card-filters { grid-template-columns:1fr; }.report-card-actions { align-items:flex-start; flex-direction:column; }.report-card-paper { padding:17px; }.report-card-summary,.report-card-signatures { grid-template-columns:1fr; gap:13px; } }
 @media (max-width:900px) { .enrollment-toolbar { flex-wrap:wrap; }.enrollment-toolbar .filter-select { flex:1 1 160px; }.enrollment-toolbar .student-total { margin-left:0; }.enrollment-preview-heading,.enrollment-preview-footer { align-items:flex-start; flex-direction:column; } }
@@ -996,6 +977,17 @@ body { background: var(--app-background); }
 .parent-portal-welcome h1 { margin:6px 0 5px; color:var(--app-text-primary); font-size:clamp(27px,3.5vw,35px); font-weight:700; letter-spacing:-.04em; line-height:1.15; }
 .parent-portal-welcome p:last-child { margin:0; color:var(--app-text-primary); font-size:15px; line-height:1.5; }
 .parent-linked-count { display:flex; align-items:center; gap:8px; border:1px solid #d9e2db; border-radius:999px; padding:8px 12px; color:#23583b; background:#edf5ef; font-size:13px; font-weight:650; white-space:nowrap; }
+.parent-school-info { margin-bottom:17px; border:1px solid var(--app-border); border-radius:15px; padding:17px 20px; background:var(--app-surface); box-shadow:0 2px 6px color-mix(in srgb, var(--app-text-primary) 3%, transparent); }
+.parent-school-info-heading { display:flex; align-items:center; gap:10px; margin-bottom:13px; }
+.parent-school-info-icon { display:flex; width:36px; height:36px; align-items:center; justify-content:center; border-radius:11px; color:var(--app-primary); background:var(--app-accent-soft); }
+.parent-school-info-heading h2 { margin:0; color:var(--app-text-primary); font-size:15px; font-weight:700; }
+.parent-school-info-heading p { margin:3px 0 0; color:var(--app-text-secondary); font-size:12px; }
+.parent-school-info-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.parent-school-info-grid > div { display:flex; min-width:0; align-items:flex-start; gap:9px; border-radius:10px; padding:10px; color:var(--app-primary); background:var(--app-surface-muted); }
+.parent-school-info-grid > div > span { display:grid; min-width:0; gap:3px; }
+.parent-school-info-grid small { color:var(--app-text-secondary); font-size:11px; }
+.parent-school-info-grid strong,.parent-school-info-grid a { overflow-wrap:anywhere; color:var(--app-text-primary); font-size:13px; font-weight:600; }
+.parent-school-info-grid > p { grid-column:1 / -1; margin:0; color:var(--app-text-secondary); font-size:13px; }
 .parent-student-picker { display:flex; gap:10px; overflow-x:auto; margin-bottom:17px; padding:1px 1px 5px; }
 .parent-student-tab { display:flex; min-width:215px; align-items:center; gap:10px; border:1px solid var(--app-border); border-radius:13px; padding:10px 12px; color:var(--app-text-primary); background:var(--app-surface); text-align:left; }
 .parent-student-tab:hover { border-color:#a9c8af; background:#f9fcfa; }
@@ -1018,6 +1010,18 @@ body { background: var(--app-background); }
 .parent-student-facts strong { overflow-wrap:anywhere; color:var(--app-text-primary); font-size:14px; font-weight:650; }
 .parent-results-section { margin-top:17px; overflow:hidden; }
 .parent-results-actions { display:flex; justify-content:flex-end; padding:0 18px 14px; }
+.parent-result-group { margin:0 18px 18px; overflow:hidden; border:1px solid var(--app-border); border-radius:12px; background:var(--app-surface); }
+.parent-result-group-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 18px 13px; }
+.parent-result-heading-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; }
+.parent-result-group-heading h3 { margin:5px 0 3px; color:var(--app-text-primary); font-size:16px; font-weight:700; }
+.parent-result-group-heading p { margin:0; color:var(--app-text-secondary); font-size:13px; }
+.parent-result-type { color:var(--app-primary); font-size:11px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
+.parent-result-published { flex:0 0 auto; border-radius:999px; padding:5px 10px; color:var(--app-primary); background:var(--app-accent-soft); font-size:11px; font-weight:700; }
+.parent-result-summary { display:flex; gap:10px; padding:0 18px 14px; }
+.parent-result-summary > div { display:grid; min-width:100px; gap:3px; border:1px solid var(--app-border); border-radius:9px; padding:9px 12px; background:var(--app-surface-muted); }
+.parent-result-summary span { color:var(--app-text-secondary); font-size:11px; }
+.parent-result-summary strong { color:var(--app-text-primary); font-size:15px; }
+.parent-result-group .parent-results-table-wrap { border-top:1px solid var(--app-border); }
 .parent-report-card-print { display:none; }
 @media print { .parent-report-card-print { display:block !important; } }
 .class-distribution-panel { margin-bottom:17px; overflow:hidden; }
@@ -1097,12 +1101,19 @@ body { background: var(--app-background); }
   .parent-portal-account div { display:none; }
   .parent-portal-content { padding:25px 14px 22px; }
   .parent-portal-welcome { align-items:flex-start; flex-direction:column; gap:12px; }
+  .parent-school-info { padding:15px; }
+  .parent-school-info-grid { grid-template-columns:1fr; }
   .parent-student-summary { padding:16px; }
   .parent-student-facts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 10px; }
   .parent-section-heading { align-items:flex-start; flex-direction:column; padding:15px; }
   .parent-term-select { width:100%; }
   .parent-term-select select { flex:1; max-width:none; }
   .parent-results-table { min-width:610px; }
+  .parent-result-group { margin:0 11px 13px; }
+  .parent-result-group-heading { padding:14px 13px 11px; }
+  .parent-result-group-heading p { max-width:230px; line-height:1.4; }
+  .parent-result-heading-actions { align-items:flex-end; flex-direction:column; }
+  .parent-result-summary { padding:0 13px 12px; }
   .parent-annual-group .parent-results-table { min-width:560px; }
 }
 .student-parent-registration { display:grid; gap:12px; border-top:1px solid #e7ece7; padding-top:16px; }
