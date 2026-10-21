@@ -101,6 +101,17 @@ export default function App() {
     }
   }, [user?.id, user?.role, user?.schoolId, signOut]);
 
+  const refreshSchoolSetup = useCallback(async () => {
+    if (user?.role !== "SCHOOL_ADMIN" || !user.schoolId) return;
+    try {
+      setSchoolSetup(await fetchSchoolSetupStatus());
+      setSchoolSetupError("");
+    } catch (cause) {
+      setSchoolSetupError(cause.message);
+      if (cause.status === 401) signOut();
+    }
+  }, [user?.role, user?.schoolId, signOut]);
+
   useEffect(() => {
     loadSchoolSetup();
   }, [loadSchoolSetup]);
@@ -337,7 +348,7 @@ export default function App() {
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,
             ) ? (
-            <GradeScalesPage signOut={signOut} />
+            <GradeScalesPage signOut={signOut} onScaleCreated={refreshSchoolSetup} />
           ) : page === "terms" &&
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,

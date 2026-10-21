@@ -50,10 +50,10 @@ function checklistFor(stepId, counts = {}) {
   return (requirements[stepId] || []).map(([label, complete]) => ({ label, complete: Boolean(complete) }));
 }
 
-function SetupPage({ page, user, signOut, onNavigate }) {
+function SetupPage({ page, user, signOut, onNavigate, onScaleCreated }) {
   if (page === 'academic-years') return <AcademicYearsPage signOut={signOut} onNavigate={onNavigate} />;
   if (page === 'terms') return <TermsPage signOut={signOut} />;
-  if (page === 'grading-scales') return <GradeScalesPage signOut={signOut} />;
+  if (page === 'grading-scales') return <GradeScalesPage signOut={signOut} onScaleCreated={onScaleCreated} />;
   if (page === 'class-levels') return <ClassLevelsPage signOut={signOut} onNavigate={onNavigate} />;
   if (page === 'class-groups') return <ClassGroupsPage signOut={signOut} />;
   if (page === 'subjects') return <SubjectsPage signOut={signOut} />;
@@ -114,7 +114,7 @@ export default function SchoolSetupWizard({ user, signOut, onComplete }) {
             <button className="primary-button" type="button" onClick={() => { setShowGuide(true); refreshStatus(); }}>Continue Setup guide</button>
           </div>
         </div>
-        <main className="school-setup-content"><SetupPage page={activePage} user={user} signOut={signOut} onNavigate={routeFromPage} /></main>
+        <main className="school-setup-content"><SetupPage page={activePage} user={user} signOut={signOut} onNavigate={routeFromPage} onScaleCreated={refreshStatus} /></main>
       </> : null}
 
       {showGuide && <div className="modal-backdrop school-setup-backdrop" role="presentation">

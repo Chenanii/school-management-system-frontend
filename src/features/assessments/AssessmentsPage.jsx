@@ -111,6 +111,9 @@ export default function AssessmentsPage({ user, signOut }) {
         assessment.subject?.code,
         assessment.teachingAssignment?.classGroup?.name,
         assessment.teachingAssignment?.classGroup?.classLevel?.name,
+        assessment.teachingAssignment?.subjectStream?.name,
+        assessment.teachingAssignment?.subjectStream?.classLevel?.name,
+        assessment.teachingAssignment?.classSubject?.classLevel?.name,
         assessment.teachingAssignment?.teacher?.firstName,
         assessment.teachingAssignment?.teacher?.lastName,
         termMap.get(assessment.termId)?.name,
@@ -300,7 +303,8 @@ export default function AssessmentsPage({ user, signOut }) {
                 {filteredAssessments.map((assessment) => {
                   const assignment = assessment.teachingAssignment;
                   const group = assignment?.classGroup;
-                  const className = [group?.classLevel?.name, group?.name].filter(Boolean).join(' · ');
+                  const classLevel = group?.classLevel || assignment?.subjectStream?.classLevel || assignment?.classSubject?.classLevel;
+                  const className = [classLevel?.name, group?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);

@@ -4,7 +4,7 @@ import { createGradeScale, fetchGradeScales } from './academicYearApi.js';
 
 const emptyBoundary = () => ({ grade: '', minScore: '', description: '' });
 
-export default function GradeScalesPage({ signOut }) {
+export default function GradeScalesPage({ signOut, onScaleCreated }) {
   const [scales, setScales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -61,6 +61,7 @@ export default function GradeScalesPage({ signOut }) {
     try {
       const result = await createGradeScale({ name: name.trim(), description: description.trim() || null, maxScore, boundaries: normalized });
       setScales((current) => [...current, result.data].sort((a, b) => a.name.localeCompare(b.name)));
+      onScaleCreated?.();
       setName('');
       setDescription('');
       setMaxScore(100);

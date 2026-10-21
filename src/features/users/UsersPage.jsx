@@ -9,6 +9,7 @@ import useUsers from './useUsers.js';
 export default function UsersPage({ signOut }) {
   const [modalUser, setModalUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [notice, setNotice] = useState('');
   const directory = useUsers({ enabled: true, signOut });
   const { users, pagination, loading, error, search, role, status, page } = directory;
 
@@ -32,6 +33,7 @@ export default function UsersPage({ signOut }) {
         </div>
         <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add user</button>
       </div>
+      {notice && <div className="teaching-assignment-notice" role="status">{notice}<button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
       <section className="panel user-directory-panel">
         <div className="users-toolbar">
           <div className="relative min-w-[220px] flex-1 sm:max-w-[300px]">
@@ -108,8 +110,13 @@ export default function UsersPage({ signOut }) {
         <UserFormModal
           user={modalUser}
           onClose={() => setModalOpen(false)}
-          onSaved={() => {
+          onSaved={(result) => {
             setModalOpen(false);
+            setNotice(modalUser
+              ? 'User account updated.'
+              : result.invitationEmailSent
+              ? `Invitation sent to ${result.data?.email || 'the user'}. They can set their password from the email link.`
+              : `User account created for ${result.data?.email || 'the user'}.`);
             directory.refresh();
           }}
         />

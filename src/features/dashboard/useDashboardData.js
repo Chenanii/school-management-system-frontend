@@ -16,8 +16,22 @@ const emptySummary = {
   teachers: [],
   studentCount: null,
   teacherCount: null,
-  classDistribution: null
+  classDistribution: null,
+  teachingAssignments: [],
+  assessments: []
 };
+
+async function fetchAllPages(path) {
+  const params = new URLSearchParams({ page: '1', limit: '100' });
+  const first = await apiRequest(`${path}?${params}`);
+  const records = [...(first.data || [])];
+  for (let page = 2; page <= (first.pagination?.totalPages || 1); page += 1) {
+    params.set('page', String(page));
+    const result = await apiRequest(`${path}?${params}`);
+    records.push(...(result.data || []));
+  }
+  return records;
+}
 
 export default function useDashboardData(signOut) {
   const [summary, setSummary] = useState(emptySummary);
@@ -80,13 +94,17 @@ export default function useDashboardData(signOut) {
           classDistribution: distributionResult?.data || null
         });
       } else {
-        const schoolResult = user.schoolId
-          ? await apiRequest('/schools/current')
-          : null;
+        const [schoolResult, teachingAssignments, assessmentResult] = await Promise.all([
+          user.schoolId ? apiRequest('/schools/current') : Promise.resolve(null),
+          user.role === 'TEACHER' ? fetchAllPages('/teaching-assignments') : Promise.resolve([]),
+          user.role === 'TEACHER' ? apiRequest('/assessments') : Promise.resolve({ data: [] })
+        ]);
         setSummary({
           ...emptySummary,
           user,
-          school: schoolResult?.data || user.school
+          school: schoolResult?.data || user.school,
+          teachingAssignments,
+          assessments: assessmentResult.data || []
         });
       }
     } catch (cause) {

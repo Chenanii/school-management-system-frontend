@@ -39,9 +39,9 @@ export default function ResetPasswordPage() {
       <div className="signin-card">
         <Brand />
         <div className="mt-12">
-          <p className="eyebrow">Account recovery</p>
+          <p className="eyebrow">Account access</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">Choose a new password</h1>
-          <p className="mt-3 text-sm leading-6 text-muted">Use at least 12 characters. This reset link can only be used once.</p>
+          <p className="mt-3 text-sm leading-6 text-muted">Set or reset your password. Use at least 12 characters. This link can only be used once.</p>
         </div>
         {!token ? <p className="form-error mt-6" role="alert">This password reset link is missing its token. Request a new link from the sign-in page.</p> : !success ? <form onSubmit={submit} className="mt-8 space-y-5">
           <label className="field-label">New password

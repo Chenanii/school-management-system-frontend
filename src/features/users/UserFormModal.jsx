@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
-import PasswordInput from '../../components/PasswordInput.jsx';
 import { userRoles } from './userRoles.js';
 
 const blankForm = {
@@ -10,8 +9,7 @@ const blankForm = {
   lastName: '',
   role: 'TEACHER',
   status: 'ACTIVE',
-  staffNumber: '',
-  password: ''
+  staffNumber: ''
 };
 
 export default function UserFormModal({ user, onClose, onSaved }) {
@@ -31,7 +29,6 @@ export default function UserFormModal({ user, onClose, onSaved }) {
         role: user.role || 'TEACHER',
         status: user.status || 'ACTIVE',
         staffNumber: user.teacher?.staffNumber || '',
-        password: ''
       });
     } else {
       setForm(blankForm);
@@ -58,16 +55,15 @@ export default function UserFormModal({ user, onClose, onSaved }) {
       payload.status = form.status;
       if (teacherRole) payload.staffNumber = form.staffNumber.trim() || null;
     } else {
-      payload.password = form.password;
       if (teacherRole && form.staffNumber.trim()) payload.staffNumber = form.staffNumber.trim();
     }
 
     try {
-      await apiRequest(editing ? `/users/${user.id}` : '/users', {
+      const result = await apiRequest(editing ? `/users/${user.id}` : '/users', {
         method: editing ? 'PATCH' : 'POST',
         body: JSON.stringify(payload)
       });
-      onSaved();
+      onSaved(result);
     } catch (cause) {
       setError(cause.message);
     } finally {
@@ -80,9 +76,9 @@ export default function UserFormModal({ user, onClose, onSaved }) {
       <section className="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-form-title">
         <div className="modal-heading">
           <div>
-            <p className="eyebrow">{editing ? 'Update account' : 'New account'}</p>
+            <p className="eyebrow">{editing ? 'Update account' : 'User onboarding'}</p>
             <h2 id="user-form-title">{editing ? 'Edit user' : 'Add a user'}</h2>
-            <p>{editing ? 'Update this user account’s details and access.' : 'Create a login for a member of your school community.'}</p>
+            <p>{editing ? 'Update this user account’s details and access.' : 'An invitation email will let the user set their own password.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -131,19 +127,13 @@ export default function UserFormModal({ user, onClose, onSaved }) {
               <input className="text-input" name="staffNumber" maxLength={30} value={form.staffNumber} onChange={updateField} />
             </label>
           )}
-          {!editing && (
-            <label className="field-label">
-              Temporary password
-              <PasswordInput name="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="At least 12 characters" value={form.password} onChange={updateField} required />
-              <span className="field-hint">Share this temporary password securely with the user.</span>
-            </label>
-          )}
+          {!editing && <p className="field-hint">The account stays inactive until the user follows the one-time email link and chooses a password.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className="primary-button" type="submit" disabled={busy}>
               {busy && <LoaderCircle size={16} className="animate-spin" />}
-              {busy ? 'Saving…' : editing ? 'Save changes' : 'Create user'}
+              {busy ? 'Saving…' : editing ? 'Save changes' : 'Create and invite'}
             </button>
           </div>
         </form>
