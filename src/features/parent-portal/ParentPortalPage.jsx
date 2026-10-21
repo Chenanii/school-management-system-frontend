@@ -19,6 +19,7 @@ import NotificationCenter from '../notifications/NotificationCenter.jsx';
 import { ReportCardPaper } from '../report-cards/ReportCardsPage.jsx';
 import { MidTermReportCardPaper } from '../mid-term-report-cards/MidTermReportCardPage.jsx';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
+import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
 function markLabel(value) {
   return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
@@ -375,6 +376,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
           </>
         )}
         <footer className="parent-portal-footer">For attendance, fee statements, or other school services, please contact the school office.</footer>
+        <div className="parent-portal-developer-brand"><img src={nexaLogo} alt="Nexa Circuit LTD" /><span>Developed by Nexa Circuit LTD</span></div>
       </section>
       {(reportCard || midTermReportCard) && <div className="parent-report-card-print">{reportCard ? <ReportCardPaper reportCard={reportCard} /> : <MidTermReportCardPaper reportCard={midTermReportCard} />}</div>}
     </main>

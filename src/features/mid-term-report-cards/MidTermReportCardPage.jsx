@@ -5,6 +5,7 @@ import { fetchAllPages } from '../report-cards/reportCardApi.js';
 import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, publishClassGroupMidTermReportCards } from './midTermReportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -93,6 +94,7 @@ export function MidTermReportCardPaper({ reportCard }) {
         <div><span>Date issued</span><strong>{formatDate(new Date())}</strong></div>
       </footer>
       <p className="report-card-generated">Each subject grade averages approved and locked coursework and mid-term exams; absences count as zero · {formatDate(new Date())}</p>
+      <div className="report-card-developer-brand"><img src={nexaLogo} alt="Nexa Circuit LTD" /><span>Developed by Nexa Circuit LTD</span></div>
     </article>
   );
 }

@@ -1,13 +1,20 @@
-import { ArrowUpRight, BookOpen, Check, ChevronRight, ClipboardList, GraduationCap, School, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, ClipboardList, Clock3, FileText, GraduationCap, LockKeyhole, School, Users } from 'lucide-react';
 import StatCard from './StatCard.jsx';
 import PeopleTable from '../directory/PeopleTable.jsx';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import { formatName, initials } from '../../shared/utils/people.js';
 import ClassDistributionPanel from '../students/ClassDistributionPanel.jsx';
+import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
 export default function OverviewPage({ summary, loading, error, onRetry, onNavigate }) {
   if (summary.user.role === 'TEACHER') {
     return <TeacherOverview summary={summary} loading={loading} error={error} onRetry={onRetry} onNavigate={onNavigate} />;
+  }
+  if (summary.user.role === 'HEADTEACHER') {
+    return <HeadteacherOverview summary={summary} loading={loading} error={error} onRetry={onRetry} onNavigate={onNavigate} />;
+  }
+  if (summary.user.role === 'EXAMS_OFFICER') {
+    return <ExamOfficerOverview summary={summary} loading={loading} error={error} onRetry={onRetry} onNavigate={onNavigate} />;
   }
   const recent = summary.students.slice(0, 5);
   const canSeeSchoolRecords = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(summary.user.role);
@@ -67,9 +74,170 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
           <button className="panel-footer" onClick={() => onNavigate('staff')}>View staff <ChevronRight size={15} /></button>
         </section>
       </div>}
-      <div className="dashboard-footnote"><Check size={14} /><span>Your school records are securely synced.</span><span className="footnote-spacer" /><span>Schoolhouse</span></div>
+      <div className="dashboard-footnote"><Check size={14} /><span>Your school records are securely synced.</span><span className="footnote-spacer" /><span className="dashboard-credit"><img className="dashboard-nexa-logo" src={nexaLogo} alt="" /><span>Developed by <strong>Nexa Circuit LTD</strong></span></span></div>
     </>
   );
+}
+
+function HeadteacherOverview({ summary, loading, error, onRetry, onNavigate }) {
+  const assessments = summary.assessments || [];
+  const terms = summary.terms || [];
+  const currentYearTerms = terms.filter((term) => term.academicYear?.isCurrent);
+  const currentTerm = currentYearTerms.find((term) => term.status === 'OPEN') || currentYearTerms[0];
+  const awaitingAssessmentReview = assessments.filter((assessment) => assessment.status === 'SUBMITTED');
+  const termFollowUps = terms.filter((term) => term.status === 'MARKS_REVIEW').slice(0, 4);
+  const followUpCount = awaitingAssessmentReview.length + terms.filter((term) => term.status === 'MARKS_REVIEW').length;
+  const actions = [
+    { label: 'Students', detail: 'Review the student register', page: 'students', icon: GraduationCap },
+    { label: 'Teaching staff', detail: 'View the school team', page: 'staff', icon: Users },
+    { label: 'Academic years', detail: 'Update school-year dates', page: 'academic-years', icon: CalendarDays },
+    { label: 'Terms', detail: 'Edit term dates and results stages', page: 'terms', icon: CalendarDays },
+    { label: 'Assessments', detail: 'Review submitted marks', page: 'assessments', icon: ClipboardList },
+    { label: 'Report cards', detail: 'Check and publish results', page: 'report-cards', icon: FileText }
+  ];
+
+  return <>
+    <div className="welcome-row exam-dashboard-welcome">
+      <div>
+        <p className="eyebrow">School leadership</p>
+        <h1 className="page-title">Good day, {summary.user.firstName}<span className="title-dot">.</span></h1>
+        <p className="mt-2 text-sm text-muted">A school-wide view of people, teaching, and academic progress.</p>
+      </div>
+      {summary.school?.logoDataUrl && <div className="dashboard-school-brand"><img src={summary.school.logoDataUrl} alt={`${summary.school.name} logo`} /><span>{summary.school.name}</span></div>}
+    </div>
+    {error && <div className="notice-error" role="alert"><span>{error}</span><button className="text-button" onClick={onRetry}>Retry</button></div>}
+
+    <div className="exam-workflow-stats headteacher-stats">
+      <div className="exam-workflow-stat"><span className="stat-icon stat-green"><GraduationCap size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : summary.studentCount ?? 0}</strong><span>Students</span><small>Across the school</small></span></div>
+      <div className="exam-workflow-stat"><span className="stat-icon stat-peach"><Users size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : summary.teacherCount ?? 0}</strong><span>Teaching staff</span><small>On the school team</small></span></div>
+      <div className="exam-workflow-stat"><span className="stat-icon stat-lilac"><ClipboardCheck size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : followUpCount}</strong><span>Academic follow-ups</span><small>Assessment and term decisions</small></span><span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${followUpCount} ${followUpCount === 1 ? 'item' : 'items'}`}</span></div>
+    </div>
+
+    <section className="headteacher-term-banner">
+      <span className="headteacher-term-icon"><CalendarDays size={18} /></span>
+      <div><small>Current academic term</small><strong>{loading ? 'Loading term…' : currentTerm ? `${currentTerm.academicYear?.name || 'Academic year'} · ${currentTerm.sequence}. ${currentTerm.name}` : 'No open term for the current academic year'}</strong></div>
+      {currentTerm && <span className={`headteacher-term-status headteacher-term-status-${currentTerm.status.toLowerCase()}`}>{currentTerm.status.replaceAll('_', ' ')}</span>}
+      <button className="text-button exam-view-all" type="button" onClick={() => onNavigate('terms')}>Update current term <ArrowRight size={15} /></button>
+    </section>
+
+    <section className="headteacher-followups">
+      <div className="exam-quick-actions-heading"><div><h2>Leadership follow-up</h2><p>Items that may need your review or a school-level decision.</p></div></div>
+      <div className="headteacher-followup-grid">
+        <section className="panel headteacher-followup-panel">
+          <div className="panel-heading"><div><h3>Assessments awaiting review</h3><p>{awaitingAssessmentReview.length} submitted for approval</p></div><button className="icon-button" type="button" onClick={() => onNavigate('assessments')} aria-label="Open assessments"><ArrowUpRight size={17} /></button></div>
+          {loading ? <div className="table-message"><span className="loading-line" /></div> : error ? <div className="headteacher-empty">Assessment review data is unavailable. Retry the dashboard to refresh it.</div> : awaitingAssessmentReview.length ? <div className="headteacher-followup-list">{awaitingAssessmentReview.slice(0, 5).map((assessment) => {
+            const assignment = assessment.teachingAssignment;
+            const subject = assessment.subject?.name || assignment?.subject?.name || assignment?.classSubject?.subject?.name || 'Subject';
+            return <button type="button" className="headteacher-followup-row" key={assessment.id} onClick={() => onNavigate('assessments')}><span className="headteacher-followup-mark"><ClipboardCheck size={15} /></span><span className="headteacher-followup-copy"><strong>{assessment.title}</strong><small>{[examClassLabel(assessment), subject, assessment.term?.name].filter(Boolean).join(' · ')}</small></span><ChevronRight size={16} /></button>;
+          })}</div> : <div className="headteacher-empty"><span><Check size={16} /></span><span>No submitted assessments are waiting for review.</span></div>}
+          <button className="panel-footer" type="button" onClick={() => onNavigate('assessments')}>Review assessments <ChevronRight size={15} /></button>
+        </section>
+
+        <section className="panel headteacher-followup-panel">
+          <div className="panel-heading"><div><h3>Terms ready for final review</h3><p>Review marks and finalize term results</p></div><button className="icon-button" type="button" onClick={() => onNavigate('terms')} aria-label="Open academic calendar"><ArrowUpRight size={17} /></button></div>
+          {loading ? <div className="table-message"><span className="loading-line" /></div> : error ? <div className="headteacher-empty">Term milestone data is unavailable. Retry the dashboard to refresh it.</div> : termFollowUps.length ? <div className="headteacher-followup-list">{termFollowUps.map((term) => <button type="button" className="headteacher-followup-row" key={term.id} onClick={() => onNavigate('terms')}><span className="headteacher-followup-mark headteacher-followup-mark-term"><FileText size={15} /></span><span className="headteacher-followup-copy"><strong>{term.academicYear?.name} · {term.sequence}. {term.name}</strong><small>Review results and finalize the term</small></span><span className="headteacher-term-status headteacher-term-status-review">Review</span></button>)}</div> : <div className="headteacher-empty"><span><Check size={16} /></span><span>No terms are waiting at a results milestone.</span></div>}
+          <button className="panel-footer" type="button" onClick={() => onNavigate('terms')}>Open academic calendar <ChevronRight size={15} /></button>
+        </section>
+      </div>
+    </section>
+
+    {summary.classDistribution && <ClassDistributionPanel distribution={summary.classDistribution} loading={loading} compact />}
+    <section className="exam-quick-actions headteacher-tools">
+      <div className="exam-quick-actions-heading"><div><h2>School oversight</h2><p>Common areas for day-to-day leadership.</p></div></div>
+      <div className="exam-action-grid">{actions.map(({ label, detail, page, icon: Icon }) => <button className="exam-action-card" type="button" key={page} onClick={() => onNavigate(page)}><span className="exam-action-icon"><Icon size={18} /></span><span className="exam-action-copy"><strong>{label}</strong><small>{detail}</small></span><ArrowUpRight size={16} className="exam-action-arrow" /></button>)}</div>
+    </section>
+    <div className="dashboard-footnote"><Check size={14} /><span>School oversight at a glance</span><span className="footnote-spacer" /><span className="dashboard-credit"><img className="dashboard-nexa-logo" src={nexaLogo} alt="" /><span>Developed by <strong>Nexa Circuit LTD</strong></span></span></div>
+  </>;
+}
+
+function examClassLabel(assessment) {
+  const assignment = assessment.teachingAssignment;
+  const level = assignment?.classGroup?.classLevel || assignment?.subjectStream?.classLevel || assignment?.classSubject?.classLevel;
+  return [level?.name, assignment?.classGroup?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : '']
+    .filter(Boolean).join(' · ') || 'Class not set';
+}
+
+function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
+  const dataUnavailable = loading || Boolean(error);
+  const assessments = summary.assessments || [];
+  const open = assessments.filter((item) => item.status === 'OPEN');
+  const awaitingReview = assessments.filter((item) => item.status === 'SUBMITTED');
+  const readyToLock = assessments.filter((item) => item.status === 'APPROVED');
+  const statusOrder = { SUBMITTED: 0, APPROVED: 1, OPEN: 2, DRAFT: 3 };
+  const workQueue = assessments
+    .filter((item) => item.status !== 'LOCKED')
+    .sort((a, b) => (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4))
+    .slice(0, 6);
+  const workflowStats = [
+    { label: 'Marks in progress', value: open.length, hint: 'Open assessments', icon: Clock3, tone: 'stat-peach' },
+    { label: 'Awaiting review', value: awaitingReview.length, hint: 'Submitted for approval', icon: ClipboardCheck, tone: 'stat-lilac' },
+    { label: 'Ready to lock', value: readyToLock.length, hint: 'Approved assessments', icon: LockKeyhole, tone: 'stat-green' }
+  ];
+  const actions = [
+    { label: 'Assessments', detail: 'Review marks and workflow', page: 'assessments', icon: ClipboardList },
+    { label: 'Mid-term reports', detail: 'Check readiness and publish', page: 'mid-term-report-cards', icon: FileText },
+    { label: 'End-of-term reports', detail: 'Publish class results', page: 'report-cards', icon: GraduationCap },
+    { label: 'Class attendance', detail: 'Open registers and summaries', page: 'attendance', icon: ClipboardCheck }
+  ];
+
+  return <>
+    <div className="welcome-row exam-dashboard-welcome">
+      <div>
+        <p className="eyebrow">Examinations & results</p>
+        <h1 className="page-title">Good day, {summary.user.firstName}<span className="title-dot">.</span></h1>
+        <p className="mt-2 text-sm text-muted">Track assessment progress, clear review work, and prepare published reports.</p>
+      </div>
+      {summary.school?.logoDataUrl && <div className="dashboard-school-brand"><img src={summary.school.logoDataUrl} alt={`${summary.school.name} logo`} /><span>{summary.school.name}</span></div>}
+    </div>
+    {error && <div className="notice-error" role="alert"><span>{error}</span><button className="text-button" onClick={onRetry}>Retry</button></div>}
+
+    <div className="exam-workflow-stats">
+      {workflowStats.map(({ label, value, hint, icon: Icon, tone }) => (
+        <div className="exam-workflow-stat" key={label}>
+          <span className={`stat-icon ${tone}`}><Icon size={19} strokeWidth={1.8} /></span>
+          <span className="exam-workflow-stat-copy"><strong>{dataUnavailable ? '—' : value}</strong><span>{label}</span><small>{hint}</small></span>
+          <span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${value} ${value === 1 ? 'item' : 'items'}`}</span>
+        </div>
+      ))}
+    </div>
+
+    <section className="panel exam-work-queue">
+      <div className="panel-heading">
+        <div><h2 className="text-[15px] font-semibold tracking-[-0.02em] text-ink">Assessment work queue</h2><p className="mt-1 text-xs text-muted">Items that still need an exam workflow action</p></div>
+        <button className="text-button exam-view-all" type="button" onClick={() => onNavigate('assessments')}>View all <ArrowRight size={15} /></button>
+      </div>
+      {loading ? <div className="table-message"><span className="loading-line" /></div> : error ? (
+        <div className="exam-queue-empty"><span className="exam-queue-error-mark">!</span><div><strong>Assessment queue unavailable</strong><p>Retry loading the dashboard to check current work.</p></div></div>
+      ) : workQueue.length === 0 ? (
+        <div className="exam-queue-empty"><span><Check size={17} /></span><div><strong>Everything is up to date</strong><p>No assessments are waiting for an exam workflow action.</p></div></div>
+      ) : <div className="overflow-x-auto"><table className="people-table exam-queue-table">
+        <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Status</th></tr></thead>
+        <tbody>{workQueue.map((assessment) => {
+          const assignment = assessment.teachingAssignment;
+          const subject = assessment.subject?.name || assignment?.subject?.name || assignment?.classSubject?.subject?.name || 'Subject';
+          const type = assessment.assessmentType?.replaceAll('_', ' ').toLowerCase() || 'assessment';
+          const status = { DRAFT: 'Needs opening', OPEN: 'Marks in progress', SUBMITTED: 'Awaiting review', APPROVED: 'Ready to lock' }[assessment.status] || assessment.status;
+          return <tr key={assessment.id}>
+            <td><strong>{assessment.title}</strong><span className="exam-queue-meta">{type}</span></td>
+            <td><strong>{examClassLabel(assessment)}</strong><span className="exam-queue-meta">{subject}</span></td>
+            <td>{assessment.term?.name || '—'}</td>
+            <td><span className={`exam-queue-status exam-queue-status-${assessment.status.toLowerCase()}`}>{status}</span></td>
+          </tr>;
+        })}</tbody>
+      </table></div>}
+      <button className="panel-footer" type="button" onClick={() => onNavigate('assessments')}>Open assessment management <ChevronRight size={15} /></button>
+    </section>
+
+    <section className="exam-quick-actions">
+      <div className="exam-quick-actions-heading"><div><h2>Exam officer tools</h2><p>Go straight to a key part of the examination cycle.</p></div></div>
+      <div className="exam-action-grid">{actions.map(({ label, detail, page, icon: Icon }) => (
+        <button className="exam-action-card" type="button" key={page} onClick={() => onNavigate(page)}>
+          <span className="exam-action-icon"><Icon size={18} /></span><span className="exam-action-copy"><strong>{label}</strong><small>{detail}</small></span><ArrowUpRight size={16} className="exam-action-arrow" />
+        </button>
+      ))}</div>
+    </section>
+    <div className="dashboard-footnote"><Check size={14} /><span>Assessment workflow at a glance</span><span className="footnote-spacer" /><span className="dashboard-credit"><img className="dashboard-nexa-logo" src={nexaLogo} alt="" /><span>Developed by <strong>Nexa Circuit LTD</strong></span></span></div>
+  </>;
 }
 
 function TeacherOverview({ summary, loading, error, onRetry, onNavigate }) {
@@ -104,6 +272,6 @@ function TeacherOverview({ summary, loading, error, onRetry, onNavigate }) {
       })}</tbody></table></div>}
       <button className="panel-footer" onClick={() => onNavigate('assessments')}>Go to assessments <ChevronRight size={15} /></button>
     </section>
-    <div className="dashboard-footnote"><Check size={14} /><span>Your teaching assignments are up to date.</span><span className="footnote-spacer" /><span>Schoolhouse</span></div>
+    <div className="dashboard-footnote"><Check size={14} /><span>Your teaching assignments are up to date.</span><span className="footnote-spacer" /><span className="dashboard-credit"><img className="dashboard-nexa-logo" src={nexaLogo} alt="" /><span>Developed by <strong>Nexa Circuit LTD</strong></span></span></div>
   </>;
 }

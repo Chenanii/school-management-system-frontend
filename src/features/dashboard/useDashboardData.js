@@ -18,7 +18,8 @@ const emptySummary = {
   teacherCount: null,
   classDistribution: null,
   teachingAssignments: [],
-  assessments: []
+  assessments: [],
+  terms: []
 };
 
 async function fetchAllPages(path) {
@@ -93,18 +94,39 @@ export default function useDashboardData(signOut) {
           teacherCount: teachersResult.pagination?.total ?? 0,
           classDistribution: distributionResult?.data || null
         });
+      } else if (user.role === 'HEADTEACHER') {
+        const [studentsResult, teachersResult, schoolResult, distributionResult, assessments, terms] = await Promise.all([
+          apiRequest('/students?limit=5'),
+          apiRequest('/teachers?limit=5'),
+          apiRequest('/schools/current'),
+          apiRequest('/students/distribution').catch(() => null),
+          fetchAllPages('/assessments'),
+          fetchAllPages('/terms')
+        ]);
+        setSummary({
+          ...emptySummary,
+          user,
+          school: schoolResult.data,
+          students: studentsResult.data || [],
+          teachers: teachersResult.data || [],
+          studentCount: studentsResult.pagination?.total ?? 0,
+          teacherCount: teachersResult.pagination?.total ?? 0,
+          classDistribution: distributionResult?.data || null,
+          assessments,
+          terms
+        });
       } else {
-        const [schoolResult, teachingAssignments, assessmentResult] = await Promise.all([
+        const [schoolResult, teachingAssignments, assessmentRecords] = await Promise.all([
           user.schoolId ? apiRequest('/schools/current') : Promise.resolve(null),
           user.role === 'TEACHER' ? fetchAllPages('/teaching-assignments') : Promise.resolve([]),
-          user.role === 'TEACHER' ? apiRequest('/assessments') : Promise.resolve({ data: [] })
+          ['TEACHER', 'EXAMS_OFFICER'].includes(user.role) ? fetchAllPages('/assessments') : Promise.resolve([])
         ]);
         setSummary({
           ...emptySummary,
           user,
           school: schoolResult?.data || user.school,
           teachingAssignments,
-          assessments: assessmentResult.data || []
+          assessments: assessmentRecords
         });
       }
     } catch (cause) {

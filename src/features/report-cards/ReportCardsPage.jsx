@@ -3,6 +3,7 @@ import { FileText, ListChecks, LoaderCircle, Printer, RotateCcw } from 'lucide-r
 import { fetchAllPages, fetchClassGroupReportCards, publishClassGroupEndOfTermReports, unpublishClassGroupEndOfTermReports } from './reportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -41,6 +42,7 @@ export function ReportCardPaper({ reportCard }) {
       <div className="overflow-x-auto"><table className="people-table report-card-subject-table"><thead><tr><th>#</th><th>Subject</th><th>Final mark</th><th>Grade</th><th>Grade description</th><th>Teacher comment</th></tr></thead><tbody>{reportCard.subjects.map((subject, index) => <tr key={subject.subjectId}><td>{index + 1}</td><td><strong>{subject.subjectName}</strong><span className="report-card-subject-code">{subject.subjectCode}</span></td><td className="report-card-mark">{subject.complete ? formatAcademicMark(subject.finalMark, reportCard.scoreOutOf) : 'Pending'}</td><td><strong>{subject.grade || '—'}</strong></td><td>{subject.gradeDescription || '—'}</td><td>{subject.teacherComment || '—'}</td></tr>)}</tbody></table></div>
       <div className="report-card-summary"><div><span>Subjects published</span><strong>{reportCard.summary.publishedSubjects} / {reportCard.summary.requiredSubjects}</strong></div><div><span>Average mark</span><strong>{formatAcademicMark(reportCard.summary.averageMark, reportCard.scoreOutOf)}</strong></div><div><span>Report status</span><strong>{reportCard.complete ? 'Complete' : 'Incomplete'}</strong></div></div>
       <footer className="report-card-signatures"><div><span>Class teacher</span><strong>{school?.classTeacherSignerName || ''}</strong><i /></div><div><span>Headteacher</span><strong>{school?.headteacherSignerName || ''}</strong><i /></div><div><span>Date issued</span><strong>{formatDate(new Date())}</strong></div></footer><p className="report-card-generated">Coursework and mid-term average contribute 40%; the final exam contributes 60% · {formatDate(new Date())}</p>
+      <div className="report-card-developer-brand"><img src={nexaLogo} alt="Nexa Circuit LTD" /><span>Developed by Nexa Circuit LTD</span></div>
     </article>
   );
 }
