@@ -12,6 +12,7 @@ function rowSnapshot(row) {
 
 function changedRows(rows, originalRows) {
   return rows.filter((row) => {
+    if (!row.canEnterResult) return false;
     const current = rowSnapshot(row);
     const original = originalRows.get(row.enrollmentId);
     if (!original) {
@@ -120,7 +121,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close" disabled={saving}><X size={19} /></button>
         </div>
-        {locked && <p className="form-hint mt-4">Results are read-only after the assessment is submitted.</p>}
+        {locked && <p className="form-hint mt-4">Existing results are read only. Students enrolled after submission can still receive their first result.</p>}
         {notice && <p className="form-success mt-4" role="status">{notice}</p>}
         {loading ? (
           <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading student results…</span></div>
@@ -153,15 +154,15 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
                         </div>
                       </td>
                       <td>
-                        <select className="assessment-result-select" value={row.status} disabled={locked || saving} onChange={(event) => updateRow(row.enrollmentId, 'status', event.target.value)} aria-label={`Result status for ${row.student.firstName} ${row.student.lastName}`}>
+                        <select className="assessment-result-select" value={row.status} disabled={!row.canEnterResult || saving} onChange={(event) => updateRow(row.enrollmentId, 'status', event.target.value)} aria-label={`Result status for ${row.student.firstName} ${row.student.lastName}`}>
                           {resultStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
                       </td>
                       <td>
-                        <input className="assessment-mark-input" type="number" min="0" max={Number(assessment.maxMark)} step="0.01" value={row.mark} disabled={locked || saving || row.status !== 'PRESENT'} onChange={(event) => updateRow(row.enrollmentId, 'mark', event.target.value)} aria-label={`Mark for ${row.student.firstName} ${row.student.lastName}`} />
+                        <input className="assessment-mark-input" type="number" min="0" max={Number(assessment.maxMark)} step="0.01" value={row.mark} disabled={!row.canEnterResult || saving || row.status !== 'PRESENT'} onChange={(event) => updateRow(row.enrollmentId, 'mark', event.target.value)} aria-label={`Mark for ${row.student.firstName} ${row.student.lastName}`} />
                       </td>
                       <td>
-                        <input className="assessment-comment-input" type="text" maxLength={1000} value={row.teacherComment} disabled={locked || saving} onChange={(event) => updateRow(row.enrollmentId, 'teacherComment', event.target.value)} aria-label={`Teacher comment for ${row.student.firstName} ${row.student.lastName}`} />
+                        <input className="assessment-comment-input" type="text" maxLength={1000} value={row.teacherComment} disabled={!row.canEnterResult || saving} onChange={(event) => updateRow(row.enrollmentId, 'teacherComment', event.target.value)} aria-label={`Teacher comment for ${row.student.firstName} ${row.student.lastName}`} />
                       </td>
                     </tr>
                   ))}
@@ -172,7 +173,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
         )}
         <div className="modal-actions assessment-results-actions">
           <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Close</button>
-          {!locked && rows.length > 0 && (
+          {rows.length > 0 && dirtyRows.length > 0 && (
             <button className="primary-button" type="button" onClick={saveChanges} disabled={saving || loading || dirtyRows.length === 0}>
               {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? 'Saving results…' : 'Save results'}
