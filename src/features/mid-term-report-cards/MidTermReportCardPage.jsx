@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { FileText, ListChecks, LoaderCircle, Printer } from 'lucide-react';
 // import { fetchAllPages } from './reportCardApi.js';
 import { fetchAllPages } from '../report-cards/reportCardApi.js';
-import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, publishClassGroupMidTermReportCards } from './midTermReportCardApi.js';
+import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, publishClassGroupMidTermReportCards, saveMidTermReportDetails } from './midTermReportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
-import nexaLogo from '../../assets/Nexa-Logo-Final.png';
+import cambridgeAssessmentLogo from '../../assets/cambridge-assessment-logo.png';
 
 function studentName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -27,74 +27,58 @@ function formatPercent(value) {
   return value === null || value === undefined ? '—' : `${value}%`;
 }
 
-export function MidTermReportCardPaper({ reportCard }) {
+export function MidTermReportCardPaper({ reportCard, canEditDetails = false }) {
+  const [details, setDetails] = useState({ behaviorComments: {}, coCurricularComments: {}, promotedTo: reportCard.nextEnrollment?.classLevel?.name || '', promotionRemarks: '', ...(reportCard.reportDetails || {}) });
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsNotice, setDetailsNotice] = useState('');
+  const [detailsError, setDetailsError] = useState('');
+  async function saveDetails() {
+    setSavingDetails(true); setDetailsError(''); setDetailsNotice('');
+    try { const { data } = await saveMidTermReportDetails(reportCard.enrollment.id, details); setDetails((current) => ({ ...current, ...data })); setDetailsNotice('Saved'); }
+    catch (cause) { setDetailsError(cause.message); }
+    finally { setSavingDetails(false); }
+  }
+  function detailField(group, key, label) {
+    const value = details[group]?.[key];
+    return <td><span className="report-card-detail-print">{value || '—'}</span>{canEditDetails && <textarea className="report-card-detail-input no-print" aria-label={label} rows={2} maxLength={500} value={value || ''} onChange={(event) => setDetails((current) => ({ ...current, [group]: { ...current[group], [key]: event.target.value } }))} />}</td>;
+  }
   const school = reportCard.school;
+  const design = { title: 'Mid-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showSignatures: true, footerText: 'Each subject grade averages approved and locked coursework and mid-term exams; absences count as zero.', sections: ['studentDetails', 'academicPerformance', 'behaviorDiscipline', 'coCurricular', 'promotionRemarks', 'gradingKey', 'summary', 'signatures'], headerSections: ['studentDetails', 'classYear', 'termDates'], ...(school?.reportDesign?.midTerm || {}) };
+  const sections = {
+    studentDetails: <div className="report-card-student-summary"><div><span>Student name</span><strong>{studentName(reportCard.student)}</strong></div><div><span>Admission number</span><strong>{reportCard.student?.admissionNumber || '—'}</strong></div><div><span>Class</span><strong>{reportCard.classLevel?.name || reportCard.classGroup?.classLevel?.name || '—'}</strong></div><div><span>Academic year · Term</span><strong>{reportCard.academicYear?.name} · {reportCard.term?.sequence}. {reportCard.term?.name}</strong></div></div>,
+    academicPerformance: <><h3 className="report-card-section-title">Academic performance</h3>{reportCard.summary.subjects === 0 && <p className="report-card-no-subjects">No subjects are assigned to this student for the selected term.</p>}<div className="overflow-x-auto"><table className="people-table report-card-subject-table"><thead><tr><th>#</th><th>Subject</th><th>Mid-term exam</th><th>Average</th><th>Mark</th><th>Grade</th>{design.showGradeDescription && <th>Grade description</th>}</tr></thead><tbody>{reportCard.subjects.map((subject, index) => <tr key={subject.subjectId}><td>{index + 1}</td><td><strong>{subject.subjectName}</strong><span className="report-card-subject-code">{subject.subjectCode}</span></td><td>{subject.midTermExam.absent ? 'Absent' : formatPercent(subject.midTermExam.percent)}</td><td>{formatPercent(subject.averagePercent)}</td><td className="report-card-mark">{formatAcademicMark(subject.finalMark, reportCard.scoreOutOf)}</td><td><strong>{subject.grade || '—'}</strong></td>{design.showGradeDescription && <td>{subject.gradeDescription || '—'}</td>}</tr>)}</tbody></table></div></>,
+    behaviorDiscipline: <><h3 className="report-card-section-title">Behaviour & discipline</h3><table className="people-table report-card-subject-table"><thead><tr><th>Area</th><th>Comment</th></tr></thead><tbody>{[['Classroom conduct', 'classroomConduct'], ['Respect & responsibility', 'respectResponsibility'], ['Participation', 'participation']].map(([item, key]) => <tr key={key}><td>{item}</td>{detailField('behaviorComments', key, `${item} comment`)}</tr>)}</tbody></table></>,
+    coCurricular: <><h3 className="report-card-section-title">Co-curricular activities</h3><table className="people-table report-card-subject-table"><thead><tr><th>Activity type</th><th>Participation / comment</th></tr></thead><tbody>{[['Sports', 'sports'], ['Arts', 'arts'], ['Clubs / other', 'clubsOther']].map(([item, key]) => <tr key={key}><td>{item}</td>{detailField('coCurricularComments', key, `${item} comment`)}</tr>)}</tbody></table></>,
+    promotionRemarks: <><h3 className="report-card-section-title">Promotion remarks</h3><p className="report-card-promotion-writein">Promoted to: <span className="report-card-detail-print">{details.promotedTo || reportCard.nextEnrollment?.classLevel?.name || '—'}</span>{canEditDetails && <input className="report-card-detail-input no-print" aria-label="Promotion destination" maxLength={120} value={details.promotedTo || ''} onChange={(event) => setDetails((current) => ({ ...current, promotedTo: event.target.value }))} />}</p>{reportCard.nextEnrollment?.term?.startDate && <p>Next term opens on: {formatDate(reportCard.nextEnrollment.term.startDate)}</p>}<label className="report-card-remarks-field"><span>Remarks</span><span className="report-card-detail-print">{details.promotionRemarks || '—'}</span>{canEditDetails && <textarea className="report-card-detail-input no-print" rows={3} maxLength={1000} value={details.promotionRemarks || ''} onChange={(event) => setDetails((current) => ({ ...current, promotionRemarks: event.target.value }))} />}</label></>,
+    gradingKey: <><h3 className="report-card-section-title">Numerical grading system</h3><table className="people-table report-card-subject-table"><thead><tr><th>Grade</th><th>Marks ({reportCard.scoreOutOf})</th><th>Description</th></tr></thead><tbody>{(reportCard.gradeKey || []).map((item) => <tr key={item.grade}><td>{item.grade}</td><td>{item.minMark} – {item.maxMark}</td><td>{item.description || '—'}</td></tr>)}</tbody></table></>,
+    summary: design.showSummary && <div className="report-card-summary"><div><span>Subjects graded</span><strong>{reportCard.summary.completeSubjects} / {reportCard.summary.subjects}</strong></div><div><span>Average mark</span><strong>{formatAcademicMark(reportCard.summary.averageMark, reportCard.scoreOutOf)}</strong></div><div><span>Report status</span><strong>{reportCard.complete ? 'Complete' : 'Incomplete'}</strong></div></div>,
+    signatures: design.showSignatures && <footer className="report-card-signatures"><div><span>Class teacher signature</span><strong>{school?.classTeacherSignerName || 'Class teacher not assigned'}</strong><i /></div><div><span>Headteacher signature</span><strong>{school?.headteacherSignerName || 'Headteacher not assigned'}</strong><i /></div><div><span>Date issued</span><strong>{formatDate(reportCard.issuedAt)}</strong></div></footer>,
+  };
+  const headerItems = {
+    studentDetails: <><span>Student name</span><strong>{studentName(reportCard.student)}</strong><small>Admission number · {reportCard.student?.admissionNumber || '—'}</small></>,
+    classYear: <><span>Class · Academic year</span><strong>{reportCard.classGroup?.name || reportCard.classLevel?.name || '—'}</strong><small>{reportCard.academicYear?.name || '—'}</small></>,
+    termDates: <><span>Term · Next term opens</span><strong>{reportCard.term?.sequence}. {reportCard.term?.name}</strong><small>{reportCard.nextEnrollment?.term?.startDate ? formatDate(reportCard.nextEnrollment.term.startDate) : '—'}</small></>,
+    schoolContact: <><span>School contact</span><strong>{school?.address || '—'}</strong><small>{[school?.phone, school?.email].filter(Boolean).join(' · ') || '—'}</small></>,
+  };
   return (
     <article className="report-card-paper">
       <header className="report-card-school-heading">
-        {school?.logoDataUrl
+        <div className="report-card-school-logo-slot">{design.showLogo && (school?.logoDataUrl
           ? <img className="report-card-school-logo" src={school.logoDataUrl} alt={`${school.name} logo`} />
-          : <div className="report-card-school-mark">{(school?.name || 'S').slice(0, 1).toUpperCase()}</div>}
+          : <div className="report-card-school-mark">{(school?.name || 'S').slice(0, 1).toUpperCase()}</div>)}</div>
         <div className="report-card-school-identity">
           <p className="eyebrow">Student academic report</p>
           <h1>{school?.name || 'School'}</h1>
-          {(school?.address || school?.phone || school?.email) && <p className="report-card-school-contact">{[school.address, school.phone, school.email].filter(Boolean).join(' · ')}</p>}
-          <h2>Mid-Term Report Card</h2>
-          <p>{reportCard.academicYear?.name} · {reportCard.term?.sequence}. {reportCard.term?.name}</p>
+          {design.showContact && (school?.address || (!design.headerSections.includes('schoolContact') && (school?.phone || school?.email))) && <p className="report-card-school-contact">{[school.address, ...(!design.headerSections.includes('schoolContact') ? [school.phone, school.email] : [])].filter(Boolean).join(' · ')}</p>}
+          <h2>{design.title}</h2>
         </div>
+        <div className="report-card-school-logo-slot report-card-school-logo-slot-right">{design.showLogo && school?.secondaryLogoDataUrl && <img className="report-card-school-logo" src={school.secondaryLogoDataUrl} alt={`${school.name} additional logo`} />}</div>
       </header>
-
-      <div className="report-card-student-summary">
-        <div><span>Student name</span><strong>{studentName(reportCard.student)}</strong></div>
-        <div><span>Admission number</span><strong>{reportCard.student?.admissionNumber || '—'}</strong></div>
-        <div><span>Class level</span><strong>{reportCard.classLevel?.name || reportCard.classGroup?.classLevel?.name || '—'}</strong></div>
-        <div><span>Academic year</span><strong>{reportCard.academicYear?.name}</strong></div>
-      </div>
-
-      {reportCard.summary.subjects === 0 && <p className="report-card-no-subjects">No subjects are assigned to this student for the selected term.</p>}
-
-      <div className="overflow-x-auto">
-        <table className="people-table report-card-subject-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Subject</th>
-              <th>Mid-term exam</th>
-              <th>Average</th>
-              <th>Mark</th>
-              <th>Grade</th>
-              <th>Grade description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reportCard.subjects.map((subject, index) => (
-              <tr key={subject.subjectId}>
-                <td>{index + 1}</td>
-                <td><strong>{subject.subjectName}</strong><span className="report-card-subject-code">{subject.subjectCode}</span></td>
-                <td>{subject.midTermExam.absent ? 'Absent' : formatPercent(subject.midTermExam.percent)}</td>
-                <td>{formatPercent(subject.averagePercent)}</td>
-                <td className="report-card-mark">{formatAcademicMark(subject.finalMark, reportCard.scoreOutOf)}</td>
-                <td><strong>{subject.grade || '—'}</strong></td>
-                <td>{subject.gradeDescription || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="report-card-summary">
-        <div><span>Subjects graded</span><strong>{reportCard.summary.completeSubjects} / {reportCard.summary.subjects}</strong></div>
-        <div><span>Average mark</span><strong>{formatAcademicMark(reportCard.summary.averageMark, reportCard.scoreOutOf)}</strong></div>
-        <div><span>Report status</span><strong>{reportCard.complete ? 'Complete' : 'Incomplete'}</strong></div>
-      </div>
-
-      <footer className="report-card-signatures">
-        <div><span>Class teacher</span><strong>{school?.classTeacherSignerName || ''}</strong><i /></div>
-        <div><span>Headteacher</span><strong>{school?.headteacherSignerName || ''}</strong><i /></div>
-        <div><span>Date issued</span><strong>{formatDate(new Date())}</strong></div>
-      </footer>
-      <p className="report-card-generated">Each subject grade averages approved and locked coursework and mid-term exams; absences count as zero · {formatDate(new Date())}</p>
-      <div className="report-card-developer-brand"><img src={nexaLogo} alt="Nexa Circuit LTD" /><span>Developed by Nexa Circuit LTD</span></div>
+      <div className="report-card-header-sections">{design.headerSections.map((id, index) => <div className="report-card-header-cell" key={`${id}-${index}`}>{headerItems[id]}</div>)}</div>
+      {design.sections.filter((id) => sections[id] && !(id === 'studentDetails' && design.headerSections.includes('studentDetails'))).map((id) => <div className="report-card-configurable-section" key={id}>{sections[id]}</div>)}
+      {canEditDetails && <div className="report-card-details-save no-print"><button className="secondary-button" type="button" onClick={saveDetails} disabled={savingDetails}>{savingDetails ? 'Saving…' : 'Save report details'}</button>{detailsNotice && <span role="status">{detailsNotice}</span>}{detailsError && <span className="notice-error" role="alert">{detailsError}</span>}</div>}
+      <p className="report-card-generated">{design.footerText}{design.footerText ? ' · ' : ''}{formatDate(reportCard.issuedAt)}</p>
+      <div className="report-card-assessment-brand"><img src={cambridgeAssessmentLogo} alt="Cambridge Assessment" /></div>
     </article>
   );
 }

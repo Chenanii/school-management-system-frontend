@@ -163,7 +163,7 @@ export default function useDashboardData(signOut) {
     setSummary((current) => ({
       ...current,
       school: { ...current.school, ...school },
-      schools: current.schools.map((item) => item.id === school.id ? { ...item, ...school } : item),
+      schools: (Array.isArray(current.schools) ? current.schools : []).map((item) => item.id === school.id ? { ...item, ...school } : item),
     }));
   }, []);
 

@@ -11,6 +11,10 @@ export function fetchMidTermReportCard(enrollmentId, options) {
   return apiRequest(withOptions(`${BASE_PATH}/enrollments/${enrollmentId}`, options));
 }
 
+export function saveMidTermReportDetails(enrollmentId, details) {
+  return apiRequest(`${BASE_PATH}/enrollments/${enrollmentId}/details`, { method: 'PUT', body: JSON.stringify(details) });
+}
+
 // Strict by default: the server answers 409 MID_TERM_RESULTS_INCOMPLETE until every subject is
 // graded from approved and locked assessments. Pass { allowIncomplete: true } to see what is missing.
 export function fetchClassGroupMidTermReportCards(termId, classGroupId, options) {

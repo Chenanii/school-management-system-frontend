@@ -1,6 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../../api.js';
 
+// These routes render their own feature pages and do not use the generic
+// directory endpoint. Keep this list aligned with the workspace navigation.
+const FEATURE_PAGES = new Set([
+  'overview',
+  'school-profile',
+  'report-designer',
+  'academic-years',
+  'grading-scales',
+  'terms',
+  'students',
+  'enrollments',
+  'teaching-assignments',
+  'attendance',
+  'assessments',
+  'class-levels',
+  'class-groups',
+  'subjects',
+  'class-subjects',
+  'staff',
+  'users',
+  'audit-logs',
+  'subscriptions',
+  'mid-term-report-cards',
+  'report-cards',
+  'promotions',
+  'school-appearance',
+]);
+
 export default function useDirectoryData({ user, page, search, directoryPage, schoolId, signOut }) {
   const [directory, setDirectory] = useState({ people: [], total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(false);
@@ -9,7 +37,7 @@ export default function useDirectoryData({ user, page, search, directoryPage, sc
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!user || page === 'overview' || page === 'academic-years' || page === 'terms' || page === 'teaching-assignments' || page === 'assessments' || page === 'report-cards' || page === 'enrollments' || page === 'promotions' || page === 'subscriptions' || page === 'users' || page === 'students' || page === 'subjects' || page === 'class-levels' || page === 'class-subjects' || page === 'class-groups' || page === 'mid-term-report-cards' || page === 'staff') return undefined;
+    if (!user || FEATURE_PAGES.has(page)) return undefined;
     if (user.role === 'SUPER_ADMIN' && !schoolId) return undefined;
     let cancelled = false;
     const timeout = window.setTimeout(async () => {

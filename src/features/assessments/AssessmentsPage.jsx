@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, R
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import FormTutorReportDetailsPanel from './FormTutorReportDetailsPanel.jsx';
 import {
   assessmentStatusLabel,
   assessmentStatuses,
@@ -255,6 +256,7 @@ export default function AssessmentsPage({ user, signOut }) {
           <button className="text-button" onClick={() => setNotice('')}>Dismiss</button>
         </div>
       )}
+      {['TEACHER', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role) && <FormTutorReportDetailsPanel signOut={signOut} />}
       <div className="assessment-weight-guide">
         <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>All coursework and mid-term marks are averaged together and contribute 40%. The final exam contributes 60%.</span></div>
         <div className="assessment-weight-guide-bar" aria-label="40 percent coursework and mid-term, 60 percent final exam"><span>Coursework + mid-term <b>40%</b></span><span>Final exam <b>60%</b></span></div>

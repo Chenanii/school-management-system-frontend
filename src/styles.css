@@ -637,6 +637,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .subject-status-finalized,.subject-status-published { color: var(--app-primary); background: var(--app-accent-soft); }
 .subject-status-closed { color: #657169; background: var(--app-surface-muted); }
 .assessment-panel { overflow: hidden; }
+.form-tutor-report-panel { margin-bottom:18px; padding:18px; }
+.form-tutor-report-panel > .panel-heading { margin:-18px -18px 15px; border-bottom:1px solid var(--app-border); padding:15px 18px; }
+.form-tutor-report-toolbar { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) auto; align-items:end; gap:12px; }
+.form-tutor-report-toolbar .field-label { min-width:0; }
+.form-tutor-report-students { display:grid; gap:12px; margin-top:16px; }
+.form-tutor-report-student { border:1px solid var(--app-border); border-radius:11px; padding:14px; background:var(--app-surface); }
+.form-tutor-report-student-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.form-tutor-report-student-heading > div { display:grid; gap:3px; }
+.form-tutor-report-student-heading strong { color:var(--app-text-primary); font-size:13px; }
+.form-tutor-report-student-heading span { color:var(--app-text-secondary); font-size:11px; }
+.form-tutor-report-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
+.form-tutor-report-fields textarea { resize:vertical; }
+.form-tutor-report-save { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:12px; }
+.form-tutor-report-save > span { color:var(--app-text-secondary); font-size:11px; }
+.form-tutor-assessments-intro { display:flex; align-items:center; gap:10px; margin-bottom:15px; border:1px solid #dfeae1; border-radius:10px; padding:12px 14px; color:#496652; background:#f3f8f3; font-size:12px; }
+@media (max-width:850px) { .form-tutor-report-toolbar { grid-template-columns:repeat(2,minmax(0,1fr)); }.form-tutor-report-toolbar > button { justify-self:start; } }
+@media (max-width:600px) { .form-tutor-report-toolbar,.form-tutor-report-fields { grid-template-columns:1fr; }.form-tutor-report-toolbar > button { width:100%; justify-content:center; } }
 .assessment-toolbar { display: flex; min-height: 70px; align-items: center; gap: 9px; border-bottom: 1px solid var(--app-border); padding: 12px 14px; }
 .assessment-search { width: 230px; flex: 1 1 190px; }
 .assessment-toolbar .filter-select { min-width: 135px; max-width: 210px; }
@@ -780,10 +797,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .report-card-incomplete { margin-bottom:12px; }
 .report-card-no-subjects { border-radius:8px; padding:12px; color:#806d49; background:#fbf6e9; font-size:12px; }
 .report-card-paper { border:1px solid #e5e9e4; border-radius:12px; padding:34px; background:var(--app-surface); box-shadow:0 6px 22px #2333260a; }
-.report-card-school-heading { display:flex; align-items:center; gap:15px; border-bottom:2px solid var(--app-secondary); padding-bottom:20px; }
+.report-card-school-heading { display:grid; grid-template-columns:minmax(70px,1fr) minmax(0,3fr) minmax(70px,1fr); align-items:center; gap:15px; border-bottom:2px solid var(--app-secondary); padding-bottom:20px; }
+.report-card-school-logo-slot { display:flex; min-width:0; min-height:70px; align-items:center; justify-content:flex-start; }
+.report-card-school-logo-slot-right { justify-content:flex-end; }
 .report-card-school-mark { display:flex; width:54px; height:54px; flex:0 0 auto; align-items:center; justify-content:center; border-radius:14px; color:var(--app-secondary); background:var(--app-accent-soft); font-size:25px; font-weight:700; }
 .report-card-school-logo { width:70px; height:70px; flex:0 0 auto; object-fit:contain; }
-.report-card-school-identity { min-width:0; }
+.report-card-school-identity { min-width:0; text-align:center; }
 .report-card-school-identity h1 { margin-top:3px; color:var(--app-text-primary); font-size:19px; font-weight:750; letter-spacing:-.03em; }
 .report-card-school-identity h2 { margin-top:6px; color:var(--app-text-primary); font-size:17px; font-weight:700; letter-spacing:-.03em; }
 .report-card-school-identity > p:last-child { margin-top:4px; color:#748078; font-size:13px; }
@@ -802,10 +821,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .report-card-signatures i { border-bottom:1px solid #aeb7af; }
 .report-card-signatures strong { color:var(--app-text-primary); font-size:12px; }
 .report-card-generated { margin-top:21px; color:#929c94; font-size:10px; text-align:center; }
-.report-card-developer-brand { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; color:#7e8981; font-size:9px; }
-.report-card-developer-brand img { width:30px; height:30px; border:1px solid #edf0ed; border-radius:50%; padding:2px; object-fit:contain; }
+.report-card-assessment-brand { display:flex; align-items:center; justify-content:center; margin-top:12px; }
+.report-card-assessment-brand img { display:block; width:280px; max-height:68px; object-fit:contain; }
 .school-profile-panel { max-width:920px; padding:22px; }
 .school-profile-logo-row { display:flex; align-items:center; gap:18px; }
+.school-profile-logos-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
 .school-profile-logo { width:112px; height:112px; flex:0 0 auto; border:1px solid var(--app-border); border-radius:12px; padding:8px; object-fit:contain; background:var(--app-surface); }
 .school-profile-logo-fallback { display:flex; width:112px; height:112px; flex:0 0 auto; align-items:center; justify-content:center; border:1px dashed #cdd8cf; border-radius:12px; color:#78917e; background:var(--app-surface-muted); }
 .school-profile-logo-controls { display:grid; gap:9px; }
@@ -813,7 +833,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .school-profile-address { grid-column:1 / -1; }
 .school-profile-address textarea { resize:vertical; padding:10px 12px; }
 .school-profile-section-title { color:var(--app-text-primary); font-size:15px; font-weight:700; }
-@media (max-width:600px) { .school-profile-panel { padding:15px; }.school-profile-fields { grid-template-columns:1fr; }.school-profile-address { grid-column:auto; }.school-profile-logo { width:84px; height:84px; }.school-profile-logo-fallback { width:84px; height:84px; }.report-card-school-logo { width:54px; height:54px; }.report-card-school-identity h1 { font-size:17px; } }
+@media (max-width:600px) { .school-profile-panel { padding:15px; }.school-profile-fields,.school-profile-logos-grid { grid-template-columns:1fr; }.school-profile-address { grid-column:auto; }.school-profile-logo { width:84px; height:84px; }.school-profile-logo-fallback { width:84px; height:84px; }.report-card-school-logo { width:54px; height:54px; }.report-card-school-identity h1 { font-size:17px; } }
 .enrollment-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 16px; }
 .enrollment-tab { border:1px solid var(--app-border); border-radius:9px; padding:9px 13px; color:#768179; background:var(--app-surface); font-size:13px; font-weight:600; }
 .enrollment-tab-active { border-color:var(--app-accent-soft); color:var(--app-secondary); background:var(--app-accent-soft); }
@@ -863,14 +883,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .subject-status-transferred { color:#627b91; background:#edf2f7; }
 .subject-status-withdrawn,.subject-status-graduated { color:#7d6e5e; background:#f5f0e9; }
 @media print {
-  @page { size:A4 portrait; margin:10mm; }
+  @page { size:A4 portrait; margin:8mm; }
   body * { visibility:hidden !important; }
   .report-card-paper,.report-card-paper * { visibility:visible !important; }
-  .report-card-paper { position:relative; inset:auto; width:100%; border:0; border-radius:0; padding:0; box-shadow:none; background:#fff !important; color:#1c2821 !important; font-size:9px; break-after:page; page-break-after:always; break-inside:avoid-page; page-break-inside:avoid; }
+  html,body,#root,.app-shell,.main-area,.page-content,.report-card-preview,.report-card-batch { width:100% !important; max-width:none !important; min-width:0 !important; margin:0 !important; padding:0 !important; }
+  .main-area { margin-left:0 !important; }
+  .report-card-paper { position:relative; inset:auto; width:194mm; max-width:194mm; min-width:0; box-sizing:border-box; margin:0; border:0; border-radius:0; padding:0; box-shadow:none; background:#fff !important; color:#1c2821 !important; font-size:8pt; break-after:page; page-break-after:always; break-inside:auto; page-break-inside:auto; }
   .report-card-paper:last-child { break-after:auto; page-break-after:auto; }
-  .no-print,.report-card-selection,.report-card-page-header,.notice-error,.teaching-assignment-notice { display:none !important; }
-  .page-content { max-width:none; margin:0; padding:0; }
-  .report-card-school-heading { gap:10px; padding-bottom:10px; }
+  .no-print,.report-card-selection,.report-card-page-header,.notice-error,.teaching-assignment-notice,.sidebar,.topbar { display:none !important; }
+  .overflow-x-auto { width:100% !important; overflow:visible !important; }
+  .report-card-school-heading { grid-template-columns:minmax(42px,.8fr) minmax(0,3fr) minmax(42px,.8fr); gap:8px; padding-bottom:10px; }
+  .report-card-school-logo-slot { min-height:52px; }
   .report-card-school-logo { width:52px; height:52px; }
   .report-card-school-mark { width:42px; height:42px; border-radius:10px; font-size:20px; }
   .report-card-school-identity h1 { font-size:16px; }
@@ -880,17 +903,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .report-card-student-summary { grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; padding:10px 0; }
   .report-card-student-summary span,.report-card-summary span { font-size:8px; }
   .report-card-student-summary strong,.report-card-summary strong { font-size:10px; }
-  .report-card-subject-table { width:100%; min-width:0; margin:8px 0; table-layout:fixed; font-size:9px; }
+  .report-card-subject-table { width:100%; min-width:0; margin:8px 0; table-layout:fixed; font-size:7.5pt; }
   .report-card-subject-table td:nth-child(2) { min-width:0; }
   .report-card-subject-table th,.report-card-subject-table td { padding:4px 5px; overflow-wrap:anywhere; }
+  .report-card-subject-table thead { display:table-header-group; }
   .report-card-subject-table tr { break-inside:avoid; page-break-inside:avoid; }
+  .report-card-configurable-section { break-inside:auto; page-break-inside:auto; }
+  .report-card-configurable-section > h3 { break-after:avoid; page-break-after:avoid; }
+  .report-card-signatures,.report-card-summary,.report-card-header-sections { break-inside:avoid; page-break-inside:avoid; }
   .report-card-summary { gap:8px; padding:9px 0; }
   .report-card-signatures { gap:18px; margin-top:18px; }
   .report-card-signatures > div { min-height:30px; font-size:9px; }
   .report-card-signatures strong { font-size:10px; }
   .report-card-generated { margin-top:10px; font-size:8px; }
   .report-card-paper,.report-card-paper * { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
-  .parent-report-card-print { display:block; }
+  .parent-report-card-print { display:block !important; position:fixed; top:0; left:0; z-index:9999; width:100%; margin:0 !important; padding:0 !important; }
+  .parent-report-card-print .report-card-paper { margin:0 !important; }
+  .report-card-assessment-brand img { width:280px; max-height:68px; }
 }
 @media (max-width:900px) { .report-card-student-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }.report-card-paper { padding:23px; } }
 @media (max-width:600px) { .report-card-filters { grid-template-columns:1fr; }.report-card-actions { align-items:flex-start; flex-direction:column; }.report-card-paper { padding:17px; }.report-card-summary,.report-card-signatures { grid-template-columns:1fr; gap:13px; } }
@@ -1113,7 +1142,6 @@ body { background: var(--app-background); }
 .parent-result-summary strong { color:var(--app-text-primary); font-size:15px; }
 .parent-result-group .parent-results-table-wrap { border-top:1px solid var(--app-border); }
 .parent-report-card-print { display:none; }
-@media print { .parent-report-card-print { display:block !important; } }
 .class-distribution-panel { margin-bottom:17px; overflow:hidden; }
 .class-distribution-compact { margin-top:17px; }
 .class-distribution-heading { align-items:flex-start; }
@@ -1186,8 +1214,8 @@ body { background: var(--app-background); }
 .parent-portal-inline-error { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:15px; border:1px solid #e5c9c2; border-radius:10px; padding:11px 14px; color:#87372d; background:#fff4f1; font-size:14px; }
 .parent-portal-inline-error button { border:0; color:#87372d; background:transparent; font-weight:700; }
 .parent-portal-footer { margin:23px 0 0; color:var(--app-text-secondary); font-size:13px; text-align:center; }
-.parent-portal-developer-brand { display:flex; align-items:center; justify-content:center; gap:9px; margin:14px auto 0; border-top:1px solid var(--app-border); padding-top:14px; color:var(--app-text-secondary); font-size:11px; }
-.parent-portal-developer-brand img { width:44px; height:44px; border:1px solid var(--app-border); border-radius:50%; padding:4px; object-fit:contain; background:var(--app-surface); }
+.parent-portal-developer-brand { display:flex; align-items:center; justify-content:center; margin:14px auto 0; border-top:1px solid var(--app-border); padding-top:14px; }
+.parent-portal-developer-brand img { display:block; width:150px; max-height:36px; object-fit:contain; }
 @media(max-width:700px) {
   .parent-portal-header { min-height:66px; padding:10px 14px; }
   .parent-portal-account div { display:none; }
@@ -1371,3 +1399,130 @@ body { background: var(--app-background); }
 .audit-details > small { display:block; margin-top:7px; color:#869087; font-size:10px; overflow-wrap:anywhere; }
 .audit-date-filter { display:grid; gap:3px; color:#707d74; font-size:11px; }
 .audit-date-filter input { min-width:140px; }
+/* School report designer */
+.report-designer-page { display: grid; gap: 1rem; }
+.report-designer-tabs { display: flex; gap: .5rem; border-bottom: 1px solid var(--app-border, #dfe5e0); }
+.report-designer-tabs button { padding: .7rem 1rem; color: var(--app-text-secondary, #59665e); border-bottom: 2px solid transparent; }
+.report-designer-tabs button.active { color: var(--app-primary, #216b49); border-color: var(--app-primary, #216b49); font-weight: 700; }
+.report-designer-grid { display: grid; grid-template-columns: minmax(190px, .75fr) minmax(210px, .9fr) minmax(300px, 1.3fr); gap: .85rem; align-items: start; }
+.report-designer-controls { display: grid; gap: 1rem; padding: 1.25rem; }
+.report-designer-controls h2 { margin: .25rem 0 0; font-size: 1rem; }
+.report-design-option { display: flex; align-items: center; gap: .65rem; font-size: .9rem; }
+.report-design-option input { accent-color: var(--app-primary, #216b49); width: 1rem; height: 1rem; }
+.report-design-preview { padding: 1rem; overflow: auto; }
+.report-design-preview-paper { min-width: 0; background: #fff; color: #1c2821; padding: 1.25rem; box-shadow: 0 2px 12px #15251a1c; font-family: Arial, sans-serif; }
+.report-design-preview-paper header { display:grid; grid-template-columns:minmax(42px,1fr) minmax(0,3fr) minmax(42px,1fr); gap:.6rem; align-items:center; border-bottom:2px solid #216b49; padding-bottom:1rem; }
+.report-design-preview-logo-slot { display:flex; min-height:48px; align-items:center; justify-content:flex-start; }
+.report-design-preview-logo-slot-right { justify-content:flex-end; }
+.report-design-preview-logo-slot-right span { color:#8b968e; font-size:.65rem; text-align:right; }
+.report-design-preview-identity { min-width:0; text-align:center; }
+.report-design-preview-logo { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: #eaf3ec; color: #216b49; font-weight: 800; }
+.report-design-preview-logo-image { width: 48px; height: 48px; object-fit: contain; }
+.report-design-preview-paper header p, .report-design-preview-paper header span { margin: .2rem 0; color: #59665e; font-size: .75rem; }
+.report-design-preview-paper h2 { margin: .5rem 0 .1rem; font-size: 1.2rem; }
+.report-design-preview-student, .report-design-preview-summary, .report-design-preview-signatures { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 0; font-size: .75rem; }
+.report-design-preview-paper table { width: 100%; border-collapse: collapse; font-size: .7rem; }
+.report-design-preview-paper th, .report-design-preview-paper td { padding: .55rem .35rem; border: 1px solid #dfe5e0; text-align: left; }
+.report-design-preview-summary { background: #f4f6f5; }
+.report-design-preview-signatures { margin-top: 1.5rem; border-bottom: 1px solid #dfe5e0; }
+.report-design-preview-paper footer { margin-top: 1rem; color: #59665e; font-size: .7rem; }
+@media (max-width: 1100px) { .report-designer-grid { grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); }.report-designer-preview-panel { grid-column: 1 / -1; } }
+.report-layout-builder { border-top: 1px solid var(--app-border); padding-top: 1rem; }
+.report-layout-builder > p { color: var(--app-text-secondary); font-size: .8rem; margin: .25rem 0 .75rem; }
+.report-section-palette, .report-layout-canvas { display: grid; gap: .5rem; }
+.report-section-chip, .report-layout-block { display: flex; align-items: center; gap: .55rem; border: 1px solid var(--app-border); border-radius: 8px; padding: .65rem; background: var(--app-surface); }
+.report-section-chip { cursor: grab; }
+.report-section-chip:active, .report-layout-block:active { cursor: grabbing; }
+.report-section-chip > span, .report-layout-name { display: grid; flex: 1; gap: .15rem; }
+.report-section-chip b, .report-layout-name b { font-size: .8rem; }
+.report-section-chip small, .report-layout-name small { color: var(--app-text-secondary); font-size: .7rem; }
+.report-layout-block { background: #f8faf8; }
+.report-layout-handle { display: flex; color: #849087; }
+.report-layout-block button { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 6px; color: var(--app-text-secondary); }
+.report-layout-block button:hover:not(:disabled) { background: var(--app-accent-soft); color: var(--app-primary); }
+.report-layout-block button:disabled { opacity: .35; }
+.report-layout-drop-target { min-height: 42px; display: grid; place-items: center; border: 1px dashed #aebbb1; border-radius: 8px; color: var(--app-text-secondary); font-size: .75rem; }
+.report-design-preview-section { margin-top: .8rem; }
+.report-design-preview-header-sections, .report-card-header-sections { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.55rem; margin:.75rem 0; }
+.report-design-preview-header-cell, .report-card-header-cell { display:grid; align-content:start; gap:.22rem; min-width:0; border:1px solid #e1e7e2; border-radius:6px; padding:.55rem; }
+.report-design-preview-header-cell span, .report-card-header-cell > span { color:#617067; font-size:.63rem; }
+.report-design-preview-header-cell b, .report-card-header-cell strong { font-size:.69rem; overflow-wrap:anywhere; }
+.report-card-header-cell small { color:#59665e; font-size:.63rem; overflow-wrap:anywhere; }
+.report-header-palette { display:grid; gap:.45rem; }
+.report-header-chip-selected { border-color:#a8c4ad; background:#f4f9f4; }
+.report-body-elements-heading { margin-top:.55rem; }
+.report-header-builder { display:grid; gap:.55rem; border-bottom:1px solid var(--app-border); padding-bottom:1rem; }
+.report-header-slots { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.45rem; }
+.report-header-slot { display:grid; align-content:start; gap:.3rem; min-height:105px; border:1px dashed #b9c5bb; border-radius:8px; padding:.65rem; background:var(--app-surface); text-align:left; }
+.report-header-slot > span { color:var(--app-text-secondary); font-size:.65rem; text-transform:uppercase; letter-spacing:.04em; }
+.report-header-slot > b { font-size:.75rem; line-height:1.35; }
+.report-header-slot > small { color:var(--app-text-secondary); font-size:.63rem; }
+.report-header-slot-active { border:1px solid var(--app-primary); background:var(--app-accent-soft); box-shadow:0 0 0 2px color-mix(in srgb, var(--app-primary) 12%, transparent); }
+.report-design-preview-section h3 { margin: 0 0 .35rem; font-size: .75rem; text-transform: uppercase; color: #42684e; }
+.report-design-preview-grade-key { font-size: .65rem; padding: .5rem; background: #f4f6f5; }
+.report-design-preview-writing { border-bottom: 1px solid #dfe5e0; padding: .5rem 0; font-size: .7rem; }
+.report-card-configurable-section { margin-top: .45rem; break-inside: avoid; }
+.report-card-section-title { margin: .85rem 0 .4rem; font-size: .8rem; font-weight: 750; text-transform: uppercase; color: #285d3e; }
+.report-card-write-in { min-width: 180px; height: 30px; }
+.report-card-promotion-writein { margin: .5rem 0; min-height: 25px; border-bottom: 1px solid #87938a; font-size: .8rem; }
+.report-card-detail-print { white-space:pre-wrap; overflow-wrap:anywhere; }
+.report-card-detail-input { display:block; width:100%; min-width:0; border:1px solid var(--app-border); border-radius:6px; padding:6px 8px; color:var(--app-text-primary); background:var(--app-surface); font-size:12px; }
+.report-card-detail-input:focus { border-color:var(--app-secondary); outline:2px solid color-mix(in srgb,var(--app-secondary) 18%,transparent); }
+.report-card-remarks-field { display:grid; gap:5px; margin-top:8px; color:var(--app-text-secondary); font-size:12px; }
+.report-card-details-save { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0; }
+.report-card-details-save > span { color:var(--app-text-secondary); font-size:12px; }
+.sidebar-collapse-toggle { margin-left: auto; }
+.app-shell-sidebar-collapsed .sidebar { width: 76px; padding: 20px 9px 13px; }
+.app-shell-sidebar-collapsed .main-area { margin-left: 76px; }
+.app-shell-sidebar-collapsed .sidebar-brand { display: grid; justify-items: center; gap: 6px; padding: 0; }
+.app-shell-sidebar-collapsed .sidebar-brand .brand-copy,
+.app-shell-sidebar-collapsed .school-switcher > div:not(.school-avatar),
+.app-shell-sidebar-collapsed .sidebar .nav-caption,
+.app-shell-sidebar-collapsed .sidebar .nav-item span,
+.app-shell-sidebar-collapsed .sidebar-note,
+.app-shell-sidebar-collapsed .profile-row > div:not(.profile-avatar) { display: none; }
+.app-shell-sidebar-collapsed .sidebar .school-switcher { justify-content: center; padding: 8px 4px; margin: 24px 0; }
+.app-shell-sidebar-collapsed .sidebar .nav-item { justify-content: center; padding: 11px 0; }
+.app-shell-sidebar-collapsed .sidebar .profile-row { justify-content: center; flex-wrap: wrap; gap: 5px; }
+.app-shell-sidebar-collapsed .sidebar .sidebar-bottom > .nav-item { font-size: 0; }
+.app-shell-sidebar-collapsed .sidebar .sidebar-collapse-toggle { margin: 8px 0 0; }
+.report-designer-controls, .report-designer-layout-panel, .report-designer-preview-panel { min-width: 0; max-height: calc(100vh - 118px); overflow: auto; }
+.report-designer-controls, .report-designer-layout-panel { position: sticky; top: 88px; }
+.report-designer-layout-panel { display: grid; align-content: start; gap: 1rem; padding: 1rem; }
+.report-designer-layout-panel h2 { font-size: 1rem; font-weight: 700; }
+.report-designer-layout-panel > div:first-child p { margin-top: .35rem; color: var(--app-text-secondary); font-size: .75rem; }
+.report-designer-preview-panel { padding: 1rem; }
+.report-elements-heading, .report-layout-heading, .report-live-preview-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.report-elements-heading { margin-bottom:.25rem; }
+.report-elements-heading h2,.report-layout-heading h2 { margin:0; font-size:1rem; font-weight:750; }
+.report-elements-heading p,.report-layout-heading p { margin:.25rem 0 .5rem; color:var(--app-text-secondary); font-size:.73rem; }
+.report-elements-heading > span,.report-layout-heading > span,.report-live-preview-heading > span { flex:0 0 auto; border-radius:20px; padding:4px 8px; color:var(--app-secondary); background:var(--app-accent-soft); font-size:.68rem; font-weight:700; }
+.report-designer-options { display:grid; gap:.5rem; }
+.report-designer-options h3 { margin:0 0 .15rem; font-size:.82rem; font-weight:700; }
+.report-settings-details { border-top:1px solid var(--app-border); padding-top:.8rem; }
+.report-settings-details summary { display:flex; align-items:center; gap:.5rem; color:var(--app-text-primary); cursor:pointer; font-size:.83rem; font-weight:700; list-style:none; }
+.report-settings-details summary::-webkit-details-marker { display:none; }
+.report-settings-details summary::after { content:'+'; margin-left:auto; color:var(--app-text-secondary); font-size:1.1rem; }
+.report-settings-details[open] summary::after { content:'−'; }
+.report-settings-fields { display:grid; gap:.85rem; padding-top:.85rem; }
+.report-section-chip { width:100%; min-height:58px; border:1px solid var(--app-border); color:var(--app-text-primary); text-align:left; transition:border-color .15s, background .15s, transform .15s; }
+.report-section-chip:hover { border-color:var(--app-primary); background:var(--app-accent-soft); transform:translateY(-1px); }
+.report-section-chip:focus-visible { outline:3px solid color-mix(in srgb, var(--app-primary) 35%, transparent); }
+.report-elements-empty { margin:0; border:1px dashed var(--app-border); border-radius:8px; padding:.8rem; color:var(--app-text-secondary); font-size:.75rem; }
+.report-layout-number { display:grid; width:25px; height:25px; flex:0 0 auto; place-items:center; border-radius:50%; color:var(--app-secondary); background:var(--app-accent-soft); font-size:.72rem; font-weight:750; }
+.report-layout-block { min-height:58px; transition:background .15s, border-color .15s, opacity .15s; }
+.report-layout-block:hover { border-color:#a9c4ae; background:#f3f8f3; }
+.report-layout-block-dragging { opacity:.42; }
+.report-layout-empty { display:grid; min-height:170px; place-items:center; align-content:center; gap:.5rem; border:1px dashed #aebbb1; border-radius:10px; color:var(--app-text-secondary); text-align:center; }
+.report-layout-empty b { color:var(--app-text-primary); font-size:.85rem; }
+.report-layout-empty span { font-size:.75rem; }
+.report-layout-drop-target { transition:background .15s, border-color .15s; }
+.report-layout-drop-active { border-color:var(--app-primary); color:var(--app-primary); background:var(--app-accent-soft); }
+.report-live-preview-heading { align-items:center; margin-bottom:.75rem; }
+.report-live-preview-heading .eyebrow { margin:0; }
+.report-design-preview-paper table { table-layout:fixed; overflow-wrap:anywhere; }
+.report-designer-save-area { display:flex; align-items:center; gap:.75rem; }
+.report-dirty-indicator { color:#8a641f; font-size:.75rem; font-weight:650; }
+@media (max-width: 1100px) { .report-designer-controls, .report-designer-layout-panel { position:static; max-height:none; }.report-designer-preview-panel { max-height:none; } }
+@media (max-width: 760px) { .sidebar-collapse-toggle { display:none; }.app-shell-sidebar-collapsed .main-area { margin-left: 0; }.app-shell-sidebar-collapsed .sidebar { width: 278px; padding: 26px 18px 15px; }.app-shell-sidebar-collapsed .sidebar-brand { display:flex; justify-content:space-between; padding:0 6px; }.app-shell-sidebar-collapsed .sidebar-brand .brand-copy,.app-shell-sidebar-collapsed .school-switcher > div:not(.school-avatar),.app-shell-sidebar-collapsed .sidebar .nav-caption,.app-shell-sidebar-collapsed .sidebar .nav-item span,.app-shell-sidebar-collapsed .sidebar-note,.app-shell-sidebar-collapsed .profile-row > div:not(.profile-avatar) { display:revert; }.app-shell-sidebar-collapsed .sidebar .school-switcher { justify-content:flex-start; padding:10px; margin:31px 0 30px; }.app-shell-sidebar-collapsed .sidebar .nav-item { justify-content:flex-start; padding:10px 11px; }.app-shell-sidebar-collapsed .sidebar .profile-row { justify-content:flex-start; flex-wrap:nowrap; }.report-designer-grid { grid-template-columns: 1fr; }.report-designer-preview-panel { grid-column: auto; } }
+@media (max-width: 500px) { .report-header-slots,.report-design-preview-header-sections,.report-card-header-sections { grid-template-columns:1fr; }.report-header-slot { min-height:82px; } }

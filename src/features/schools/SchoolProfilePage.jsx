@@ -10,6 +10,7 @@ const emptyProfile = {
   address: '',
   phone: '',
   logoDataUrl: '',
+  secondaryLogoDataUrl: '',
   classTeacherSignerName: '',
   headteacherSignerName: '',
 };
@@ -41,6 +42,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
             address: data.address || '',
             phone: data.phone || '',
             logoDataUrl: data.logoDataUrl || '',
+            secondaryLogoDataUrl: data.secondaryLogoDataUrl || '',
             classTeacherSignerName: data.classTeacherSignerName || '',
             headteacherSignerName: data.headteacherSignerName || '',
           });
@@ -63,7 +65,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
     setProfile((current) => ({ ...current, [name]: value }));
   }
 
-  async function selectLogo(event) {
+  async function selectLogo(event, target = 'logoDataUrl') {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
@@ -84,7 +86,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
         reader.onerror = () => reject(new Error('The logo could not be read.'));
         reader.readAsDataURL(file);
       });
-      setProfile((current) => ({ ...current, logoDataUrl }));
+      setProfile((current) => ({ ...current, [target]: logoDataUrl }));
       setError('');
       setNotice('');
     } catch (cause) {
@@ -107,6 +109,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
           address: optionalValue(profile.address),
           phone: optionalValue(profile.phone),
           logoDataUrl: profile.logoDataUrl || null,
+          secondaryLogoDataUrl: profile.secondaryLogoDataUrl || null,
           classTeacherSignerName: optionalValue(profile.classTeacherSignerName),
           headteacherSignerName: optionalValue(profile.headteacherSignerName),
         }),
@@ -118,6 +121,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
         address: data.address || '',
         phone: data.phone || '',
         logoDataUrl: data.logoDataUrl || '',
+        secondaryLogoDataUrl: data.secondaryLogoDataUrl || '',
         classTeacherSignerName: data.classTeacherSignerName || '',
         headteacherSignerName: data.headteacherSignerName || '',
       }));
@@ -148,18 +152,13 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
       {notice && <div className="teaching-assignment-notice mb-4" role="status">{notice}</div>}
       <section className="panel school-profile-panel">
         <form className="user-form" onSubmit={submit}>
-          <div className="school-profile-logo-row">
-            {profile.logoDataUrl
-              ? <img className="school-profile-logo" src={profile.logoDataUrl} alt={`${profile.name} logo preview`} />
-              : <div className="school-profile-logo-fallback"><Building2 size={24} /></div>}
-            <div className="school-profile-logo-controls">
-              <label className="field-label">
-                School logo
-                <input className="text-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={selectLogo} disabled={saving} />
-                <span className="field-hint">PNG, JPEG, or WebP; maximum 512 KB.</span>
-              </label>
-              {profile.logoDataUrl && <button className="table-action" type="button" onClick={() => setConfirmLogoRemoval(true)} disabled={saving}><Trash2 size={14} /> Remove logo</button>}
-            </div>
+          <div className="school-profile-logos-grid">
+            {[['logoDataUrl', 'School logo'], ['secondaryLogoDataUrl', 'Right-side report logo']].map(([field, label]) => <div className="school-profile-logo-row" key={field}>
+              {profile[field] ? <img className="school-profile-logo" src={profile[field]} alt={`${label} preview`} /> : <div className="school-profile-logo-fallback"><Building2 size={24} /></div>}
+              <div className="school-profile-logo-controls"><label className="field-label">{label}<input className="text-input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => selectLogo(event, field)} disabled={saving} /><span className="field-hint">{field === 'secondaryLogoDataUrl' ? 'Shown on the right side of report headers. ' : ''}PNG, JPEG, or WebP; maximum 512 KB.</span></label>
+                {profile[field] && <button className="table-action" type="button" onClick={() => field === 'logoDataUrl' ? setConfirmLogoRemoval(true) : setProfile((current) => ({ ...current, secondaryLogoDataUrl: '' }))} disabled={saving}><Trash2 size={14} /> Remove logo</button>}
+              </div>
+            </div>)}
           </div>
           <div className="school-profile-fields">
             <label className="field-label">School name<input className="text-input" name="name" value={profile.name} onChange={updateField} maxLength={160} required /></label>

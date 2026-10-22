@@ -14,6 +14,7 @@ import {
   UserRoundCog,
   Users,
   Files,
+  FileSliders,
   UserRoundPlus,
   History,
   Palette,
@@ -27,6 +28,13 @@ export const sections = [
     label: "School profile",
     group: "Administration",
     icon: Building2,
+    roles: ["SCHOOL_ADMIN", "HEADTEACHER"],
+  },
+  {
+    id: "report-designer",
+    label: "Report designer",
+    group: "Administration",
+    icon: FileSliders,
     roles: ["SCHOOL_ADMIN", "HEADTEACHER"],
   },
   {
@@ -96,6 +104,7 @@ export const sections = [
       "HEADTEACHER",
       "EXAMS_OFFICER",
       "TEACHER",
+      "FORM_TUTOR",
     ],
   },
   {

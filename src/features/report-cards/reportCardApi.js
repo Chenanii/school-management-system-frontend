@@ -28,6 +28,10 @@ export function fetchReportCard(enrollmentId) {
   return apiRequest(`/report-cards/enrollments/${enrollmentId}`);
 }
 
+export function saveEndOfTermReportDetails(enrollmentId, details) {
+  return apiRequest(`/report-cards/enrollments/${enrollmentId}/details`, { method: 'PUT', body: JSON.stringify(details) });
+}
+
 export function fetchClassGroupReportCards(termId, classGroupId, { allowIncomplete = false } = {}) {
   const path = `/report-cards/terms/${termId}/class-groups/${classGroupId}`;
   return apiRequest(allowIncomplete ? `${path}?allowIncomplete=true` : path);

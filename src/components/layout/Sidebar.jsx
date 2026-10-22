@@ -3,6 +3,8 @@ import {
   CalendarDays,
   CircleHelp,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   X
 } from 'lucide-react';
 import Brand from './Brand.jsx';
@@ -19,7 +21,9 @@ export default function Sidebar({
   onSchoolChange,
   onSignOut,
   open,
-  onClose
+  onClose,
+  collapsed = false,
+  onToggleCollapse
 }) {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
   const schoolName = school?.name || (isSuperAdmin ? 'Select a school' : user.schoolName || 'My school');
@@ -33,9 +37,10 @@ export default function Sidebar({
   return (
     <>
       {open && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={onClose} />}
-      <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
+      <aside className={`sidebar ${open ? 'sidebar-open' : ''} ${collapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="sidebar-brand">
           <Brand />
+          <button className="icon-button sidebar-collapse-toggle" onClick={onToggleCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Minimize sidebar'} title={collapsed ? 'Expand sidebar' : 'Minimize sidebar'}>{collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
           <button className="icon-button mobile-close" onClick={onClose} aria-label="Close menu"><X size={19} /></button>
         </div>
         <div className="school-switcher">
@@ -70,6 +75,7 @@ export default function Sidebar({
                     key={id}
                     className={`nav-item ${page === id ? 'nav-item-active' : ''}`}
                     aria-current={page === id ? 'page' : undefined}
+                    title={label}
                     onClick={() => { setPage(id); onClose(); }}
                   >
                     <Icon size={18} strokeWidth={1.8} />

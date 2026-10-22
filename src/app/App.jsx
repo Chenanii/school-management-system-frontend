@@ -16,7 +16,9 @@ import GradeScalesPage from "../features/academic-years/GradeScalesPage.jsx";
 import TeachingAssignmentsPage from "../features/teaching-assignments/TeachingAssignmentsPage.jsx";
 import TermsPage from "../features/terms/TermsPage.jsx";
 import AssessmentsPage from "../features/assessments/AssessmentsPage.jsx";
+import FormTutorAssessmentsPage from "../features/assessments/FormTutorAssessmentsPage.jsx";
 import ReportCardsPage from "../features/report-cards/ReportCardsPage.jsx";
+import ReportDesignerPage from "../features/report-cards/ReportDesignerPage.jsx";
 import MidTermReportCardsPage from "../features/mid-term-report-cards/MidTermReportCardPage.jsx";
 import PromotionsPage from "../features/promotions/PromotionsPage.jsx";
 import SubscriptionsPage from "../features/subscriptions/SubscriptionsPage.jsx";
@@ -57,6 +59,7 @@ export default function App() {
     () => workspaceRoute(window.location.pathname, pageIds).page,
   );
   const [mobileNav, setMobileNav] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.localStorage.getItem("nexa-sidebar-collapsed") === "true");
   const [search, setSearch] = useState("");
   const [directoryPage, setDirectoryPage] = useState(1);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
@@ -81,6 +84,10 @@ export default function App() {
   useEffect(() => {
     if (user && user.role !== "PARENT") loadSummary(user);
   }, [user, loadSummary]);
+
+  useEffect(() => {
+    window.localStorage.setItem("nexa-sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const loadSchoolSetup = useCallback(async () => {
     if (user?.role !== "SCHOOL_ADMIN" || !user.schoolId) {
@@ -269,7 +276,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarCollapsed ? "app-shell-sidebar-collapsed" : ""}`}>
       <Sidebar
         page={page}
         setPage={navigate}
@@ -281,6 +288,8 @@ export default function App() {
         onSignOut={requestSignOut}
         open={mobileNav}
         onClose={() => setMobileNav(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
       <main className="main-area">
         <Header
@@ -366,8 +375,9 @@ export default function App() {
               "HEADTEACHER",
               "EXAMS_OFFICER",
               "TEACHER",
+              "FORM_TUTOR",
             ].includes(user.role) ? (
-            <AssessmentsPage user={user} signOut={signOut} />
+            user.role === "FORM_TUTOR" ? <FormTutorAssessmentsPage signOut={signOut} /> : <AssessmentsPage user={user} signOut={signOut} />
           ) : page === "mid-term-report-cards" &&
             [
               "SCHOOL_ADMIN",
@@ -478,6 +488,9 @@ export default function App() {
               user.role,
             ) ? (
             <SchoolAppearancePage signOut={signOut} user={user} />
+          ) : page === "report-designer" &&
+            ["SCHOOL_ADMIN", "HEADTEACHER"].includes(user.role) ? (
+            <ReportDesignerPage signOut={signOut} />
           ) : page === "staff" &&
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,

@@ -19,7 +19,7 @@ import NotificationCenter from '../notifications/NotificationCenter.jsx';
 import { ReportCardPaper } from '../report-cards/ReportCardsPage.jsx';
 import { MidTermReportCardPaper } from '../mid-term-report-cards/MidTermReportCardPage.jsx';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
-import nexaLogo from '../../assets/Nexa-Logo-Final.png';
+import cambridgeAssessmentLogo from '../../assets/cambridge-assessment-logo.png';
 
 function markLabel(value) {
   return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
@@ -41,6 +41,10 @@ function groupAnnualResults(results) {
     groups[year] = [...(groups[year] || []), result];
     return groups;
   }, {});
+}
+
+function parentReportError() {
+  return 'We couldn’t load this report right now. Please try again later. If the problem continues, contact the school office for help.';
 }
 
 export default function ParentPortalPage({ user, onSignOut }) {
@@ -110,8 +114,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
       .then((response) => {
         if (!cancelled) setMidTermPortalReport({ enrollmentId: enrollment.id, reportCard: response.data });
       })
-      .catch((cause) => {
-        if (!cancelled) setReportCardError(cause.message || 'Could not load this mid-term report.');
+      .catch(() => {
+        if (!cancelled) setReportCardError(parentReportError());
       })
       .finally(() => { if (!cancelled) setLoadingMidTermPortalReport(false); });
     return () => { cancelled = true; };
@@ -127,8 +131,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
       const response = await apiRequest(`/parent-portal/enrollments/${enrollment.id}/report-card`);
       setReportCard(response.data);
       window.setTimeout(() => window.print(), 100);
-    } catch (cause) {
-      setReportCardError(cause.message || 'Could not prepare this report card.');
+    } catch {
+      setReportCardError(parentReportError());
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -146,8 +150,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
         : (await apiRequest(`/parent-portal/enrollments/${enrollment.id}/mid-term-report-card`)).data;
       setMidTermReportCard(cachedReport);
       window.setTimeout(() => window.print(), 100);
-    } catch (cause) {
-      setReportCardError(cause.message || 'Could not prepare this mid-term report card.');
+    } catch {
+      setReportCardError(parentReportError());
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -376,7 +380,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
           </>
         )}
         <footer className="parent-portal-footer">For attendance, fee statements, or other school services, please contact the school office.</footer>
-        <div className="parent-portal-developer-brand"><img src={nexaLogo} alt="Nexa Circuit LTD" /><span>Developed by Nexa Circuit LTD</span></div>
+        <div className="parent-portal-developer-brand"><img src={cambridgeAssessmentLogo} alt="Cambridge Assessment" /></div>
       </section>
       {(reportCard || midTermReportCard) && <div className="parent-report-card-print">{reportCard ? <ReportCardPaper reportCard={reportCard} /> : <MidTermReportCardPaper reportCard={midTermReportCard} />}</div>}
     </main>
