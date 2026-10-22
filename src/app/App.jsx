@@ -133,7 +133,9 @@ export default function App() {
   }, [isTeacherInvitation, summary.school?.slug]);
 
   useEffect(() => {
-    const schoolId = summary.school?.id || user?.schoolId;
+    const schoolId = user?.role === "SUPER_ADMIN"
+      ? summary.school?.id
+      : user?.schoolId;
     if (!user || !schoolId) {
       return undefined;
     }
@@ -169,7 +171,7 @@ export default function App() {
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [user?.id, user?.schoolId, summary.school?.id, signOut]);
+  }, [user?.id, user?.schoolId, user?.role, summary.school?.id, signOut]);
 
   const navigate = useCallback(
     (nextPage) => {
@@ -307,7 +309,7 @@ export default function App() {
               : "school-workspace"
           }
         >
-          {user.role === "SUPER_ADMIN" && !summary.school ? (
+          {user.role === "SUPER_ADMIN" && !summary.school && page !== "subscriptions" ? (
             loading ? (
               <div className="panel">
                 <div className="empty-state">Loading schools...</div>

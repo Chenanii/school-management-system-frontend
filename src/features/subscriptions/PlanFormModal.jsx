@@ -28,7 +28,7 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
     setError('');
     setSaving(true);
     const data = {
-      ...(plan ? {} : { code: form.code.trim() }),
+      ...(plan ? {} : { code: form.code.trim().toLowerCase() }),
       name: form.name.trim(),
       description: form.description.trim() || null,
       interval: form.interval,
@@ -43,7 +43,10 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
       await savePlan(plan?.id, data);
       onSaved();
     } catch (cause) {
-      setError(cause.message);
+      const detailMessage = Array.isArray(cause.details)
+        ? cause.details.map((item) => [item.field, item.message].filter(Boolean).join(': ')).join(' ')
+        : '';
+      setError(detailMessage ? `${cause.message} ${detailMessage}` : cause.message);
       if (cause.status === 401) signOut();
     } finally {
       setSaving(false);
@@ -67,7 +70,7 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
           {!plan && (
             <label className="field-label">
               Plan code
-              <input className="text-input" name="code" maxLength={50} pattern="[a-z0-9][a-z0-9_-]*" value={form.code} onChange={updateField} required />
+              <input className="text-input" name="code" minLength={2} maxLength={50} pattern="[a-z0-9][a-z0-9_\x2d]*" value={form.code} onChange={updateField} required />
               <span className="field-hint">Lowercase letters, numbers, hyphens, and underscores.</span>
             </label>
           )}

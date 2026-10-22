@@ -43,8 +43,11 @@ function groupAnnualResults(results) {
   }, {});
 }
 
-function parentReportError() {
-  return 'We couldn’t load this report right now. Please try again later. If the problem continues, contact the school office for help.';
+function logParentReportFailure(action, cause) {
+  console.debug(`[Parent portal] ${action}`, {
+    status: cause?.status ?? null,
+    code: cause?.code ?? null,
+  });
 }
 
 export default function ParentPortalPage({ user, onSignOut }) {
@@ -58,7 +61,6 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const [midTermPortalReport, setMidTermPortalReport] = useState(null);
   const [loadingMidTermPortalReport, setLoadingMidTermPortalReport] = useState(false);
   const [downloadingEnrollmentId, setDownloadingEnrollmentId] = useState('');
-  const [reportCardError, setReportCardError] = useState('');
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -104,7 +106,6 @@ export default function ParentPortalPage({ user, onSignOut }) {
   useEffect(() => {
     let cancelled = false;
     setMidTermPortalReport(null);
-    setReportCardError('');
     if (!enrollment?.midTermPublishedAt) {
       setLoadingMidTermPortalReport(false);
       return () => { cancelled = true; };
@@ -114,8 +115,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
       .then((response) => {
         if (!cancelled) setMidTermPortalReport({ enrollmentId: enrollment.id, reportCard: response.data });
       })
-      .catch(() => {
-        if (!cancelled) setReportCardError(parentReportError());
+      .catch((cause) => {
+        if (!cancelled) logParentReportFailure('Could not load the published mid-term report.', cause);
       })
       .finally(() => { if (!cancelled) setLoadingMidTermPortalReport(false); });
     return () => { cancelled = true; };
@@ -124,15 +125,14 @@ export default function ParentPortalPage({ user, onSignOut }) {
   async function downloadReportCard() {
     if (!enrollment || !endOfTermPublished || termResults.length === 0) return;
     setDownloadingEnrollmentId(enrollment.id);
-    setReportCardError('');
     setReportCard(null);
     setMidTermReportCard(null);
     try {
       const response = await apiRequest(`/parent-portal/enrollments/${enrollment.id}/report-card`);
       setReportCard(response.data);
       window.setTimeout(() => window.print(), 100);
-    } catch {
-      setReportCardError(parentReportError());
+    } catch (cause) {
+      logParentReportFailure('Could not prepare the end-of-term report.', cause);
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -141,17 +141,20 @@ export default function ParentPortalPage({ user, onSignOut }) {
   async function downloadMidTermReportCard() {
     if (!enrollment?.midTermPublishedAt) return;
     setDownloadingEnrollmentId(enrollment.id);
-    setReportCardError('');
     setReportCard(null);
     setMidTermReportCard(null);
     try {
       const cachedReport = midTermPortalReport?.enrollmentId === enrollment.id
         ? midTermPortalReport.reportCard
         : (await apiRequest(`/parent-portal/enrollments/${enrollment.id}/mid-term-report-card`)).data;
+      if (!cachedReport) {
+        setMidTermPortalReport({ enrollmentId: enrollment.id, reportCard: null });
+        return;
+      }
       setMidTermReportCard(cachedReport);
       window.setTimeout(() => window.print(), 100);
-    } catch {
-      setReportCardError(parentReportError());
+    } catch (cause) {
+      logParentReportFailure('Could not prepare the mid-term report.', cause);
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -285,10 +288,11 @@ export default function ParentPortalPage({ user, onSignOut }) {
                       </label>
                     )}
                   </div>
-                  {reportCardError && <div className="parent-portal-inline-error" role="alert">{reportCardError}</div>}
                   {enrollment?.midTermPublishedAt && (loadingMidTermPortalReport
                     ? <div className="parent-results-empty" role="status">Loading published mid-term results…</div>
-                    : midTermPortalReport?.enrollmentId === enrollment.id && <section className="parent-result-group" aria-labelledby="parent-midterm-heading">
+                    : midTermPortalReport?.enrollmentId === enrollment.id && !midTermPortalReport.reportCard
+                      ? <div className="parent-results-empty" role="status"><BookOpen size={18} /><span>Mid-term results are being prepared by the school and will appear here once available.</span></div>
+                      : midTermPortalReport?.enrollmentId === enrollment.id && <section className="parent-result-group" aria-labelledby="parent-midterm-heading">
                       <div className="parent-result-group-heading">
                         <div><span className="parent-result-type">Mid-term</span><h3 id="parent-midterm-heading">Mid-term results</h3><p>Exam mark and calculated subject result</p></div>
                         <div className="parent-result-heading-actions"><span className="parent-result-published">Published</span><button className="secondary-button no-print" type="button" onClick={downloadMidTermReportCard} disabled={downloadingEnrollmentId === enrollment.id}><Printer size={15} />{downloadingEnrollmentId === enrollment.id ? 'Preparing…' : 'Download mid-term report'}</button></div>
