@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LoaderCircle, Save } from 'lucide-react';
 import { fetchAllPages, fetchClassGroupReportCards, saveEndOfTermReportDetails } from '../report-cards/reportCardApi.js';
 import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, saveMidTermReportDetails } from '../mid-term-report-cards/midTermReportCardApi.js';
+import AssessmentPopup from './AssessmentPopup.jsx';
 
 function displayName(student) {
   return [student?.firstName, student?.middleName, student?.lastName].filter(Boolean).join(' ') || 'Student';
@@ -32,6 +33,8 @@ function StudentReportDetailsForm({ card, reportType }) {
   }
 
   return <form className="form-tutor-report-student" onSubmit={submit}>
+    <AssessmentPopup message={error} onDismiss={() => setError('')} />
+    <AssessmentPopup message={saved ? 'Student report details saved.' : ''} type="success" onDismiss={() => setSaved(false)} />
     <div className="form-tutor-report-student-heading"><div><strong>{displayName(card.student)}</strong><span>{card.student?.admissionNumber || 'No admission number'} · {card.classGroup?.name || card.classLevel?.name || 'Class'}</span></div></div>
     <div className="form-tutor-report-fields">
       <label className="field-label">Classroom conduct<textarea className="text-input" rows={2} maxLength={500} value={details.behaviorComments?.classroomConduct || ''} onChange={(event) => updateComment('behaviorComments', 'classroomConduct', event.target.value)} /></label>
@@ -43,7 +46,7 @@ function StudentReportDetailsForm({ card, reportType }) {
       <label className="field-label">Promotion destination<input className="text-input" maxLength={120} value={details.promotedTo || ''} onChange={(event) => { setDetails((current) => ({ ...current, promotedTo: event.target.value })); setSaved(false); }} /></label>
       <label className="field-label">Promotion remarks<textarea className="text-input" rows={2} maxLength={1000} value={details.promotionRemarks || ''} onChange={(event) => { setDetails((current) => ({ ...current, promotionRemarks: event.target.value })); setSaved(false); }} /></label>
     </div>
-    <div className="form-tutor-report-save"><button className="secondary-button" type="submit" disabled={saving}>{saving ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}{saving ? 'Saving…' : 'Save details'}</button>{saved && <span role="status">Saved for this report</span>}{error && <span className="notice-error" role="alert">{error}</span>}</div>
+    <div className="form-tutor-report-save"><button className="secondary-button" type="submit" disabled={saving}>{saving ? <LoaderCircle size={15} className="animate-spin" /> : <Save size={15} />}{saving ? 'Saving…' : 'Save details'}</button></div>
   </form>;
 }
 
@@ -92,6 +95,7 @@ export default function FormTutorReportDetailsPanel({ signOut }) {
   }
 
   return <section className="panel form-tutor-report-panel">
+    <AssessmentPopup message={error} onDismiss={() => setError('')} />
     <div className="panel-heading"><div><h2>Form tutor report details</h2><p>Enter behaviour and activity comments for each student. End-of-term reports also include promotion details.</p></div></div>
     <div className="form-tutor-report-toolbar">
       <label className="field-label">Report period<select className="filter-select" value={reportType} onChange={(event) => { setReportType(event.target.value); setCards(null); }}><option value="MID_TERM">Mid-term</option><option value="END_OF_TERM">End-of-term</option></select></label>
@@ -99,7 +103,6 @@ export default function FormTutorReportDetailsPanel({ signOut }) {
       <label className="field-label">Assigned class<select className="filter-select" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} disabled={!termId || loadingGroups}><option value="">{loadingGroups ? 'Loading classes…' : 'Select a class'}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}</select></label>
       <button className="primary-button" type="button" onClick={loadStudents} disabled={!termId || !classGroupId || loadingCards}>{loadingCards ? <LoaderCircle size={15} className="animate-spin" /> : null}{loadingCards ? 'Loading…' : 'Load students'}</button>
     </div>
-    {error && <div className="notice-error" role="alert">{error}</div>}
     {termId && !loadingGroups && !error && groups.length === 0 && <div className="attendance-readonly-note">No classes are assigned to you as form tutor for this term.</div>}
     {cards && <div className="form-tutor-report-students">{cards.length ? cards.map((card) => <StudentReportDetailsForm key={card.enrollment.id} card={card} reportType={reportType} />) : <div className="table-message">No active students are enrolled in this class for the selected term.</div>}</div>}
   </section>;

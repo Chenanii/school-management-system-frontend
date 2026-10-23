@@ -150,11 +150,11 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
         <form className="user-form" onSubmit={handleSubmit}>
           {editing ? (
             <label className="field-label">
-              Admission number <span className="optional-label">System-generated</span>
+              Student ID <span className="optional-label">System-generated · 10 characters</span>
               <input className="text-input" value={student.admissionNumber} readOnly />
             </label>
           ) : (
-            <p className="field-label">Admission number <span className="optional-label">Generated automatically after registration</span></p>
+            <p className="field-label">Student ID <span className="optional-label">Generated automatically · 10 characters</span></p>
           )}
           <div className="user-name-grid">
             <label className="field-label">

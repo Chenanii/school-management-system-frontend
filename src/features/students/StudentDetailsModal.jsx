@@ -34,7 +34,7 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
           <div>
             <p className="eyebrow">Student profile</p>
             <h2 id="student-details-title">{formatName(details)}</h2>
-            <p>Admission no. {details.admissionNumber}</p>
+            <p>Student ID {details.admissionNumber}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>

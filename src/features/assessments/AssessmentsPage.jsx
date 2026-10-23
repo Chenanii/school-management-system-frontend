@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
+import AssessmentPopup from './AssessmentPopup.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import FormTutorReportDetailsPanel from './FormTutorReportDetailsPanel.jsx';
 import {
@@ -154,11 +155,15 @@ export default function AssessmentsPage({ user, signOut }) {
         const resultResponse = await fetchAssessmentResults(assessment.id);
         const resultRows = resultResponse.data || [];
         if (resultRows.length === 0) {
-          setActionError('Assessment was not submitted to admins: there are no active student enrollments for this assessment.');
+          setActionError(['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType)
+            ? 'Assessment was not submitted to admins: no students are eligible yet. Save class attendance for the exam date first.'
+            : 'Assessment was not submitted to admins: there are no active student enrollments for this assessment.');
           return;
         }
         const maxMark = Number(assessment.maxMark);
         const incompleteResults = resultRows.filter((result) => {
+          if (assessment.adminReopened && ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType)
+            && ['ABSENT', 'NOT_ENTERED'].includes(result.status) && (result.mark == null || result.mark === '')) return false;
           if (result.status !== 'PRESENT' || result.mark == null || String(result.mark).trim() === '') return true;
           const mark = Number(result.mark);
           return !Number.isFinite(mark) || mark < 0 || mark > maxMark;
@@ -171,7 +176,7 @@ export default function AssessmentsPage({ user, signOut }) {
           ));
           const extraCount = incompleteResults.length - names.length;
           setActionError(
-            `Assessment was not submitted to admins: ${incompleteResults.length} student${incompleteResults.length === 1 ? '' : 's'} do not have a valid numeric mark. Mark every active student PRESENT and enter a mark from 0 to ${maxMark}; absent/exempt results do not satisfy the submission requirement${names.length ? ` (${names.join(', ')}${extraCount > 0 ? `, and ${extraCount} more` : ''})` : ''}.`,
+            `Assessment was not submitted to admins: ${incompleteResults.length} eligible student${incompleteResults.length === 1 ? '' : 's'} do not have a valid numeric mark. Enter a mark from 0 to ${maxMark} for every student${names.length ? ` (${names.join(', ')}${extraCount > 0 ? `, and ${extraCount} more` : ''})` : ''}.`,
           );
           return;
         }
@@ -238,24 +243,9 @@ export default function AssessmentsPage({ user, signOut }) {
           <Plus size={17} /> Create assessment
         </button>
       </div>
-      {optionsError && (
-        <div className="notice-error" role="alert">
-          <span>Assessment choices could not be loaded: {optionsError}</span>
-          <button className="text-button" onClick={refresh}>Try again</button>
-        </div>
-      )}
-      {actionError && (
-        <div className="notice-error" role="alert">
-          <span>{actionError}</span>
-          <button className="text-button" onClick={() => setActionError('')}>Dismiss</button>
-        </div>
-      )}
-      {notice && (
-        <div className="teaching-assignment-notice" role="status">
-          <span>{notice}</span>
-          <button className="text-button" onClick={() => setNotice('')}>Dismiss</button>
-        </div>
-      )}
+      <AssessmentPopup message={optionsError ? `Assessment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
+      <AssessmentPopup message={actionError} onDismiss={() => setActionError('')} />
+      <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       {['TEACHER', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role) && <FormTutorReportDetailsPanel signOut={signOut} />}
       <div className="assessment-weight-guide">
         <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>All coursework and mid-term marks are averaged together and contribute 40%. The final exam contributes 60%.</span></div>
@@ -310,7 +300,7 @@ export default function AssessmentsPage({ user, signOut }) {
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
-                  const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && (assessment._count?.results ?? 0) === 0;
+                  const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
                   const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
                   const canReset = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
                     && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
@@ -335,7 +325,7 @@ export default function AssessmentsPage({ user, signOut }) {
                       <td>
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Enter or review marks">Results</button>
-                          <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment' : 'Only draft or open assessments without results can be edited'}>Edit</button>
+                          <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
                           {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete draft assessment"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (
                             <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`Move to ${assessmentStatusLabel(nextStatus)}`}>
@@ -383,7 +373,7 @@ export default function AssessmentsPage({ user, signOut }) {
       )}
       {pendingReset && <ConfirmActionModal
         title="Reset assessment to open?"
-        message={`Existing marks for “${pendingReset.title}” will be kept. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`}
+        message={`Existing marks for “${pendingReset.title}” will be kept. Reopening also approves result corrections for students recorded absent on a mid-term or final exam. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`}
         confirmLabel="Reset assessment"
         onCancel={() => setPendingReset(null)}
         onConfirm={() => { const assessment = pendingReset; setPendingReset(null); reopenAssessment(assessment); }}

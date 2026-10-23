@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Check, CheckCheck, LoaderCircle, UsersRound } from 'lucide-react';
-import { downloadAttendanceReport, fetchAttendanceClasses, fetchAttendanceReport, fetchAttendanceSheet, fetchAttendanceTerms, saveAttendanceSheet } from './attendanceApi.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CalendarDays, Check, CheckCheck, LoaderCircle, UsersRound, Camera, Download } from 'lucide-react';
+import { downloadAttendanceReport, downloadStudentQr, fetchAttendanceClasses, fetchAttendanceReport, fetchAttendanceSheet, fetchAttendanceTerms, resolveAttendanceQr, saveAttendanceSheet } from './attendanceApi.js';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 
 const MARKS = [
   { value: 'PRESENT', label: 'Present' },
@@ -23,6 +24,7 @@ function className(group) {
 }
 
 export default function ClassAttendancePage({ user, signOut }) {
+  const canDownloadStudentQr = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
   const [terms, setTerms] = useState([]);
   const [termId, setTermId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
@@ -41,6 +43,24 @@ export default function ClassAttendancePage({ user, signOut }) {
   const [reportStudentId, setReportStudentId] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
   const [reportDownloading, setReportDownloading] = useState(false);
+  const [scanCode, setScanCode] = useState('');
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanErrorPopup, setScanErrorPopup] = useState('');
+  const [lastScanned, setLastScanned] = useState(null);
+  const [cameraMessage, setCameraMessage] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [scannerCycle, setScannerCycle] = useState(0);
+  const cameraVideo = useRef(null);
+  const cameraControls = useRef(null);
+  const scannedEnrollments = useRef(new Set());
+  const pendingCodes = useRef(new Set());
+  const duplicateCooldowns = useRef(new Map());
+  const scanErrorTimer = useRef(null);
+
+  useEffect(() => () => {
+    cameraControls.current?.stop();
+    window.clearTimeout(scanErrorTimer.current);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,9 +123,24 @@ export default function ClassAttendancePage({ user, signOut }) {
     return () => { cancelled = true; };
   }, [termId, classGroupId, date, signOut]);
 
+  useEffect(() => {
+    scannedEnrollments.current = new Set((sheet?.students || []).filter((row) => row.status).map((row) => row.enrollmentId));
+  }, [termId, classGroupId, date, sheet?.students]);
+
+  useEffect(() => { setLastScanned(null); }, [termId, classGroupId, date]);
+
   const markedCount = sheet?.students.filter((row) => row.status).length || 0;
   const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
   const canEditAttendance = Boolean(sheet && (canManageAttendance || sheet.canRecord));
+  useEffect(() => {
+    if (!sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
+    startCamera();
+    return () => {
+      cameraControls.current?.stop();
+      cameraControls.current = null;
+      setCameraActive(false);
+    };
+  }, [Boolean(sheet), loadingSheet, canEditAttendance, sheet?.term?.status, classGroupId, termId, date, scannerCycle]);
   const selectedTerm = terms.find((term) => term.id === termId);
   const counts = useMemo(() => (sheet?.students || []).reduce((summary, row) => {
     if (row.status) summary[row.status] += 1;
@@ -121,6 +156,78 @@ export default function ClassAttendancePage({ user, signOut }) {
 
   function markAllPresent() {
     setSheet((current) => ({ ...current, students: current.students.map((row) => ({ ...row, status: 'PRESENT' })) }));
+  }
+
+  function showDuplicatePopup(student) {
+    const key = student.admissionNumber;
+    const now = Date.now();
+    if ((duplicateCooldowns.current.get(key) || 0) > now) return;
+    duplicateCooldowns.current.set(key, now + 5000);
+    setScanErrorPopup(`${studentName(student)} has already been scanned.`);
+    window.clearTimeout(scanErrorTimer.current);
+    scanErrorTimer.current = window.setTimeout(() => setScanErrorPopup(''), 2000);
+  }
+
+  async function markScanned(code) {
+    if (!sheet || !canEditAttendance || sheet.term.status !== 'OPEN') return;
+    const normalizedCode = code.trim();
+    if (!normalizedCode || pendingCodes.current.has(normalizedCode)) return;
+    const rosterStudent = sheet.students.find((row) => row.student.admissionNumber === normalizedCode);
+    if (rosterStudent && (rosterStudent.status || scannedEnrollments.current.has(rosterStudent.enrollmentId))) {
+      showDuplicatePopup(rosterStudent.student);
+      setScanCode('');
+      return;
+    }
+    pendingCodes.current.add(normalizedCode);
+    setScanBusy(true); setError(''); setNotice('');
+    try {
+      const result = await resolveAttendanceQr({ termId, classGroupId, date, code: normalizedCode });
+      const row = sheet.students.find((item) => item.enrollmentId === result.data.enrollmentId);
+      if (!row) throw new Error('This student is not in the current attendance roster.');
+      if (row.status || scannedEnrollments.current.has(row.enrollmentId)) showDuplicatePopup(row.student);
+      else {
+        scannedEnrollments.current.add(row.enrollmentId);
+        updateStudent(row.enrollmentId, 'status', 'PRESENT');
+        setLastScanned({ ...row.student, status: 'PRESENT', duplicate: false, time: new Date() });
+        setNotice(`${studentName(row.student)} marked present.`);
+      }
+      setScanCode('');
+    } catch (cause) { setError(cause.message); if (cause.status === 401) signOut(); }
+    finally { pendingCodes.current.delete(normalizedCode); setScanBusy(false); }
+  }
+
+  async function startCamera() {
+    if (cameraControls.current) return;
+    if (!navigator.mediaDevices?.getUserMedia) { setCameraMessage('Camera access requires a secure page (HTTPS or localhost) and a browser that supports cameras.'); return; }
+    try {
+      setCameraMessage('Requesting camera access…');
+      const { BrowserQRCodeReader } = await import('@zxing/browser');
+      const reader = new BrowserQRCodeReader();
+      let handled = false;
+      const controls = await reader.decodeFromVideoDevice(undefined, cameraVideo.current, (result) => {
+        if (!result || handled) return;
+        const code = result.getText().trim();
+        const rosterStudent = sheet?.students.find((row) => row.student.admissionNumber === code);
+        if (rosterStudent && (rosterStudent.status || scannedEnrollments.current.has(rosterStudent.enrollmentId))) {
+          showDuplicatePopup(rosterStudent.student);
+          return;
+        }
+        handled = true;
+        controls.stop();
+        cameraControls.current = null;
+        setCameraActive(false);
+        setCameraMessage('');
+        markScanned(code).finally(() => setScannerCycle((cycle) => cycle + 1));
+      });
+      cameraControls.current = controls;
+      setCameraActive(true);
+      setCameraMessage('Camera active. Hold a student QR code in front of the camera.');
+    } catch (cause) { cameraControls.current?.stop(); cameraControls.current = null; setCameraActive(false); setCameraMessage(cause.message || 'Could not access the camera. Check the browser camera permission and try again.'); }
+  }
+
+  async function downloadQr(studentId) {
+    try { await downloadStudentQr(studentId); }
+    catch (cause) { setError(cause.message); if (cause.status === 401) signOut(); }
   }
 
   async function save() {
@@ -174,11 +281,11 @@ export default function ClassAttendancePage({ user, signOut }) {
 
   return (
     <>
+      <AssessmentPopup message={error} onDismiss={() => setError('')} />
+      <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       <div className="welcome-row students-welcome">
         <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors take the daily register for their assigned class. School administrators can record registers and follow class summaries.</p></div>
       </div>
-      {error && <div className="notice-error" role="alert">{error}</div>}
-      {notice && <div className="teaching-assignment-notice" role="status">{notice}</div>}
       <section className="panel attendance-panel">
         <div className="attendance-toolbar">
           <label className="field-label">Academic term
@@ -236,9 +343,26 @@ export default function ClassAttendancePage({ user, signOut }) {
           <div className="attendance-register-heading"><span><strong>{sheet.students.length}</strong> students · <strong>{markedCount}</strong> marked {sheet.saved && <span className="attendance-saved"><Check size={14} /> Saved</span>}</span>
             <div className="attendance-register-actions"><button className="text-button" type="button" onClick={() => setClassGroupId('')}>Choose another class</button>{canEditAttendance && <button className="secondary-button" type="button" onClick={markAllPresent} disabled={!sheet.students.length || sheet.term.status !== 'OPEN'}><CheckCheck size={15} /> Mark all present</button>}</div>
           </div>
+          {canEditAttendance && sheet.term.status === 'OPEN' && <div className="attendance-scan-panel">
+            <div><strong>Scan student QR code</strong><span>Downloaded student codes contain the student admission number. Scanned students are marked present in this register.</span></div>
+            <form onSubmit={(event) => { event.preventDefault(); if (scanCode.trim()) markScanned(scanCode); }}>
+              <input autoFocus autoComplete="off" className="search-input" value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="Scan or enter admission number" aria-label="Student QR code or admission number" />
+              <button className="secondary-button" type="submit" disabled={scanBusy || !scanCode.trim()}>{scanBusy ? 'Checking…' : 'Process scan'}</button>
+              {!cameraActive && cameraMessage && <button className="secondary-button" type="button" onClick={startCamera}><Camera size={15} /> Retry camera</button>}
+            </form>
+            {cameraMessage && <span className="attendance-camera-message">{cameraMessage}</span>}
+            <video ref={cameraVideo} className="attendance-camera-preview" style={{ display: cameraActive ? 'block' : 'none' }} muted playsInline />
+            {scanErrorPopup && <div className="attendance-scan-toast" role="alert" aria-live="assertive">{scanErrorPopup}</div>}
+            {lastScanned && <div className={`attendance-last-scanned ${lastScanned.duplicate ? 'attendance-last-scanned-duplicate' : ''}`} role="status" aria-live="polite">
+              <span className="attendance-last-scanned-icon"><Check size={18} /></span>
+              <div><strong>{lastScanned.duplicate ? 'Already marked' : 'Scanned just now'}</strong><span>{studentName(lastScanned)} · {lastScanned.admissionNumber} · {lastScanned.status}</span></div>
+              <time>{lastScanned.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time>
+            </div>}
+          </div>}
           {!sheet.students.length ? <div className="table-message">No active students are enrolled in this class for the selected term.</div> : <div className="attendance-list">{sheet.students.map((row, index) => <div className="attendance-row" key={row.enrollmentId}>
             <span className="attendance-row-number">{index + 1}</span>
             <div className="attendance-student"><strong>{studentName(row.student)}</strong><span>{row.student.admissionNumber}</span></div>
+            {canDownloadStudentQr && <button className="attendance-qr-download" type="button" onClick={() => downloadQr(row.student.id)} title={`Download ${studentName(row.student)} QR code`} aria-label={`Download QR code for ${studentName(row.student)}`}><Download size={15} /> QR</button>}
             <select className={`filter-select attendance-status-select ${row.status ? `attendance-status-${row.status.toLowerCase()}` : ''}`} value={row.status || ''} onChange={(event) => updateStudent(row.enrollmentId, 'status', event.target.value)} disabled={!canEditAttendance || sheet.term.status !== 'OPEN'} title={!canEditAttendance ? 'Only the assigned form tutor or a school administrator can mark attendance.' : sheet.term.status !== 'OPEN' ? 'Attendance can only be changed while the term is open.' : undefined} aria-label={`Attendance for ${studentName(row.student)}`}>
               <option value="">Mark attendance</option>{MARKS.map((mark) => <option key={mark.value} value={mark.value}>{mark.label}</option>)}
             </select>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { assessmentAssignmentLabel, assessmentTypes, saveAssessment } from './assessmentApi.js';
+import AssessmentPopup from './AssessmentPopup.jsx';
 
 function termContextLabel(term) {
   if (!term) return 'Term information unavailable';
@@ -13,6 +14,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
   const [form, setForm] = useState({
     title: assessment?.title || '',
     assessmentType: assessment?.assessmentType || 'COURSEWORK',
+    assessmentDate: assessment?.assessmentDate ? new Date(assessment.assessmentDate).toISOString().slice(0, 10) : '',
     teachingAssignmentId: assessment?.teachingAssignmentId || ''
   });
   const [error, setError] = useState('');
@@ -21,6 +23,8 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
   const selectedTerm = terms.find((item) => item.id === (selectedAssignment?.termId || assessment?.termId));
   const canCreateForSelectedTerm = !selectedTerm || ['DRAFT', 'OPEN'].includes(selectedTerm.status);
   const canEdit = !editing || ['DRAFT', 'OPEN'].includes(assessment.status) && (assessment._count?.results ?? 0) === 0;
+  const isExam = ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(form.assessmentType);
+  const canSetExamDateOnly = Boolean(editing && isExam && !assessment.assessmentDate && ['DRAFT', 'OPEN'].includes(assessment.status));
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -31,10 +35,12 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
     event.preventDefault();
     setError('');
     setSaving(true);
-    const payload = {
+    const payload = canSetExamDateOnly ? { assessmentDate: form.assessmentDate } : {
       title: form.title.trim(),
       assessmentType: form.assessmentType
     };
+    if (!canSetExamDateOnly && isExam) payload.assessmentDate = form.assessmentDate;
+    else if (!canSetExamDateOnly && editing && assessment.assessmentDate) payload.assessmentDate = null;
     if (!editing) {
       payload.teachingAssignmentId = form.teachingAssignmentId;
       payload.termId = selectedAssignment?.termId;
@@ -54,6 +60,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !saving) onClose();
     }}>
+      <AssessmentPopup message={error || (!canCreateForSelectedTerm && !editing ? 'The selected teaching assignment belongs to a term that does not accept new assessments.' : '')} onDismiss={() => setError('')} />
       <section className="user-modal" role="dialog" aria-modal="true" aria-labelledby="assessment-form-title">
         <div className="modal-heading">
           <div>
@@ -95,12 +102,15 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
               {assessmentTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
-          {!canCreateForSelectedTerm && !editing && <p className="form-error" role="alert">The selected teaching assignment belongs to a term that does not accept new assessments.</p>}
+          {isExam && <label className="field-label">
+            Exam date
+            <input className="text-input" type="date" name="assessmentDate" value={form.assessmentDate} onChange={updateField} required disabled={!canEdit && !canSetExamDateOnly} />
+            <span className="field-hint">Only students marked present in class attendance on this date can receive a result.</span>
+          </label>}
           {!canEdit && <p className="form-hint">This assessment cannot be edited after submission or after results have been recorded.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={saving || !canEdit || (!editing && (!selectedAssignment || !canCreateForSelectedTerm))}>
+            <button className="primary-button" type="submit" disabled={saving || (!canEdit && !canSetExamDateOnly) || (isExam && !form.assessmentDate) || (!editing && (!selectedAssignment || !canCreateForSelectedTerm))}>
               {saving && <LoaderCircle size={16} className="animate-spin" />}
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Create assessment'}
             </button>

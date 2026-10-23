@@ -5,7 +5,7 @@ import StatusBadge from '../directory/StatusBadge.jsx';
 import StudentDetailsModal from './StudentDetailsModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
 import useStudents from './useStudents.js';
-import { apiRequest } from '../../api.js';
+import { API_BASE_URL, apiRequest, getAccessToken, getSchoolContextId } from '../../api.js';
 import ClassDistributionPanel from './ClassDistributionPanel.jsx';
 
 const statuses = [
@@ -17,6 +17,7 @@ const statuses = [
 
 export default function StudentsPage({ user, signOut }) {
   const isTeacher = user.role === 'TEACHER';
+  const canExportQr = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
   const directory = useStudents({ enabled: true, signOut });
   const { students, pagination, loading, error, search, status, academicYearId, classLevelId, classGroupId, page } = directory;
   const [classGroups, setClassGroups] = useState([]);
@@ -139,6 +140,43 @@ export default function StudentsPage({ user, signOut }) {
     }
   }
 
+  async function downloadStudentIdsWithQr() {
+    setExporting(true);
+    setActionError('');
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      if (status) params.set('status', status);
+      if (academicYearId) params.set('academicYearId', academicYearId);
+      if (classLevelId) params.set('classLevelId', classLevelId);
+      if (classGroupId) params.set('classGroupId', classGroupId);
+      const headers = new Headers();
+      const token = getAccessToken();
+      const schoolId = getSchoolContextId();
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+      if (schoolId) headers.set('X-School-ID', schoolId);
+      const response = await fetch(`${API_BASE_URL}/students/qr-export?${params}`, { headers });
+      if (!response.ok) {
+        let message = 'Student IDs and QR codes could not be exported.';
+        try { message = (await response.json()).error?.message || message; } catch { /* use fallback */ }
+        const cause = new Error(message);
+        cause.status = response.status;
+        throw cause;
+      }
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'student-ids-and-qr-codes.html';
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (cause) {
+      setActionError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function openCreate() {
     setFormStudent(null);
     setFormOpen(true);
@@ -208,6 +246,9 @@ export default function StudentsPage({ user, signOut }) {
           <button className="secondary-button" type="button" onClick={downloadFilteredStudents} disabled={exporting || loading}>
             {exporting ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{exporting ? 'Preparing…' : 'Export Excel'}
           </button>
+          {canExportQr && <button className="secondary-button" type="button" onClick={downloadStudentIdsWithQr} disabled={exporting || loading}>
+            {exporting ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{exporting ? 'Preparing…' : 'Export IDs + QR'}
+          </button>}
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'student' : 'students'}</span>
         </div>
         {error ? (
@@ -228,7 +269,7 @@ export default function StudentsPage({ user, signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table students-table">
               <thead>
-                <tr><th>Student</th><th>Admission no.</th><th>Parent phone</th><th>Class level</th><th>Class group</th><th>Date of birth</th><th>Gender</th><th>Enrolments</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Student</th><th>Student ID</th><th>Parent phone</th><th>Class level</th><th>Class group</th><th>Date of birth</th><th>Gender</th><th>Enrolments</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {students.map((student) => (

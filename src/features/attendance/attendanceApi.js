@@ -30,6 +30,27 @@ export function saveAttendanceSheet(data) {
   return apiRequest('/attendance/sheet', { method: 'PUT', body: JSON.stringify(data) });
 }
 
+export function resolveAttendanceQr(data) {
+  return apiRequest('/attendance/scan', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function downloadStudentQr(studentId) {
+  const headers = new Headers();
+  const token = getAccessToken();
+  const schoolId = getSchoolContextId();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (schoolId) headers.set('X-School-ID', schoolId);
+  const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/qr`, { headers });
+  if (!response.ok) {
+    let message = 'The student QR code could not be downloaded.';
+    try { message = (await response.json()).error?.message || message; } catch { /* fallback */ }
+    const error = new Error(message); error.status = response.status; throw error;
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a'); link.href = url; link.download = `student-${studentId}-qr.png`; link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function fetchAttendanceReport({ termId, classGroupId, studentId }) {
   const params = new URLSearchParams({ termId });
   if (classGroupId) params.set('classGroupId', classGroupId);

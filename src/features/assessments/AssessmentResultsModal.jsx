@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, Save, X } from 'lucide-react';
 import { fetchAssessmentResults, resultStatuses, saveAssessmentResults } from './assessmentApi.js';
+import AssessmentPopup from './AssessmentPopup.jsx';
 
 function rowSnapshot(row) {
   return {
@@ -32,6 +33,8 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const locked = !['DRAFT', 'OPEN'].includes(assessment.status);
+  const attendanceRestrictedExam = ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType);
+  const examDateLabel = assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : '';
   const dirtyRows = useMemo(() => changedRows(rows, originalRows), [originalRows, rows]);
 
   const loadResults = useCallback(async () => {
@@ -112,6 +115,8 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !saving) onClose();
     }}>
+      <AssessmentPopup message={error} onDismiss={() => setError('')} />
+      <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       <section className="user-modal assessment-results-modal" role="dialog" aria-modal="true" aria-labelledby="assessment-results-title">
         <div className="modal-heading">
           <div>
@@ -122,12 +127,12 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close" disabled={saving}><X size={19} /></button>
         </div>
         {locked && <p className="form-hint mt-4">Existing results are read only. Students enrolled after submission can still receive their first result.</p>}
-        {notice && <p className="form-success mt-4" role="status">{notice}</p>}
+        {attendanceRestrictedExam && <p className="form-hint mt-4">Only students marked PRESENT in class attendance on {examDateLabel || 'the exam date'} are initially eligible for a result. Administrators can reopen a submitted exam to approve corrections for absent students.</p>}
+        {rows.some((row) => row.approvedAbsenceCorrection) && <p className="form-hint mt-2">An administrator reopened this exam. Absent students shown below may now receive their approved makeup result.</p>}
         {loading ? (
           <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading student results…</span></div>
         ) : error && rows.length === 0 ? (
           <div className="table-message">
-            <p>{error}</p>
             <button className="text-button mt-2" type="button" onClick={() => {
               setLoading(true);
               loadResults();
@@ -135,13 +140,12 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           </div>
         ) : rows.length === 0 ? (
           <div className="empty-state assessment-results-empty">
-            <p className="text-sm font-semibold text-ink">No active enrolments for this class and term</p>
-            <p className="mt-1 text-xs text-muted">Enrol active students in the selected class group and term before entering results.</p>
+            <p className="text-sm font-semibold text-ink">{attendanceRestrictedExam ? 'No students marked present for this exam date' : 'No active enrolments for this class and term'}</p>
+            <p className="mt-1 text-xs text-muted">{attendanceRestrictedExam ? 'Record and save class attendance for the exam date before entering results.' : 'Enrol active students in the selected class group and term before entering results.'}</p>
           </div>
         ) : (
           <>
-            <div className="assessment-results-count">{rows.length} active enrolments · {dirtyRows.length} unsaved changes</div>
-            {error && <p className="form-error mt-3" role="alert">{error}</p>}
+            <div className="assessment-results-count">{rows.length} {attendanceRestrictedExam ? 'eligible students' : 'active enrolments'} · {dirtyRows.length} unsaved changes</div>
             <div className="assessment-results-scroll">
               <table className="people-table assessment-results-table">
                 <thead><tr><th>Student</th><th>Result status</th><th>Mark</th><th>Teacher comment</th></tr></thead>
@@ -151,6 +155,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
                       <td>
                         <div className="assessment-student-name">
                           <strong>{[row.student.firstName, row.student.middleName, row.student.lastName].filter(Boolean).join(' ')}</strong>
+                          {row.approvedAbsenceCorrection && <span className="assessment-absence-correction-badge">Absent on exam date · Admin approved correction</span>}
                         </div>
                       </td>
                       <td>
