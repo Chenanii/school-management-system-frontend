@@ -76,6 +76,12 @@ export default function useAuth() {
     setUser(session.user);
   }, []);
 
+  const updateUser = useCallback((updatedUser) => {
+    setUser((current) => current?.id === updatedUser.id
+      ? { ...current, ...updatedUser, school: updatedUser.school || current.school }
+      : current);
+  }, []);
+
   const signIn = useCallback(async (identifier, password) => {
     const result = await apiRequest('/auth/login', {
       method: 'POST',
@@ -84,5 +90,5 @@ export default function useAuth() {
     acceptAuthenticatedSession(result.data);
   }, [acceptAuthenticatedSession]);
 
-  return { user, signIn, acceptAuthenticatedSession, signOut };
+  return { user, signIn, acceptAuthenticatedSession, signOut, updateUser };
 }

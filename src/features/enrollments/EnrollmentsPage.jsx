@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, UsersRound } from 'lucide-react';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import {
   assignClassGroupBulk,
   createBulkEnrollments,
@@ -69,11 +70,11 @@ function matchesSearch(student, query) {
   return query.trim().toLowerCase().split(/\s+/).filter(Boolean).every((token) => text.includes(token));
 }
 
-function Notices({ error, notice, onClearError, onClearNotice, className = 'mx-4 mb-3' }) {
+function Notices({ error, notice, onClearError, onClearNotice }) {
   return (
     <>
-      {error && <div className={`notice-error ${className}`} role="alert"><span>{error}</span><button className="text-button" type="button" onClick={onClearError}>Dismiss</button></div>}
-      {notice && <div className={`teaching-assignment-notice ${className}`} role="status"><span>{notice}</span><button className="text-button" type="button" onClick={onClearNotice}>Dismiss</button></div>}
+      <AssessmentPopup message={error} onDismiss={onClearError} />
+      <AssessmentPopup message={notice} type="success" onDismiss={onClearNotice} />
     </>
   );
 }
@@ -354,7 +355,7 @@ function SubjectStreamPanel({ terms, classLevels, signOut, onSaved }) {
           </select>
         </label>
       </div>
-      {error && <div className="notice-error m-4" role="alert">{error}</div>}
+      <AssessmentPopup message={error} onDismiss={() => setError('')} />
       {classLevelId && !loadingAssignments && !assignments.length && <div className="table-message">No optional subject stream was found for this class level and term. Go to Teaching assignments and assign a teacher to an optional or standalone subject. Required subjects include every active student automatically.</div>}
       {assignmentId && <>
         <div className="stream-roster-toolbar">
@@ -510,7 +511,7 @@ function StudentEnrollmentModal({ terms, groups, classLevels, signOut, onClose, 
               {activeStudents.map((student) => <option key={student.id} value={student.id}>{studentName(student)} · {student.admissionNumber}</option>)}
             </select>
           </label>
-          {optionsError && <p className="form-error" role="alert">{optionsError}</p>}
+          <AssessmentPopup message={optionsError} onDismiss={() => setOptionsError('')} />
           <label className="field-label">Previous enrollment <span className="optional-label">Optional</span>
             <select className="text-input" value={previousEnrollmentId} onChange={(event) => setPreviousEnrollmentId(event.target.value)} disabled={!studentId || loadingPrevious}>
               <option value="">{loadingPrevious ? 'Loading previous enrollments…' : 'No previous enrollment'}</option>
@@ -520,7 +521,7 @@ function StudentEnrollmentModal({ terms, groups, classLevels, signOut, onClose, 
             </select>
             <span className="field-hint">Choose an earlier enrollment to preserve the student’s progression history.</span>
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          <AssessmentPopup message={error} onDismiss={() => setError('')} />
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || loadingStudents || !acceptingTerms.length}>
@@ -1024,7 +1025,7 @@ export default function EnrollmentsPage({ user, signOut }) {
         <div><p className="eyebrow">Academic records</p><h1 className="page-title">Enrollments<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Manage student placement and progression between terms and classes.</p></div>
         {canManage && <button className="primary-button add-user-button" onClick={() => setFormOpen(true)} disabled={loadingOptions || !terms.length || !classLevels.length}><Plus size={17} /> Enroll student</button>}
       </div>
-      <Notices error={error} notice={notice} onClearError={() => setError('')} onClearNotice={() => setNotice('')} className="mb-4" />
+      <Notices error={error} notice={notice} onClearError={() => setError('')} onClearNotice={() => setNotice('')} />
       {canManage && (
         <div className="enrollment-tabs" role="tablist" aria-label="Enrollment management">
           {tabs.map(([key, label]) => (

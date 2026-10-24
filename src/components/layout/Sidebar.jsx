@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import {
   ArrowUpRight,
   CalendarDays,
+  ChevronDown,
   CircleHelp,
   LogOut,
   PanelLeftClose,
@@ -26,6 +28,7 @@ export default function Sidebar({
   onToggleCollapse
 }) {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
+  const [settingsOpen, setSettingsOpen] = useState(true);
   const schoolName = school?.name || (isSuperAdmin ? 'Select a school' : user.schoolName || 'My school');
   const visibleSections = sections.filter(({ roles }) => !roles || roles.includes(user.role));
   const sectionGroups = visibleSections.reduce((groups, section) => {
@@ -33,6 +36,11 @@ export default function Sidebar({
     groups.set(group, [...(groups.get(group) || []), section]);
     return groups;
   }, new Map());
+  const orderedSectionGroups = [...sectionGroups.entries()].sort(([groupA], [groupB]) => {
+    if (groupA === 'Settings') return 1;
+    if (groupB === 'Settings') return -1;
+    return 0;
+  });
 
   return (
     <>
@@ -66,10 +74,14 @@ export default function Sidebar({
           </div>
         </div>
         <nav className="sidebar-navigation" aria-label="Main navigation">
-          {[...sectionGroups.entries()].map(([group, items]) => (
+          {orderedSectionGroups.map(([group, items]) => (
             <div className="sidebar-nav-group" key={group}>
-              <div className="nav-caption">{group}</div>
-              <div className="space-y-1">
+              {group === 'Settings' ? (
+                <button className="nav-caption nav-group-toggle" type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen((value) => !value)}>
+                  <span>{group}</span><ChevronDown size={14} className={settingsOpen ? '' : 'nav-group-chevron-closed'} />
+                </button>
+              ) : <div className="nav-caption">{group}</div>}
+              <div className="space-y-1" hidden={group === 'Settings' && !settingsOpen && !collapsed}>
                 {items.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}

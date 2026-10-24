@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { saveAssignment, teacherDisplayName } from './teachingAssignmentApi.js';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 
 const OPEN_STATUSES = ['DRAFT', 'OPEN'];
 
@@ -322,7 +323,7 @@ export default function TeachingAssignmentFormModal({
               Type, class level, subject, and class group or stream are locked because this academic year has assessments. You can still reassign the teacher from a selected term onward.
             </p>
           )}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          <AssessmentPopup message={error} onDismiss={() => setError('')} />
 
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>

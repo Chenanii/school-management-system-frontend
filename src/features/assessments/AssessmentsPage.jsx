@@ -103,6 +103,16 @@ export default function AssessmentsPage({ user, signOut }) {
   }, [termFilter, statusFilter, typeFilter, refreshKey, signOut]);
 
   const termMap = useMemo(() => new Map(terms.map((term) => [term.id, term])), [terms]);
+  const currentTerm = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const isInProgress = (term) => term.startDate?.slice(0, 10) <= today && term.endDate?.slice(0, 10) >= today;
+    const currentYearTerms = terms.filter((term) => term.academicYear?.isCurrent);
+    return currentYearTerms.find(isInProgress)
+      || currentYearTerms.find((term) => term.status === 'OPEN')
+      || currentYearTerms.sort((left, right) => right.sequence - left.sequence)[0]
+      || terms.find(isInProgress)
+      || null;
+  }, [terms]);
   const filteredAssessments = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     if (!query) return assessments;
@@ -126,8 +136,8 @@ export default function AssessmentsPage({ user, signOut }) {
   }, [assessments, search, termMap]);
 
   const availableAssignments = useMemo(() => assignments.filter((assignment) =>
-    assignment.term?.status === 'OPEN' && assignment.term.academicYear?.isCurrent === true
-  ), [assignments]);
+    currentTerm && assignment.termId === currentTerm.id
+  ), [assignments, currentTerm]);
 
   function refresh() {
     setRefreshKey((current) => current + 1);

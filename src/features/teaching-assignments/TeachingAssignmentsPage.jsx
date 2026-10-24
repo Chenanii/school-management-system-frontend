@@ -4,6 +4,7 @@ import { apiRequest } from '../../api.js';
 import TeachingAssignmentFormModal from './TeachingAssignmentFormModal.jsx';
 import FormTutorAssignmentsModal from './FormTutorAssignmentsModal.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import {
   deleteAssignment,
   fetchAllPages,
@@ -183,18 +184,9 @@ export default function TeachingAssignmentsPage({ signOut }) {
           <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}><Plus size={17} /> Create assignment</button>
         </div>
       </div>
-      {optionsError && (
-        <div className="notice-error" role="alert">
-          <span>Assignment choices could not be loaded: {optionsError}</span>
-          <button className="text-button" onClick={refresh}>Try again</button>
-        </div>
-      )}
-      {notice && (
-        <div className={notice.error ? 'notice-error' : 'teaching-assignment-notice'} role={notice.error ? 'alert' : 'status'}>
-          <span>{notice.message}</span>
-          <button className="text-button" onClick={() => setNotice('')}>Dismiss</button>
-        </div>
-      )}
+      <AssessmentPopup message={optionsError ? `Assignment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
+      <AssessmentPopup message={error} onDismiss={() => setError('')} actionLabel="Try again" onAction={refresh} />
+      <AssessmentPopup message={notice?.message || ''} type={notice?.error ? 'error' : 'success'} onDismiss={() => setNotice('')} />
       <section className="panel directory-panel teaching-assignment-panel">
         <div className="teaching-assignment-toolbar">
           <div className="relative teaching-assignment-search">

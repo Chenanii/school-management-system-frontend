@@ -3,12 +3,14 @@ import { ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, Users } from 'lu
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import UserFormModal from './UserFormModal.jsx';
+import UserDetailsModal from './UserDetailsModal.jsx';
 import { roleLabel, userRoles } from './userRoles.js';
 import useUsers from './useUsers.js';
 
 export default function UsersPage({ signOut }) {
   const [modalUser, setModalUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailsUser, setDetailsUser] = useState(null);
   const [notice, setNotice] = useState('');
   const directory = useUsers({ enabled: true, signOut });
   const { users, pagination, loading, error, search, role, status, page } = directory;
@@ -81,7 +83,7 @@ export default function UsersPage({ signOut }) {
                     <td>
                       <div className="flex min-w-[170px] items-center gap-3">
                         <div className="person-avatar person-staff">{initials(user) || '?'}</div>
-                        <span className="whitespace-nowrap font-medium text-ink">{formatName(user)}</span>
+                        <button className="user-name-link whitespace-nowrap font-medium text-ink" type="button" onClick={() => setDetailsUser(user)}>{formatName(user)}</button>
                       </div>
                     </td>
                     <td className="whitespace-nowrap text-muted">{user.email}</td>
@@ -89,7 +91,7 @@ export default function UsersPage({ signOut }) {
                     <td className="whitespace-nowrap text-muted">{user.teacher?.staffNumber || '—'}</td>
                     <td><StatusBadge status={user.status} /></td>
                     <td className="whitespace-nowrap text-muted">{formatDate(user.createdAt)}</td>
-                    <td><button className="table-action" onClick={() => openEdit(user)}>Edit</button></td>
+                    <td><button className="table-action" onClick={() => setDetailsUser(user)}>View</button><button className="table-action ml-2" onClick={() => openEdit(user)}>Edit</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -121,6 +123,7 @@ export default function UsersPage({ signOut }) {
           }}
         />
       )}
+      {detailsUser && <UserDetailsModal user={detailsUser} signOut={signOut} onClose={() => setDetailsUser(null)} onEdit={(user) => { setDetailsUser(null); openEdit(user); }} />}
     </>
   );
 }

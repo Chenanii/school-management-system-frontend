@@ -40,11 +40,12 @@ import { applySchoolTheme } from "../features/school-themes/schoolThemeRuntime.j
 import SchoolSetupWizard from "../features/onboarding/SchoolSetupWizard.jsx";
 import { fetchSchoolSetupStatus } from "../features/onboarding/schoolSetupApi.js";
 import ResetPasswordPage from "../features/auth/ResetPasswordPage.jsx";
+import ProfilesPage from "../features/users/ProfilesPage.jsx";
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
 export default function App() {
-  const { user, signIn, acceptAuthenticatedSession, signOut } = useAuth();
+  const { user, signIn, acceptAuthenticatedSession, signOut, updateUser } = useAuth();
   const {
     summary,
     loading,
@@ -350,6 +351,8 @@ export default function App() {
               onRetry={retry}
               onNavigate={navigate}
             />
+          ) : page === "profiles" ? (
+            <ProfilesPage signOut={signOut} onSaved={updateUser} />
           ) : page === "academic-years" &&
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,

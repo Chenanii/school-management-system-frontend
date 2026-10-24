@@ -16,6 +16,7 @@ import {
 import { apiRequest } from '../../api.js';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import NotificationCenter from '../notifications/NotificationCenter.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import { ReportCardPaper } from '../report-cards/ReportCardsPage.jsx';
 import { MidTermReportCardPaper } from '../mid-term-report-cards/MidTermReportCardPage.jsx';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
@@ -61,6 +62,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
   const [midTermPortalReport, setMidTermPortalReport] = useState(null);
   const [loadingMidTermPortalReport, setLoadingMidTermPortalReport] = useState(false);
   const [downloadingEnrollmentId, setDownloadingEnrollmentId] = useState('');
+  const [reportDownloadError, setReportDownloadError] = useState('');
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -123,8 +125,9 @@ export default function ParentPortalPage({ user, onSignOut }) {
   }, [enrollment?.id, enrollment?.midTermPublishedAt]);
 
   async function downloadReportCard() {
-    if (!enrollment || !endOfTermPublished || termResults.length === 0) return;
+    if (!enrollment || !endOfTermPublished) return;
     setDownloadingEnrollmentId(enrollment.id);
+    setReportDownloadError('');
     setReportCard(null);
     setMidTermReportCard(null);
     try {
@@ -133,6 +136,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
       window.setTimeout(() => window.print(), 100);
     } catch (cause) {
       logParentReportFailure('Could not prepare the end-of-term report.', cause);
+      setReportDownloadError(cause.message || 'Could not prepare the end-of-term report. Please try again.');
     } finally {
       setDownloadingEnrollmentId('');
     }
@@ -183,6 +187,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
 
   return (
     <main className="parent-portal-page">
+      <AssessmentPopup message={reportDownloadError} onDismiss={() => setReportDownloadError('')} />
       <header className="parent-portal-header">
         <div className="parent-school-mark">
           {overview?.school.logoDataUrl

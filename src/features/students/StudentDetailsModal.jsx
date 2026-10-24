@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, LoaderCircle, Mail, Users, X } from 'lucide-react';
+import { CalendarDays, ChevronRight, LoaderCircle, Mail, Users, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { formatDate, formatName } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
@@ -8,6 +8,10 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
   const [details, setDetails] = useState(student);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedEnrollment, setSelectedEnrollment] = useState(null);
+  const enrollmentFormTutor = selectedEnrollment?.classGroup?.formTutorAssignments?.find((assignment) =>
+    assignment.academicYear?.id === selectedEnrollment.term?.academicYear?.id
+  )?.teacher;
 
   useEffect(() => {
     let cancelled = false;
@@ -52,10 +56,11 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
                 <section className="student-history">
                   <h3>Recent enrolments</h3>
                   {!details.enrollments?.length ? <p>No enrolments recorded yet.</p> : details.enrollments.slice(0, 5).map((enrollment) => (
-                    <div className="student-history-row" key={enrollment.id}>
+                    <button className="student-history-row student-enrollment-link" type="button" key={enrollment.id} onClick={() => setSelectedEnrollment(enrollment)} aria-label={`View class information for ${enrollment.term?.name || 'enrollment'}`}>
                       <div><strong>{enrollment.classLevel?.name || enrollment.classGroup?.classLevel?.name || 'Class'}{enrollment.classGroup?.name ? ` · ${enrollment.classGroup.name}` : ' · Home group not assigned'}</strong><span>{enrollment.term?.academicYear?.name} · {enrollment.term?.name}</span></div>
                       <StatusBadge status={enrollment.status} />
-                    </div>
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </button>
                   ))}
                 </section>
                 {!isTeacher && <section className="student-history">
@@ -72,6 +77,23 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
           <button className="secondary-button" type="button" onClick={onClose}>Close</button>
         </div>
       </section>
+      {selectedEnrollment && <div className="modal-backdrop student-class-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedEnrollment(null); }}>
+        <section className="user-modal student-class-info-modal" role="dialog" aria-modal="true" aria-labelledby="student-class-info-title">
+          <div className="modal-heading">
+            <div><p className="eyebrow">Enrollment class information</p><h2 id="student-class-info-title">{selectedEnrollment.classLevel?.name || selectedEnrollment.classGroup?.classLevel?.name || 'Class details'}</h2><p>{selectedEnrollment.classGroup?.name || 'Home class group not assigned'}</p></div>
+            <button className="icon-button" type="button" onClick={() => setSelectedEnrollment(null)} aria-label="Close class information"><X size={19} /></button>
+          </div>
+          <dl className="student-class-info-grid">
+            <div><dt>Class level</dt><dd>{selectedEnrollment.classLevel?.name || selectedEnrollment.classGroup?.classLevel?.name || '—'}</dd></div>
+            <div><dt>Class group</dt><dd>{selectedEnrollment.classGroup?.name || 'Not assigned'}</dd></div>
+            <div><dt>Academic year</dt><dd>{selectedEnrollment.term?.academicYear?.name || '—'}</dd></div>
+            <div><dt>Term</dt><dd>{selectedEnrollment.term?.name || '—'}</dd></div>
+            <div><dt>Form tutor</dt><dd>{enrollmentFormTutor ? `${enrollmentFormTutor.firstName} ${enrollmentFormTutor.lastName}` : 'Not assigned'}</dd></div>
+            <div><dt>Enrollment status</dt><dd><StatusBadge status={selectedEnrollment.status} /></dd></div>
+          </dl>
+          <div className="modal-actions"><button className="secondary-button" type="button" onClick={() => setSelectedEnrollment(null)}>Back to student details</button></div>
+        </section>
+      </div>}
     </div>
   );
 }

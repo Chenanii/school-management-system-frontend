@@ -18,6 +18,10 @@ export function createGradeScale(data) {
   return apiRequest('/grade-scales', { method: 'POST', body: JSON.stringify(data) });
 }
 
+export function updateGradeScale(id, data) {
+  return apiRequest(`/grade-scales/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
 export function saveAcademicYear(id, data) {
   return apiRequest(id ? `/academic-years/${id}` : '/academic-years', {
     method: id ? 'PATCH' : 'POST',

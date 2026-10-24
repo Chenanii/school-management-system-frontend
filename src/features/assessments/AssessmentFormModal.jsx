@@ -93,7 +93,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
                 ))}
               </select>
               {selectedAssignment && <span className="field-hint">Selected term: {termContextLabel(selectedAssignment.term)}</span>}
-              {assignments.length === 0 && <span className="field-hint">No teaching assignments are available for the current open term and academic year.</span>}
+              {assignments.length === 0 && <span className="field-hint">No teaching assignments are available for the current term.</span>}
             </label>
           )}
           <label className="field-label">

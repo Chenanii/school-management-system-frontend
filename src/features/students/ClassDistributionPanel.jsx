@@ -39,7 +39,7 @@ export default function ClassDistributionPanel({ distribution, loading, compact 
                   <strong>{level.name}</strong><span>{level.students}</span>
                 </div>
                 <div className="class-distribution-track" aria-label={`${level.name}: ${level.students} active students`}><span style={{ width: `${(level.students / highestLevelCount) * 100}%` }} /></div>
-                {expanded && level.groups.length > 0 && <div className="class-distribution-groups">
+                {level.groups.length > 0 || level.unassignedStudents > 0 ? <div className="class-distribution-groups">
                   {level.groups.map((group) => <div className="class-distribution-group" key={group.id}>
                     <span>{group.name}</span><span>{group.students}</span>
                     <div className="class-distribution-group-track"><span style={{ width: `${(group.students / highestGroupCount) * 100}%` }} /></div>
@@ -48,7 +48,7 @@ export default function ClassDistributionPanel({ distribution, loading, compact 
                     <span>Not assigned to a group</span><span>{level.unassignedStudents}</span>
                     <div className="class-distribution-group-track"><span style={{ width: `${(level.unassignedStudents / highestGroupCount) * 100}%` }} /></div>
                   </div>}
-                </div>}
+                </div> : <div className="class-distribution-no-groups">No class groups</div>}
               </div>
             ))}
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Award, LoaderCircle, Plus, Trash2 } from 'lucide-react';
-import { createGradeScale, fetchGradeScales } from './academicYearApi.js';
+import { Award, LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react';
+import { createGradeScale, fetchGradeScales, updateGradeScale } from './academicYearApi.js';
 
 const emptyBoundary = () => ({ grade: '', minScore: '', description: '' });
 
@@ -9,6 +9,7 @@ export default function GradeScalesPage({ signOut, onScaleCreated }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingScale, setEditingScale] = useState(null);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -59,13 +60,19 @@ export default function GradeScalesPage({ signOut, onScaleCreated }) {
     if (new Set(normalized.map((item) => item.minScore)).size !== normalized.length) return setError('Minimum scores must be unique.');
     setSaving(true);
     try {
-      const result = await createGradeScale({ name: name.trim(), description: description.trim() || null, maxScore, boundaries: normalized });
-      setScales((current) => [...current, result.data].sort((a, b) => a.name.localeCompare(b.name)));
+      const payload = { name: name.trim(), description: description.trim() || null, maxScore, boundaries: normalized };
+      const result = editingScale
+        ? await updateGradeScale(editingScale.id, payload)
+        : await createGradeScale(payload);
+      setScales((current) => (editingScale
+        ? current.map((scale) => scale.id === editingScale.id ? result.data : scale)
+        : [...current, result.data]).sort((a, b) => a.name.localeCompare(b.name)));
       onScaleCreated?.();
       setName('');
       setDescription('');
       setMaxScore(100);
       setBoundaries([{ grade: '', minScore: '0', description: '' }, { grade: '', minScore: '', description: '' }]);
+      setEditingScale(null);
       setCreating(false);
     } catch (cause) {
       setError(cause.message);
@@ -75,6 +82,26 @@ export default function GradeScalesPage({ signOut, onScaleCreated }) {
     }
   }
 
+  function editScale(scale) {
+    setError('');
+    setEditingScale(scale);
+    setName(scale.name);
+    setDescription(scale.description || '');
+    setMaxScore(scale.maxScore);
+    setBoundaries(scale.boundaries.map((item) => ({
+      grade: item.grade,
+      minScore: String(Number(item.minScore)),
+      description: item.description || ''
+    })));
+    setCreating(true);
+  }
+
+  function closeForm() {
+    setCreating(false);
+    setEditingScale(null);
+    setError('');
+  }
+
   return <>
     <div className="welcome-row students-welcome">
       <div>
@@ -82,11 +109,11 @@ export default function GradeScalesPage({ signOut, onScaleCreated }) {
         <h1 className="page-title">Grading scales<span className="title-dot">.</span></h1>
         <p className="mt-2 text-sm text-muted">Choose whether results are scored out of 50 or as percentages, then assign the scale to an academic year.</p>
       </div>
-      <button className="primary-button add-user-button" onClick={() => { setError(''); setCreating((open) => !open); }}><Plus size={17} /> {creating ? 'Close form' : 'Create grading scale'}</button>
+      <button className="primary-button add-user-button" onClick={() => { if (creating) closeForm(); else { setEditingScale(null); setName(''); setDescription(''); setMaxScore(100); setBoundaries([{ grade: '', minScore: '0', description: '' }, { grade: '', minScore: '', description: '' }]); setError(''); setCreating(true); } }}><Plus size={17} /> {creating ? 'Close form' : 'Create grading scale'}</button>
     </div>
 
     {creating && <form className="panel grade-scale-page-form" onSubmit={saveScale}>
-      <div className="grade-scale-form-heading"><div><p className="eyebrow">New scale</p><h2>Create a grading scale</h2><p>Choose the score range, then add a minimum score for each grade.</p></div><span className="grade-scale-form-step">{boundaries.length} grade bands</span></div>
+      <div className="grade-scale-form-heading"><div><p className="eyebrow">{editingScale ? 'Edit scale' : 'New scale'}</p><h2>{editingScale ? `Edit ${editingScale.name}` : 'Create a grading scale'}</h2><p>Choose the score range, then add a minimum score for each grade.</p></div><span className="grade-scale-form-step">{boundaries.length} grade bands</span></div>
       <div className="grade-scale-create-fields">
         <label className="field-label">Scale name<input className="text-input" value={name} onChange={(event) => setName(event.target.value)} maxLength={60} placeholder="e.g. Primary school grades" required /></label>
         <label className="field-label">Description <span className="optional-label">Optional</span><input className="text-input" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={250} placeholder="Who or what this scale applies to" /></label>
@@ -124,14 +151,14 @@ export default function GradeScalesPage({ signOut, onScaleCreated }) {
       </div>
       <div className="flex flex-wrap gap-2">
         <button className="secondary-button" type="button" onClick={() => setBoundaries((current) => [...current, emptyBoundary()])} disabled={boundaries.length >= 20}><Plus size={14} /> Add grade band</button>
-        <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save grading scale'}</button>
+        <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving…' : editingScale ? 'Save changes' : 'Save grading scale'}</button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
     </form>}
 
     <section className="panel directory-panel">
       <div className="panel-heading"><div><h2>Saved grading scales</h2><p>{scales.length} {scales.length === 1 ? 'scale' : 'scales'} available for academic years</p></div></div>
-      {error && !creating ? <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={loadScales}>Try again</button></div> : loading ? <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading grading scales…</span></div> : scales.length === 0 ? <div className="empty-state"><div className="empty-state-icon"><Award size={22} /></div><p className="mt-3 text-sm font-semibold text-ink">No grading scales yet</p><p className="mt-1 text-xs text-muted">Create a scale before calculating term results.</p></div> : <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Scale</th><th>Description</th><th>Maximum score</th><th>Grade bands</th><th>Grade boundaries</th></tr></thead><tbody>{scales.map((scale) => <tr key={scale.id}><td className="font-medium text-ink">{scale.name}</td><td className="text-muted">{scale.description || '—'}</td><td className="text-muted">{scale.maxScore === 50 ? '50 points' : '100%'}</td><td className="text-muted">{scale.boundaries.length}</td><td><div className="grade-scale-chips">{scale.boundaries.map((item) => <span className="grade-scale-chip" key={item.id || `${item.grade}-${item.minScore}`}>{item.grade} ≥ {Number(item.minScore)}{scale.maxScore === 50 ? '' : '%'}</span>)}</div></td></tr>)}</tbody></table></div>}
+      {error && !creating ? <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={loadScales}>Try again</button></div> : loading ? <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading grading scales…</span></div> : scales.length === 0 ? <div className="empty-state"><div className="empty-state-icon"><Award size={22} /></div><p className="mt-3 text-sm font-semibold text-ink">No grading scales yet</p><p className="mt-1 text-xs text-muted">Create a scale before calculating term results.</p></div> : <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Scale</th><th>Description</th><th>Maximum score</th><th>Grade bands</th><th>Grade boundaries</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{scales.map((scale) => <tr key={scale.id}><td className="font-medium text-ink">{scale.name}</td><td className="text-muted">{scale.description || '—'}</td><td className="text-muted">{scale.maxScore === 50 ? '50 points' : '100%'}</td><td className="text-muted">{scale.boundaries.length}</td><td><div className="grade-scale-chips">{scale.boundaries.map((item) => <span className="grade-scale-chip" key={item.id || `${item.grade}-${item.minScore}`}>{item.grade} ≥ {Number(item.minScore)}{scale.maxScore === 50 ? '' : '%'}</span>)}</div></td><td><button className="table-action" type="button" onClick={() => editScale(scale)}><Pencil size={14} /> Edit</button></td></tr>)}</tbody></table></div>}
       <p className="px-5 pb-4 text-xs text-muted">To use a scale, open Academic years, edit the relevant year, and select it under Grade scale.</p>
     </section>
   </>;
