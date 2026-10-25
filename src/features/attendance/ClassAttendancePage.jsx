@@ -204,7 +204,7 @@ export default function ClassAttendancePage({ user, signOut }) {
       const { BrowserQRCodeReader } = await import('@zxing/browser');
       const reader = new BrowserQRCodeReader();
       let handled = false;
-      const controls = await reader.decodeFromVideoDevice(undefined, cameraVideo.current, (result) => {
+      const controls = await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } } }, cameraVideo.current, (result) => {
         if (!result || handled) return;
         const code = result.getText().trim();
         const rosterStudent = sheet?.students.find((row) => row.student.admissionNumber === code);
@@ -346,9 +346,9 @@ export default function ClassAttendancePage({ user, signOut }) {
           {canEditAttendance && sheet.term.status === 'OPEN' && <div className="attendance-scan-panel">
             <div><strong>Scan student QR code</strong><span>Downloaded student codes contain the student admission number. Scanned students are marked present in this register.</span></div>
             <form onSubmit={(event) => { event.preventDefault(); if (scanCode.trim()) markScanned(scanCode); }}>
-              <input autoFocus autoComplete="off" className="search-input" value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="Scan or enter admission number" aria-label="Student QR code or admission number" />
+              <input autoFocus autoComplete="off" className="search-input" value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="USB scanner or enter admission number" aria-label="USB scanner input or student admission number" />
               <button className="secondary-button" type="submit" disabled={scanBusy || !scanCode.trim()}>{scanBusy ? 'Checking…' : 'Process scan'}</button>
-              {!cameraActive && cameraMessage && <button className="secondary-button" type="button" onClick={startCamera}><Camera size={15} /> Retry camera</button>}
+              {!cameraActive && cameraMessage && <button className="secondary-button" type="button" onClick={startCamera} disabled={scanBusy}><Camera size={15} /> Retry camera</button>}
             </form>
             {cameraMessage && <span className="attendance-camera-message">{cameraMessage}</span>}
             <video ref={cameraVideo} className="attendance-camera-preview" style={{ display: cameraActive ? 'block' : 'none' }} muted playsInline />
