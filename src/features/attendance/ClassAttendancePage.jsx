@@ -340,7 +340,7 @@ export default function ClassAttendancePage({ user, signOut }) {
           </div>
           {!canEditAttendance && <div className="attendance-readonly-note">Only the assigned form tutor or a school administrator can take or edit this register.</div>}
           {sheet.term.status !== 'OPEN' && <div className="attendance-readonly-note">Attendance can only be changed while the term is open.</div>}
-          <div className="attendance-register-heading"><span><strong>{sheet.students.length}</strong> students · <strong>{markedCount}</strong> marked {sheet.saved && <span className="attendance-saved"><Check size={14} /> Saved</span>}</span>
+          <div className="attendance-register-heading" hidden><span><strong>{sheet.students.length}</strong> students · <strong>{markedCount}</strong> marked {sheet.saved && <span className="attendance-saved"><Check size={14} /> Saved</span>}</span>
             <div className="attendance-register-actions"><button className="text-button" type="button" onClick={() => setClassGroupId('')}>Choose another class</button>{canEditAttendance && <button className="secondary-button" type="button" onClick={markAllPresent} disabled={!sheet.students.length || sheet.term.status !== 'OPEN'}><CheckCheck size={15} /> Mark all present</button>}</div>
           </div>
           {canEditAttendance && sheet.term.status === 'OPEN' && <div className="attendance-scan-panel">
@@ -359,7 +359,7 @@ export default function ClassAttendancePage({ user, signOut }) {
               <time>{lastScanned.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time>
             </div>}
           </div>}
-          {!sheet.students.length ? <div className="table-message">No active students are enrolled in this class for the selected term.</div> : <div className="attendance-list">{sheet.students.map((row, index) => <div className="attendance-row" key={row.enrollmentId}>
+          {!sheet.students.length ? <div className="table-message">No active students are enrolled in this class for the selected term.</div> : <div className="attendance-list">{sheet.students.map((row, index) => <div className={`attendance-row ${canDownloadStudentQr ? '' : 'attendance-row-no-qr'}`} key={row.enrollmentId}>
             <span className="attendance-row-number">{index + 1}</span>
             <div className="attendance-student"><strong>{studentName(row.student)}</strong><span>{row.student.admissionNumber}</span></div>
             {canDownloadStudentQr && <button className="attendance-qr-download" type="button" onClick={() => downloadQr(row.student.id)} title={`Download ${studentName(row.student)} QR code`} aria-label={`Download QR code for ${studentName(row.student)}`}><Download size={15} /> QR</button>}

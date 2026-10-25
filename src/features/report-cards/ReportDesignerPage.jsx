@@ -19,8 +19,8 @@ const headerFields = [
 ];
 const initialSections = sections.map(({ id }) => id);
 const defaults = {
-  endOfTerm: { title: 'End-of-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showTeacherComments: true, showSignatures: true, footerText: 'Coursework and mid-term average contribute 40%; the final exam contributes 60%.', sections: initialSections, headerSections: ['studentDetails', 'classYear', 'termDates'] },
-  midTerm: { title: 'Mid-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showSignatures: true, footerText: 'Each subject grade averages approved and locked coursework and mid-term exams; absences count as zero.', sections: initialSections, headerSections: ['studentDetails', 'classYear', 'termDates'] },
+  endOfTerm: { title: 'End-of-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showTeacherComments: true, showSignatures: true, footerText: 'Coursework contributes 20%, the mid-term exam 30%, and the final exam 50%.', sections: initialSections, headerSections: ['studentDetails', 'classYear', 'termDates'] },
+  midTerm: { title: 'Mid-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showSignatures: true, footerText: 'Coursework contributes 40% and the mid-term exam 60%; absences count as zero.', sections: initialSections, headerSections: ['studentDetails', 'classYear', 'termDates'] },
 };
 
 function normaliseDesign(reportDesign) {

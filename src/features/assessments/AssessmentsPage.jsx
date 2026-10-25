@@ -258,8 +258,8 @@ export default function AssessmentsPage({ user, signOut }) {
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       {['TEACHER', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role) && <FormTutorReportDetailsPanel signOut={signOut} />}
       <div className="assessment-weight-guide">
-        <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>All coursework and mid-term marks are averaged together and contribute 40%. The final exam contributes 60%.</span></div>
-        <div className="assessment-weight-guide-bar" aria-label="40 percent coursework and mid-term, 60 percent final exam"><span>Coursework + mid-term <b>40%</b></span><span>Final exam <b>60%</b></span></div>
+        <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>Mid-term reports use 40% coursework and 60% mid-term exam. End-of-term reports use 20% coursework, 30% mid-term exam and 50% final exam.</span></div>
+        <div className="assessment-weight-guide-bar" aria-label="Mid-term: 40 percent coursework and 60 percent mid-term exam. End-of-term: 20 percent coursework, 30 percent mid-term exam and 50 percent final exam."><span>Mid-term <b>40% + 60%</b></span><span>End-of-term <b>20% + 30% + 50%</b></span></div>
       </div>
       <section className="panel directory-panel assessment-panel">
         <div className="assessment-toolbar">
