@@ -10,7 +10,7 @@ export default function AssessmentPopup({ message, type = 'error', onDismiss, ac
   useEffect(() => { actionRef.current = onAction; }, [onAction]);
   useEffect(() => {
     setVisible(Boolean(message));
-    if (!message) return undefined;
+    if (!message || duration <= 0) return undefined;
     const timer = window.setTimeout(() => dismissRef.current?.(), duration);
     return () => window.clearTimeout(timer);
   }, [message, duration]);

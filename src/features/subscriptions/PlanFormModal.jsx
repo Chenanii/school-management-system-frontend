@@ -7,7 +7,7 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
     code: plan?.code || '',
     name: plan?.name || '',
     description: plan?.description || '',
-    interval: plan?.interval || 'MONTHLY',
+    interval: plan?.interval || 'TERM',
     priceMinor: plan ? String(plan.priceMinor) : '0',
     currency: plan?.currency || 'MWK',
     trialDays: plan ? String(plan.trialDays) : '14',
@@ -86,8 +86,7 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
             <label className="field-label">
               Billing interval
               <select className="text-input" name="interval" value={form.interval} onChange={updateField}>
-                <option value="MONTHLY">Monthly</option>
-                <option value="YEARLY">Yearly</option>
+                <option value="TERM">Per academic term</option>
               </select>
             </label>
             <label className="field-label">

@@ -22,6 +22,7 @@ import ReportDesignerPage from "../features/report-cards/ReportDesignerPage.jsx"
 import MidTermReportCardsPage from "../features/mid-term-report-cards/MidTermReportCardPage.jsx";
 import PromotionsPage from "../features/promotions/PromotionsPage.jsx";
 import SubscriptionsPage from "../features/subscriptions/SubscriptionsPage.jsx";
+import TermExpiryReminder from "../features/subscriptions/TermExpiryReminder.jsx";
 import TeacherInvitationPage from "../features/teachers/TeacherInvitationPage.jsx";
 import TeachersPage from "../features/teachers/TeachersPage.jsx";
 import SubjectsPage from "../features/subjects/SubjectsPage.jsx";
@@ -517,6 +518,7 @@ export default function App() {
           )}
         </div>
       </main>
+      <TermExpiryReminder user={user} schoolId={summary.school?.id} page={page} onNavigate={navigate} />
       {confirmingSignOut && (
         <SignOutConfirmation
           onCancel={() => setConfirmingSignOut(false)}

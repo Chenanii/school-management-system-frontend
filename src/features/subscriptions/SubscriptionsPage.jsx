@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Clock3, CreditCard, LoaderCircle, Pencil, Plus, RefreshCw } from 'lucide-react';
+import { Building2, CreditCard, LoaderCircle, Pencil, Plus, RefreshCw, X } from 'lucide-react';
 import PlanFormModal from './PlanFormModal.jsx';
 import SubscriptionStatusModal from './SubscriptionStatusModal.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import {
   formatPlanPrice,
   formatSubscriptionDate,
   getSubscriptionData,
   requestPlan,
+  startCheckout,
   statusLabel
 } from './subscriptionApi.js';
 
@@ -16,6 +18,49 @@ function PlanLimits({ plan }) {
       <span>{plan.maxStudents == null ? 'Unlimited' : plan.maxStudents} students</span>
       <span>{plan.maxStaff == null ? 'Unlimited' : plan.maxStaff} staff</span>
     </div>
+  );
+}
+
+function PaymentCheckoutModal({ plan, loading, onClose, onPay }) {
+  if (!plan) return null;
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !loading) onClose();
+    }}>
+      <section className="user-modal subscription-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
+        <div className="modal-heading">
+          <div>
+            <p className="eyebrow">Plan change awaiting payment</p>
+            <h2 id="checkout-modal-title">Complete your subscription</h2>
+            <p>{plan.name} · {formatPlanPrice(plan)}</p>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} disabled={loading} aria-label="Close"><X size={19} /></button>
+        </div>
+        <p className="checkout-modal-copy">Your plan will be activated after PayChangu confirms your payment.</p>
+        <div className="modal-actions">
+          <button className="secondary-button" type="button" onClick={onClose} disabled={loading}>Pay later</button>
+          <button className="primary-button" type="button" onClick={onPay} disabled={loading}>
+            {loading ? <LoaderCircle size={16} className="animate-spin" /> : <CreditCard size={16} />}
+            {loading ? 'Opening checkout…' : 'Pay with PayChangu'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FloatingPaymentReminder({ plan, onCompletePayment }) {
+  if (!plan) return null;
+  return (
+    <aside className="subscription-payment-reminder" aria-label="Pending subscription payment">
+      <div>
+        <strong>Plan change awaiting payment</strong>
+        <span>{plan.name} · {formatPlanPrice(plan)}</span>
+      </div>
+      <button className="primary-button" type="button" onClick={onCompletePayment}>
+        <CreditCard size={15} /> Complete payment
+      </button>
+    </aside>
   );
 }
 
@@ -90,6 +135,7 @@ function PlanManager({ signOut }) {
 
 function SubscriptionManager({ signOut }) {
   const [subscriptions, setSubscriptions] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -98,8 +144,12 @@ function SubscriptionManager({ signOut }) {
   const load = useCallback(async () => {
     setError('');
     try {
-      const result = await getSubscriptionData('/subscriptions/manage/subscriptions');
+      const [result, paymentResult] = await Promise.all([
+        getSubscriptionData('/subscriptions/manage/subscriptions'),
+        getSubscriptionData('/subscriptions/manage/payments')
+      ]);
       setSubscriptions(result.data || []);
+      setPayments(paymentResult.data || []);
     } catch (cause) {
       setError(cause.message);
       if (cause.status === 401) signOut();
@@ -160,6 +210,21 @@ function SubscriptionManager({ signOut }) {
           }}
         />
       )}
+      <div className="subscription-section-heading mt-6"><div><h2>Payment ledger</h2><p>Provider verified status for every checkout attempt.</p></div><span className="subscription-record-count">{payments.length} records</span></div>
+      <div className="overflow-x-auto">
+        <table className="people-table subscription-table">
+          <thead><tr><th>School</th><th>Plan</th><th>Reference</th><th>Amount</th><th>Status</th><th>Paid/created</th></tr></thead>
+          <tbody>{payments.map((payment) => (
+            <tr key={payment.id}>
+              <td><div className="subscription-school-cell"><strong>{payment.school?.name || 'School'}</strong><span>{payment.school?.slug}</span></div></td>
+              <td>{payment.plan?.name}</td><td className="font-mono text-xs">{payment.txRef}</td>
+              <td>{payment.currency} {(payment.amount / 100).toFixed(2)}</td>
+              <td><span className={`subject-status subject-status-${payment.status.toLowerCase()}`}>{statusLabel(payment.status)}</span></td>
+              <td className="whitespace-nowrap text-muted">{formatSubscriptionDate(payment.verifiedAt || payment.createdAt)}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -170,21 +235,34 @@ function SchoolSubscription({ signOut }) {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionMessage, setActionMessage] = useState('');
-  const [actionIsError, setActionIsError] = useState(false);
+  const [actionMessage, setActionMessage] = useState(() => {
+    const status = new URLSearchParams(window.location.search).get('payment_status');
+    if (status === 'success') return 'Payment confirmed by PayChangu. Your subscription is active.';
+    if (status === 'failed') return 'PayChangu reports that this payment did not complete. You can retry checkout.';
+    if (status === 'pending') return 'Payment is still pending verification. Check payment history again shortly.';
+    return '';
+  });
+  const [actionIsError, setActionIsError] = useState(() => new URLSearchParams(window.location.search).get('payment_status') === 'failed');
   const [requesting, setRequesting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [payments, setPayments] = useState([]);
+  const [checkoutSubscriptionId, setCheckoutSubscriptionId] = useState('');
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const [subscriptionResult, plansResult] = await Promise.all([
+      const [subscriptionResult, plansResult, paymentResult] = await Promise.all([
         getSubscriptionData('/subscriptions/current'),
-        getSubscriptionData('/subscriptions/plans')
+        getSubscriptionData('/subscriptions/plans'),
+        getSubscriptionData('/subscriptions/payments')
       ]);
       setSubscription(subscriptionResult.data);
       setPlans(plansResult.data || []);
-      setSelectedPlan((current) => current || plansResult.data?.[0]?.id || '');
+      setPayments(paymentResult.data || []);
+      setCheckoutSubscriptionId(subscriptionResult.data?.pendingChange?.plan?.priceMinor > 0
+        ? subscriptionResult.data.pendingChange.id
+        : '');
+      setSelectedPlan('');
     } catch (cause) {
       setError(cause.message);
       if (cause.status === 401) signOut();
@@ -207,9 +285,8 @@ function SchoolSubscription({ signOut }) {
     try {
       const result = await requestPlan(selectedPlan);
       const status = result.data?.status;
-      setActionMessage(status === 'ACTIVE'
-        ? 'Your plan has been changed successfully.'
-        : 'Plan change requested. Payment confirmation is pending; contact your school platform administrator to complete the change.');
+      if (status === 'ACTIVE') setActionMessage('Your plan has been changed successfully.');
+      else setActionMessage('');
       setRefreshKey((current) => current + 1);
     } catch (cause) {
       setActionMessage(cause.message);
@@ -220,24 +297,39 @@ function SchoolSubscription({ signOut }) {
     }
   }
 
+  async function payForSubscription(subscriptionId) {
+    setRequesting(true);
+    setActionMessage('');
+    try {
+      const result = await startCheckout(subscriptionId);
+      window.location.assign(result.data.checkoutUrl);
+    } catch (cause) {
+      setActionMessage(cause.message);
+      setActionIsError(true);
+      if (cause.status === 401) signOut();
+    } finally { setRequesting(false); }
+  }
+
   const current = subscription?.current;
   const pendingChange = subscription?.pendingChange;
-  const selectedIsAlreadyRequested = selectedPlan === current?.planId || selectedPlan === pendingChange?.planId;
+  const pendingPaymentExists = payments.some((payment) => payment.subscriptionId === pendingChange?.id && payment.status === 'PENDING');
+  const renewalAllowed = Boolean(current?.currentPeriodEnd &&
+    new Date(current.currentPeriodEnd).getTime() > Date.now() &&
+    new Date(current.currentPeriodEnd).getTime() - Date.now() <= 28 * 24 * 60 * 60 * 1000);
+  const selectedIsAlreadyRequested = (selectedPlan === current?.planId && !renewalAllowed) || selectedPlan === pendingChange?.planId;
 
   if (loading) {
     return <div className="panel subscription-loading"><LoaderCircle size={20} className="animate-spin text-green-700" /><span>Loading your subscription…</span></div>;
   }
-  if (error) {
-    return <div className="panel subscription-loading subscription-error"><p>{error}</p><button className="text-button" onClick={() => setRefreshKey((value) => value + 1)}>Try again</button></div>;
-  }
-
   return (
     <div className="school-subscription-content">
-      {actionMessage && (
-        <div className={actionIsError ? 'notice-error' : 'teaching-assignment-notice'} role={actionIsError ? 'alert' : 'status'}>
-          <span>{actionMessage}</span><button className="text-button" onClick={() => setActionMessage('')}>Dismiss</button>
-        </div>
-      )}
+      <AssessmentPopup message={error} duration={15000} onDismiss={() => setError('')} actionLabel="Try again" onAction={() => setRefreshKey((value) => value + 1)} />
+      <AssessmentPopup
+        message={actionMessage}
+        duration={pendingChange?.plan?.priceMinor > 0 ? 0 : 15000}
+        type={actionIsError ? 'error' : 'success'}
+        onDismiss={() => setActionMessage('')}
+      />
       <section className="panel subscription-current-panel">
         <div className="subscription-current-icon"><CreditCard size={20} /></div>
         <div className="subscription-current-copy">
@@ -259,13 +351,6 @@ function SchoolSubscription({ signOut }) {
         </div>
         {current && <span className={`subject-status subject-status-${current.status.toLowerCase().replace('_', '-')}`}>{statusLabel(current.status)}</span>}
       </section>
-      {pendingChange && (
-        <section className="subscription-pending-card">
-          <Clock3 size={17} />
-          <div><strong>Plan change awaiting confirmation</strong><span>{pendingChange.plan?.name} · requested {formatSubscriptionDate(pendingChange.createdAt)}</span></div>
-          <span className="subject-status subject-status-pending-payment">Pending payment</span>
-        </section>
-      )}
       <section className="panel school-plan-selection">
         <div className="subscription-section-heading">
           <div><h2>Available plans</h2><p>Select a plan to apply or send a change request to the platform administrator.</p></div>
@@ -278,12 +363,13 @@ function SchoolSubscription({ signOut }) {
               {plans.map((plan) => {
                 const isCurrent = current?.planId === plan.id;
                 const isPending = pendingChange?.planId === plan.id;
+                const canRenewCurrent = isCurrent && renewalAllowed;
                 return (
                   <label className={`subscription-plan-card subscription-choice-card ${selectedPlan === plan.id ? 'subscription-choice-selected' : ''}`} key={plan.id}>
-                    <input type="radio" name="plan" value={plan.id} checked={selectedPlan === plan.id} onChange={() => setSelectedPlan(plan.id)} disabled={isCurrent || isPending} />
+                    <input type="radio" name="plan" value={plan.id} checked={selectedPlan === plan.id} onChange={() => setSelectedPlan(plan.id)} disabled={(isCurrent && !canRenewCurrent) || isPending || pendingPaymentExists} />
                     <div className="subscription-plan-card-top">
                       <div><span className="eyebrow">{plan.interval.toLowerCase()}</span><h3>{plan.name}</h3></div>
-                      {(isCurrent || isPending) && <span className="subject-status subject-status-active">{isCurrent ? 'Current' : 'Requested'}</span>}
+                      {(isCurrent || isPending) && <span className="subject-status subject-status-active">{canRenewCurrent ? 'Renewal available' : isCurrent ? 'Current' : 'Requested'}</span>}
                     </div>
                     <p className="subscription-plan-description">{plan.description || `${plan.trialDays} day${plan.trialDays === 1 ? '' : 's'} trial`}</p>
                     <strong className="subscription-plan-price">{formatPlanPrice(plan)}</strong>
@@ -294,7 +380,7 @@ function SchoolSubscription({ signOut }) {
               })}
             </div>
             <div className="subscription-request-footer">
-              {pendingChange && <span>Requesting another plan will replace the current pending request.</span>}
+              {pendingPaymentExists && <span>Complete or verify the pending checkout before requesting another plan.</span>}
               <button className="primary-button" type="submit" disabled={requesting || !selectedPlan || plans.length === 0 || selectedIsAlreadyRequested}>
                 {requesting ? <LoaderCircle size={16} className="animate-spin" /> : <RefreshCw size={15} />}
                 {requesting ? 'Sending request…' : 'Request plan change'}
@@ -316,6 +402,29 @@ function SchoolSubscription({ signOut }) {
           </div>
         </section>
       )}
+      {payments.length > 0 && (
+        <section className="panel subscription-history-panel">
+          <div className="subscription-section-heading"><div><h2>Payment history</h2><p>Payment status is updated only after PayChangu confirms the transaction.</p></div></div>
+          <div className="subscription-history-list">
+            {payments.map((payment) => (
+              <div className="subscription-history-row" key={payment.id}>
+                <div><strong>{payment.plan?.name || payment.txRef}</strong><span>{payment.txRef} · {formatSubscriptionDate(payment.createdAt)} · {payment.currency} {(payment.amount / 100).toFixed(2)}</span></div>
+                <span className={`subject-status subject-status-${payment.status.toLowerCase()}`}>{statusLabel(payment.status)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      <PaymentCheckoutModal
+        plan={pendingChange?.id === checkoutSubscriptionId ? pendingChange.plan : null}
+        loading={requesting}
+        onClose={() => setCheckoutSubscriptionId('')}
+        onPay={() => payForSubscription(checkoutSubscriptionId)}
+      />
+      <FloatingPaymentReminder
+        plan={pendingChange?.plan?.priceMinor > 0 && !checkoutSubscriptionId ? pendingChange.plan : null}
+        onCompletePayment={() => setCheckoutSubscriptionId(pendingChange.id)}
+      />
     </div>
   );
 }

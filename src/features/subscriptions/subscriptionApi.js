@@ -27,6 +27,10 @@ export function requestPlan(planId) {
   });
 }
 
+export function startCheckout(subscriptionId) {
+  return apiRequest(`/subscriptions/${subscriptionId}/checkout`, { method: 'POST' });
+}
+
 export function updateSubscription(id, data) {
   return apiRequest(`/subscriptions/${id}/status`, {
     method: 'PATCH',
@@ -41,7 +45,7 @@ export function formatPlanPrice(plan) {
       currency: plan.currency
     });
     const amount = plan.priceMinor / (10 ** formatter.resolvedOptions().maximumFractionDigits);
-    const period = plan.interval === 'YEARLY' ? 'year' : 'month';
+    const period = 'academic term';
     return plan.priceMinor === 0 ? 'Free' : `${formatter.format(amount)} / ${period}`;
   } catch {
     return `${plan.currency} ${(plan.priceMinor / 100).toFixed(2)}`;

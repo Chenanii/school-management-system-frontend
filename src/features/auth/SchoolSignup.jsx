@@ -11,7 +11,7 @@ function formatPrice(plan) {
   });
   const amount = plan.priceMinor / (10 ** formatter.resolvedOptions().maximumFractionDigits);
   const price = formatter.format(amount);
-  const interval = plan.interval === 'YEARLY' ? 'year' : 'month';
+  const interval = 'academic term';
   return plan.priceMinor === 0 ? 'Free' : `${price} / ${interval}`;
 }
 
