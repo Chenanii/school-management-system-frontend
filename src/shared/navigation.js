@@ -23,7 +23,7 @@ import {
 
 
 export const sections = [
-  { id: "overview", label: "Overview", group: "Home", icon: LayoutDashboard },
+  { id: "overview", label: "Overviewx", group: "Home", icon: LayoutDashboard },
   {
     id: "profiles",
     label: "My profile",
