@@ -3,10 +3,11 @@ import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Eye, LoaderCirc
 import { fetchAllPages, fetchTerms, formatTermDate, termStatusLabel, termStatuses, termTransitions, updateTermStatus } from './termApi.js';
 import TermDetailsModal from './TermDetailsModal.jsx';
 import TermFormModal from './TermFormModal.jsx';
+import ToastMessage from '../../components/ToastMessage.jsx';
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
 
-export default function TermsPage({ signOut }) {
+export default function TermsPage({ user, signOut }) {
   const [terms, setTerms] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [pagination, setPagination] = useState(emptyPagination);
@@ -127,18 +128,8 @@ export default function TermsPage({ signOut }) {
           <button className="text-button" onClick={refresh}>Try again</button>
         </div>
       )}
-      {actionError && (
-        <div className="notice-error" role="alert">
-          <span>{actionError}</span>
-          <button className="text-button" onClick={() => setActionError('')}>Dismiss</button>
-        </div>
-      )}
-      {actionNotice && (
-        <div className="teaching-assignment-notice" role="status">
-          <span>{actionNotice}</span>
-          <button className="text-button" onClick={() => setActionNotice('')}>Dismiss</button>
-        </div>
-      )}
+      {actionError && <ToastMessage onDismiss={() => setActionError('')}>{actionError}</ToastMessage>}
+      {actionNotice && <ToastMessage type="success" onDismiss={() => setActionNotice('')}>{actionNotice}</ToastMessage>}
       <section className="panel directory-panel term-panel">
         <div className="term-toolbar">
           <label className="sr-only" htmlFor="term-year-filter">Filter by academic year</label>
@@ -174,7 +165,7 @@ export default function TermsPage({ signOut }) {
               </thead>
               <tbody>
                 {terms.map((term) => {
-                  const transitions = termTransitions[term.status] || [];
+                  const transitions = (termTransitions[term.status] || []).filter((nextStatus) => nextStatus !== 'FINALIZED' || user?.role === 'HEADTEACHER');
                   return (
                     <tr key={term.id}>
                       <td>
@@ -239,11 +230,13 @@ export default function TermsPage({ signOut }) {
       {detailTerm && (
         <TermDetailsModal
           term={detailTerm}
+          user={user}
           signOut={signOut}
           onClose={() => setDetailTerm(null)}
           onEdit={openEdit}
           onStatusChanged={(updated) => {
             setDetailTerm(updated);
+            setActionNotice(`${updated.name} moved to ${termStatusLabel(updated.status)}.`);
             refresh();
           }}
         />

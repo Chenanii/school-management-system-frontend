@@ -15,11 +15,18 @@ function formatPrice(plan) {
   return plan.priceMinor === 0 ? 'Free' : `${price} / ${interval}`;
 }
 
+function schoolSlug(name) {
+  return name.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+}
+
 export default function SchoolSignup({ onBack, onCreated }) {
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [nameAvailability, setNameAvailability] = useState({ status: 'idle', message: '' });
+  const [nameCheckRetry, setNameCheckRetry] = useState(0);
   const [schoolEmail, setSchoolEmail] = useState('');
   const [adminFirstName, setAdminFirstName] = useState('');
   const [adminLastName, setAdminLastName] = useState('');
@@ -31,6 +38,7 @@ export default function SchoolSignup({ onBack, onCreated }) {
   const [plansRetry, setPlansRetry] = useState(0);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const workspaceSlug = schoolSlug(schoolName.trim());
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +60,29 @@ export default function SchoolSignup({ onBack, onCreated }) {
     loadPlans();
     return () => { cancelled = true; };
   }, [plansRetry]);
+
+  useEffect(() => {
+    const name = schoolName.trim();
+    if (name.length < 2) {
+      setNameAvailability({ status: 'idle', message: '' });
+      return undefined;
+    }
+    let cancelled = false;
+    setNameAvailability({ status: 'checking', message: 'Checking school name availability…' });
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ name });
+        const result = await apiRequest(`/schools/name-availability?${params}`);
+        if (!cancelled) setNameAvailability({
+          status: result.data.available ? 'available' : 'unavailable',
+          message: result.data.message
+        });
+      } catch {
+        if (!cancelled) setNameAvailability({ status: 'error', message: 'We could not check availability right now. You can try again shortly.' });
+      }
+    }, 450);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [schoolName, nameCheckRetry]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -98,6 +129,12 @@ export default function SchoolSignup({ onBack, onCreated }) {
       setError('Choose an available subscription plan to continue.');
       return;
     }
+    if (nameAvailability.status !== 'available') {
+      setError(nameAvailability.status === 'unavailable'
+        ? 'This school name is already in use. Choose a different name to continue.'
+        : 'Please wait until the school name availability check is complete.');
+      return;
+    }
     setStep(2);
   }
 
@@ -128,8 +165,13 @@ export default function SchoolSignup({ onBack, onCreated }) {
               <h2>Tell us about your school</h2>
               <label className="field-label">
                 School name
-                <input className="text-input" type="text" autoComplete="organization" maxLength={160} placeholder="e.g. Greenfields Secondary School" value={schoolName} onChange={(event) => setSchoolName(event.target.value)} required />
+                <input className="text-input" type="text" autoComplete="organization" maxLength={160} placeholder="e.g. Greenfields Secondary School" value={schoolName} onChange={(event) => { setSchoolName(event.target.value); setError(''); }} aria-describedby="school-workspace-url school-name-availability" aria-invalid={nameAvailability.status === 'unavailable'} required />
               </label>
+              <div id="school-workspace-url" className="school-workspace-url">
+                <span>Workspace URL</span>
+                <code>{window.location.origin}/{workspaceSlug || 'your-school-name'}</code>
+              </div>
+              {nameAvailability.message && <div id="school-name-availability" className={`field-hint school-name-availability school-name-availability-${nameAvailability.status}`} role="status" aria-live="polite">{nameAvailability.status === 'checking' && <LoaderCircle size={13} className="animate-spin" />}{nameAvailability.message}{nameAvailability.status === 'error' && <button className="text-button" type="button" onClick={() => setNameCheckRetry((count) => count + 1)}>Try again</button>}</div>}
               <label className="field-label">
                 School email <span className="optional-label">Optional</span>
                 <input className="text-input" type="email" autoComplete="email" placeholder="office@school.edu" value={schoolEmail} onChange={(event) => setSchoolEmail(event.target.value)} />
@@ -190,7 +232,7 @@ export default function SchoolSignup({ onBack, onCreated }) {
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="signup-step-actions">
             {step === 2 && <button className="secondary-button" type="button" onClick={() => { setStep(1); setError(''); }}><ArrowLeft size={15} /> Back</button>}
-            <button className="primary-button justify-center" type="submit" disabled={step === 1 ? plansLoading || Boolean(plansError) || plans.length === 0 : busy || plansLoading || Boolean(plansError) || plans.length === 0}>
+            <button className="primary-button justify-center" type="submit" disabled={step === 1 ? plansLoading || Boolean(plansError) || plans.length === 0 || nameAvailability.status !== 'available' : busy || plansLoading || Boolean(plansError) || plans.length === 0}>
               {busy ? <LoaderCircle size={17} className="animate-spin" /> : null}
               {busy ? 'Creating your school…' : step === 1 ? 'Continue to administrator' : 'Create school account'}
             </button>

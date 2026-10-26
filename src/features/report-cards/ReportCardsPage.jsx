@@ -3,6 +3,8 @@ import { FileText, ListChecks, LoaderCircle, Printer, RotateCcw } from 'lucide-r
 import { fetchAllPages, fetchClassGroupReportCards, publishClassGroupEndOfTermReports, unpublishClassGroupEndOfTermReports, saveEndOfTermReportDetails } from './reportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import ToastMessage from '../../components/ToastMessage.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import cambridgeAssessmentLogo from '../../assets/cambridge-assessment-logo.png';
 
 function studentName(student) {
@@ -108,6 +110,8 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
   const [batchReportCards, setBatchReportCards] = useState(null);
   const [readinessReportCards, setReadinessReportCards] = useState(null);
   const [publication, setPublication] = useState(null);
+  const [paymentRequired, setPaymentRequired] = useState(false);
+  const [finalExamResultsStarted, setFinalExamResultsStarted] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [loadingReadiness, setLoadingReadiness] = useState(false);
@@ -119,7 +123,8 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
   const [errorCode, setErrorCode] = useState('');
   const [notice, setNotice] = useState('');
   const [unpublishWindowOpen, setUnpublishWindowOpen] = useState(false);
-  const canPublishResults = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
+  const canPublishResults = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role);
+  const downloadsRestricted = paymentRequired || finalExamResultsStarted;
 
   useEffect(() => {
     const publishedAt = publication?.publishedAt ? new Date(publication.publishedAt).getTime() : NaN;
@@ -181,15 +186,31 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
     setBatchReportCards(null);
     setReadinessReportCards(null);
     setPublication(null);
+    setPaymentRequired(false);
+    setFinalExamResultsStarted(false);
     setError('');
     setErrorCode('');
     try {
       const result = await fetchClassGroupReportCards(termId, classGroupId);
       setBatchReportCards(result.data || []);
       setPublication(result.publication || null);
+      setPaymentRequired(Boolean(result.paymentRequired));
+      setFinalExamResultsStarted(Boolean(result.finalExamResultsStarted));
     } catch (cause) {
-      setError(cause.message);
-      setErrorCode(cause.code || '');
+      if (cause.code === 'END_OF_TERM_ASSESSMENTS_INCOMPLETE') {
+        await loadReadiness();
+      } else if (['REPORTS_RESTRICTED_NEAR_TERM_END', 'SUBSCRIPTION_PAYMENT_REQUIRED'].includes(cause.code)) {
+        setPaymentRequired(true);
+        setError('');
+        setErrorCode('');
+      } else if (cause.code === 'FINAL_EXAM_RESULTS_STARTED') {
+        setFinalExamResultsStarted(true);
+        setError('');
+        setErrorCode('');
+      } else {
+        setError(cause.message);
+        setErrorCode(cause.code || '');
+      }
       if (cause.status === 401) signOut();
     } finally {
       setLoadingBatch(false);
@@ -201,13 +222,27 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
     setLoadingReadiness(true);
     setError('');
     setErrorCode('');
+    setPaymentRequired(false);
+    setFinalExamResultsStarted(false);
     try {
       const result = await fetchClassGroupReportCards(termId, classGroupId, { allowIncomplete: true });
       setReadinessReportCards(result.data || []);
       setPublication(result.publication || null);
+      setPaymentRequired(Boolean(result.paymentRequired));
+      setFinalExamResultsStarted(Boolean(result.finalExamResultsStarted));
     } catch (cause) {
-      setError(cause.message);
-      setErrorCode(cause.code || '');
+      if (['REPORTS_RESTRICTED_NEAR_TERM_END', 'SUBSCRIPTION_PAYMENT_REQUIRED'].includes(cause.code)) {
+        setPaymentRequired(true);
+        setError('');
+        setErrorCode('');
+      } else if (cause.code === 'FINAL_EXAM_RESULTS_STARTED') {
+        setFinalExamResultsStarted(true);
+        setError('');
+        setErrorCode('');
+      } else {
+        setError(cause.message);
+        setErrorCode(cause.code || '');
+      }
       if (cause.status === 401) signOut();
     } finally {
       setLoadingReadiness(false);
@@ -226,8 +261,18 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
       setNotice(`End-of-term reports published ${new Date(result.data.publishedAt).toLocaleString()}.`);
       await loadReadiness();
     } catch (cause) {
-      setError(cause.message);
-      setErrorCode(cause.code || '');
+      if (cause.code === 'SUBSCRIPTION_PAYMENT_REQUIRED') {
+        setPaymentRequired(true);
+        setError('');
+        setErrorCode('');
+      } else if (cause.code === 'FINAL_EXAM_RESULTS_STARTED') {
+        setFinalExamResultsStarted(true);
+        setError('');
+        setErrorCode('');
+      } else {
+        setError(cause.message);
+        setErrorCode(cause.code || '');
+      }
       if (cause.status === 401) signOut();
     } finally {
       setPublishingClassResults(false);
@@ -267,25 +312,26 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
           <p className="mt-2 text-sm text-muted">Select an academic term and class group to view and download every student report together.</p>
         </div>
       </div>
-      {error && <div className="notice-error mb-4" role="alert"><span>{error}</span>{errorCode === 'END_OF_TERM_ASSESSMENTS_INCOMPLETE' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grade scale</button>}<button className="text-button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button></div>}
-      {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
+      {error && <ToastMessage onDismiss={() => { setError(''); setErrorCode(''); }}><span>{error}</span>{errorCode === 'END_OF_TERM_ASSESSMENTS_INCOMPLETE' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grade scale</button>}</ToastMessage>}
+      {notice && <ToastMessage type="success" onDismiss={() => setNotice('')}>{notice}</ToastMessage>}
+      <AssessmentPopup message={paymentRequired ? 'Subscription payment has not been confirmed for this finalized term. Please make payment before publishing or downloading reports.' : finalExamResultsStarted ? 'Final exam results are being entered or are awaiting lock for this class. Publishing and downloading reports are disabled until mark entry is complete and the exam is locked.' : ''} duration={0} actionLabel={paymentRequired && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? 'Make payment' : ''} onAction={() => onNavigate('subscriptions')} />
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading"><div><h2>Generate class report batch</h2><p>All active student reports for the selected term and class group will appear together.</p></div></div>
         <div className="report-card-filters">
           <label className="field-label">Academic term
-            <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setClassGroupId(''); setBatchReportCards(null); setReadinessReportCards(null); setPublication(null); setError(''); setErrorCode(''); }} required disabled={loadingOptions}>
+            <select className="text-input" value={termId} onChange={(event) => { setTermId(event.target.value); setClassGroupId(''); setBatchReportCards(null); setReadinessReportCards(null); setPublication(null); setPaymentRequired(false); setFinalExamResultsStarted(false); setError(''); setErrorCode(''); }} required disabled={loadingOptions}>
               <option value="">Select a term</option>
               {terms.map((term) => <option key={term.id} value={term.id}>{termLabel(term)}</option>)}
             </select>
           </label>
           <label className="field-label">Class group
-            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); setBatchReportCards(null); setReadinessReportCards(null); setPublication(null); setError(''); setErrorCode(''); }} required disabled={!termId}>
+            <select className="text-input" value={classGroupId} onChange={(event) => { setClassGroupId(event.target.value); setBatchReportCards(null); setReadinessReportCards(null); setPublication(null); setPaymentRequired(false); setFinalExamResultsStarted(false); setError(''); setErrorCode(''); }} required disabled={!termId}>
               <option value="">Select a class group</option>
               {availableGroups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}
             </select>
           </label>
-          {termId && classGroupId && <button className="primary-button report-card-batch-load" type="button" onClick={loadBatchReportCards} disabled={loadingBatch}>
+          {termId && classGroupId && !downloadsRestricted && <button className="primary-button report-card-batch-load" type="button" onClick={loadBatchReportCards} disabled={loadingBatch}>
             {loadingBatch ? <LoaderCircle size={16} className="animate-spin" /> : <FileText size={16} />}
             {loadingBatch ? 'Loading class reports…' : 'View / download all reports'}
           </button>}
@@ -299,18 +345,18 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
         ? <div className="panel table-message no-print"><span>No active student enrollments were found, so readiness could not be checked.</span></div>
         : readinessReportCards.every((card) => card.complete)
           ? <div className="panel table-message no-print report-readiness-success" role="status">
-            <span>{publication ? `End-of-term reports were published ${new Date(publication.publishedAt).toLocaleString()}.` : 'Every subject result is ready for end-of-term publication.'} Select “View / download all reports” to preview or print them.</span>
-            {canPublishResults && !publication && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults}>{publishingClassResults ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishingClassResults ? 'Publishing results…' : 'Publish end-of-term reports for class'}</button>}
-            {canPublishResults && publication && unpublishWindowOpen && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}
+            <span>{downloadsRestricted ? 'Readiness is available, but report downloads are disabled until the subscription is paid and final exam mark entry is complete.' : publication ? `End-of-term reports were published ${new Date(publication.publishedAt).toLocaleString()}.` : 'Every subject result is ready. The headteacher must finalize the term before a school administrator can publish.'}{!downloadsRestricted && ' Select “View / download all reports” to preview or print them.'}</span>
+            {canPublishResults && !publication && !paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults}>{publishingClassResults ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishingClassResults ? 'Publishing results…' : 'Publish end-of-term reports for class'}</button>}
+            {canPublishResults && publication && unpublishWindowOpen && !paymentRequired && !finalExamResultsStarted && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}
           </div>
-          : <ReadinessPanel reportCards={readinessReportCards} canPublish={canPublishResults} publishing={publishingClassResults} onPublish={() => setShowPublishConfirmation(true)} />)}
+          : <ReadinessPanel reportCards={readinessReportCards} canPublish={canPublishResults && !paymentRequired && !finalExamResultsStarted} publishing={publishingClassResults} onPublish={() => setShowPublishConfirmation(true)} />)}
       {batchReportCards && <section className="report-card-preview report-card-batch">
-        <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. Marks are calculated directly from locked assessments{publication ? ' and published for this class.' : '.'}</span>{canPublishResults && publication && unpublishWindowOpen && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}<button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button></div>
+        <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. Marks are calculated directly from locked assessments{publication ? ' and published for this class.' : '.'}</span>{canPublishResults && publication && unpublishWindowOpen && !paymentRequired && !finalExamResultsStarted && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}{!paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button>}</div>
         {!batchReportCards.length ? <div className="panel table-message"><span>No active student enrollments found in this class group and term.</span></div> : batchReportCards.map((card) => <ReportCardPaper key={card.enrollment.id} reportCard={card} />)}
       </section>}
       {showPublishConfirmation && <ConfirmActionModal
         title="Calculate and publish end-of-term results?"
-        message="The system will calculate results from approved and locked assessments, finalize them, and release every subject for the selected class and term to students and parents. Nothing will be published if a required mark or calculation is incomplete."
+        message="The headteacher must finalize the term before publication. The system will calculate results from approved and locked assessments, then release every subject for the selected class and term to students and parents. Nothing will be published if a required mark or calculation is incomplete."
         confirmationText="PUBLISH END-OF-TERM"
         confirmLabel={publishingClassResults ? 'Calculating and publishing…' : 'Calculate and publish all results'}
         tone="primary"

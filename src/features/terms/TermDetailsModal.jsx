@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, ClipboardList, LoaderCircle, Users, X } from 'lucide-react';
+import ToastMessage from '../../components/ToastMessage.jsx';
 import { fetchTerm, formatTermDate, termStatusLabel, termTransitions, updateTermStatus } from './termApi.js';
 
-export default function TermDetailsModal({ term, signOut, onClose, onEdit, onStatusChanged }) {
+export default function TermDetailsModal({ term, user, signOut, onClose, onEdit, onStatusChanged }) {
   const [details, setDetails] = useState(term);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +42,7 @@ export default function TermDetailsModal({ term, signOut, onClose, onEdit, onSta
     }
   }
 
-  const transitions = termTransitions[details.status] || [];
+  const transitions = (termTransitions[details.status] || []).filter((nextStatus) => nextStatus !== 'FINALIZED' || user?.role === 'HEADTEACHER');
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
@@ -81,7 +82,7 @@ export default function TermDetailsModal({ term, signOut, onClose, onEdit, onSta
               <span>Annual result weight</span>
               <strong>{details.annualWeightPercent == null ? 'Not set' : `${Number(details.annualWeightPercent)}%`}</strong>
             </div>
-            {actionError && <p className="form-error" role="alert">{actionError}</p>}
+            {actionError && <ToastMessage onDismiss={() => setActionError('')}>{actionError}</ToastMessage>}
             {transitions.length > 0 && (
               <section className="term-workflow">
                 <h3>Next status</h3>

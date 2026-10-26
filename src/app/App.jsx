@@ -368,7 +368,7 @@ export default function App() {
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,
             ) ? (
-            <TermsPage signOut={signOut} />
+            <TermsPage user={user} signOut={signOut} />
           ) : page === "teaching-assignments" &&
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,

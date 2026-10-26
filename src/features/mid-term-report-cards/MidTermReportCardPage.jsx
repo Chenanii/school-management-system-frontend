@@ -5,6 +5,7 @@ import { fetchAllPages } from '../report-cards/reportCardApi.js';
 import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, publishClassGroupMidTermReportCards, saveMidTermReportDetails } from './midTermReportCardApi.js';
 import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 import cambridgeAssessmentLogo from '../../assets/cambridge-assessment-logo.png';
 
 function studentName(student) {
@@ -138,7 +139,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
   const [notice, setNotice] = useState('');
-  const canPublish = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
+  const canPublish = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,8 +229,12 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       setBatchReportCards(result.data || []);
       setPublication(result.publication || null);
     } catch (cause) {
-      setError(cause.message);
-      setErrorCode(cause.code || '');
+      if (cause.code === 'MID_TERM_RESULTS_INCOMPLETE') {
+        await loadMissingItems();
+      } else {
+        setError(cause.message);
+        setErrorCode(cause.code || '');
+      }
       if (cause.status === 401) signOut();
     } finally {
       setLoadingBatch(false);
@@ -282,21 +287,8 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
         </div>
       </div>
 
-      {error && (
-        <div className="notice-error mb-4" role="alert">
-          <span>{error}</span>
-          {errorCode === 'MID_TERM_RESULTS_INCOMPLETE' && !missingReportCards && (
-            <button className="text-button" type="button" onClick={loadMissingItems} disabled={loadingMissing}>
-              {loadingMissing ? 'Checking…' : 'Show what is missing'}
-            </button>
-          )}
-          {errorCode === 'MID_TERM_RESULTS_INCOMPLETE' && <button className="text-button" type="button" onClick={() => onNavigate('assessments')}>Go to Assessments to approve and lock</button>}
-          {errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}
-          {errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grading scale</button>}
-          <button className="text-button" type="button" onClick={() => { setError(''); setErrorCode(''); }}>Dismiss</button>
-        </div>
-      )}
-      {notice && <div className="teaching-assignment-notice mb-4" role="status"><span>{notice}</span><button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
+      <AssessmentPopup message={error} onDismiss={() => { setError(''); setErrorCode(''); }} />
+      {notice && <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />}
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading">

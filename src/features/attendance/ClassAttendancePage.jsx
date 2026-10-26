@@ -302,7 +302,6 @@ export default function ClassAttendancePage({ user, signOut }) {
         {canViewReport && <div className="attendance-report">
           <div className="attendance-report-heading"><div><strong>Attendance report</strong><span>Saved register days in the selected term. Late marks count as present; excused marks are excluded from the percentage.</span></div>
             <div className="attendance-report-actions">
-              <button type="button" className="secondary-button" onClick={() => downloadReport('pdf')} disabled={reportDownloading || !termId}>Download PDF</button>
               <button type="button" className="secondary-button" onClick={() => downloadReport('excel')} disabled={reportDownloading || !termId}>Download Excel</button>
             </div>
           </div>
