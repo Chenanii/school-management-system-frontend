@@ -128,7 +128,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
             {parentSetup
               ? 'Verify the email address or phone number the school has on your child’s record, then choose your password.'
               : forgotPassword
-                ? 'Enter the email address on your account. We’ll send a link to reset your password.'
+                ? 'Enter your account email. We’ll check that it belongs to an active account before sending a reset link.'
               : 'Your school day, thoughtfully organized.'}
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
               type={forgotPassword ? 'email' : 'text'}
               name={forgotPassword ? 'email' : 'username'}
               autoComplete={forgotPassword ? 'email' : 'username'}
-              placeholder={parentSetup ? 'Use the contact registered with the school' : 'you@school.edu or +265...'}
+              placeholder={parentSetup ? 'Use the contact registered with the school' : forgotPassword ? 'you@school.edu' : 'Email address or +265...'}
               value={identifier}
               onChange={(event) => {
                 setIdentifier(event.target.value);
@@ -165,7 +165,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
               <PasswordInput name="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
             </label>
           ) : forgotPassword ? (
-            <p className="parent-access-help">For security, this page will give the same confirmation whether or not the email is registered.</p>
+            <p className="parent-access-help">Password reset links are sent only to the email address on an active account.</p>
           ) : enteringCode ? (
             <>
               {parentNotice && <p className="parent-access-notice" role="status">{parentNotice}</p>}

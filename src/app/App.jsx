@@ -43,6 +43,7 @@ import { fetchSchoolSetupStatus } from "../features/onboarding/schoolSetupApi.js
 import ResetPasswordPage from "../features/auth/ResetPasswordPage.jsx";
 import ProfilesPage from "../features/users/ProfilesPage.jsx";
 import LandingPage from "../features/landing/LandingPage.jsx";
+import SchoolManagementPage from "../features/schools/SchoolManagementPage.jsx";
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
@@ -314,7 +315,7 @@ export default function App() {
               : "school-workspace"
           }
         >
-          {user.role === "SUPER_ADMIN" && !summary.school && page !== "subscriptions" ? (
+          {user.role === "SUPER_ADMIN" && !summary.school && page !== "subscriptions" && page !== "school-management" ? (
             loading ? (
               <div className="panel">
                 <div className="empty-state">Loading schools...</div>
@@ -424,6 +425,8 @@ export default function App() {
               "ACADEMIC_ADMIN",
             ].includes(user.role) ? (
             <PromotionsPage user={user} signOut={signOut} />
+          ) : page === "school-management" && user.role === "SUPER_ADMIN" ? (
+            <SchoolManagementPage signOut={signOut} onDeleted={() => loadSummary(user)} />
           ) : page === "subscriptions" &&
             ["SCHOOL_ADMIN", "SUPER_ADMIN"].includes(user.role) ? (
             <SubscriptionsPage user={user} signOut={signOut} />

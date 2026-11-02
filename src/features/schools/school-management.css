@@ -1,0 +1,16 @@
+.school-management-list { display:grid; gap:12px; }
+.school-management-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 20px; }
+.school-management-card-copy { display:grid; min-width:0; gap:13px; }
+.school-management-title { display:flex; min-width:0; align-items:center; gap:12px; }
+.school-management-title h2 { margin:0; color:var(--app-text-primary); font-size:15px; font-weight:700; }
+.school-management-title p { margin:3px 0 0; color:var(--app-text-secondary); font-size:12px; }
+.school-management-meta { display:flex; flex-wrap:wrap; align-items:center; gap:9px 16px; color:var(--app-text-secondary); font-size:12px; }
+.school-management-delete { display:inline-flex; min-height:38px; flex:0 0 auto; align-items:center; justify-content:center; gap:7px; border:1px solid #e8c9c5; border-radius:8px; padding:0 12px; color:#a3372f; background:#fffafa; font-size:12px; font-weight:650; }
+.school-management-delete:hover { border-color:#d9a49e; background:#fff2f0; }
+.confirm-action-button-danger { border-color:#b42318; background:#b42318; }
+.confirm-action-button-danger:hover:not(:disabled) { background:#912018; }
+@media(max-width:650px) {
+  .school-management-card { align-items:stretch; flex-direction:column; gap:15px; padding:16px; }
+  .school-management-delete { width:100%; }
+  .school-management-meta { gap:8px 12px; }
+}

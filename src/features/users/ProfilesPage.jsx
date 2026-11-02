@@ -6,7 +6,7 @@ import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 
 const maxSignatureBytes = 500 * 1024;
 const acceptedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
-const emptyProfile = { firstName: '', lastName: '', email: '', role: '', status: '', staffNumber: '', signatureDataUrl: '' };
+const emptyProfile = { firstName: '', lastName: '', email: '', phone: '', role: '', status: '', staffNumber: '', signatureDataUrl: '' };
 
 export default function ProfilesPage({ signOut, onSaved }) {
   const [profile, setProfile] = useState(emptyProfile);
@@ -18,7 +18,7 @@ export default function ProfilesPage({ signOut, onSaved }) {
   useEffect(() => {
     let cancelled = false;
     apiRequest('/auth/profile')
-      .then(({ data }) => { if (!cancelled) setProfile({ ...emptyProfile, ...data, email: data.email || '', signatureDataUrl: data.signatureDataUrl || '' }); })
+      .then(({ data }) => { if (!cancelled) setProfile({ ...emptyProfile, ...data, email: data.email || '', phone: data.phone || '', signatureDataUrl: data.signatureDataUrl || '' }); })
       .catch((cause) => {
         if (!cancelled) {
           setError(cause.message);
@@ -73,10 +73,11 @@ export default function ProfilesPage({ signOut, onSaved }) {
           firstName: profile.firstName.trim(),
           lastName: profile.lastName.trim(),
           email: profile.email.trim() || null,
+          ...(profile.role !== 'PARENT' ? { phone: profile.phone.trim() || null } : {}),
           signatureDataUrl: profile.signatureDataUrl || null
         })
       });
-      setProfile((current) => ({ ...current, ...data, email: data.email || '', signatureDataUrl: data.signatureDataUrl || '' }));
+      setProfile((current) => ({ ...current, ...data, email: data.email || '', phone: data.phone || '', signatureDataUrl: data.signatureDataUrl || '' }));
       onSaved({ id: data.id, firstName: data.firstName, lastName: data.lastName, email: data.email, role: data.role, status: data.status, schoolId: data.schoolId });
       setNotice('Your profile has been updated.');
     } catch (cause) {
@@ -99,6 +100,7 @@ export default function ProfilesPage({ signOut, onSaved }) {
         <label className="field-label">First name<input className="text-input" name="firstName" value={profile.firstName} onChange={updateField} maxLength={80} required disabled={saving} /></label>
         <label className="field-label">Last name<input className="text-input" name="lastName" value={profile.lastName} onChange={updateField} maxLength={80} required disabled={saving} /></label>
         <label className="field-label">Email address<input className="text-input" type="email" name="email" value={profile.email} onChange={updateField} maxLength={254} disabled={saving || profile.role === 'PARENT'} /><span className="field-hint">{profile.role === 'PARENT' ? 'Parent email changes require verification.' : 'Used for account notifications and sign-in.'}</span></label>
+        {profile.role !== 'PARENT' && <label className="field-label">Phone number<input className="text-input" type="tel" name="phone" value={profile.phone} onChange={updateField} maxLength={40} autoComplete="tel" placeholder="+265…" disabled={saving} /><span className="field-hint">Optional. Use this number to sign in with your password.</span></label>}
         <div className="profile-readonly"><span>Role</span><strong>{roleLabel(profile.role)}</strong></div>
         {profile.staffNumber && <div className="profile-readonly"><span>Staff number</span><strong>{profile.staffNumber}</strong></div>}
       </div>

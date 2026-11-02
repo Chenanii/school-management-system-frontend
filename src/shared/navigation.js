@@ -19,11 +19,13 @@ import {
   UserRound,
   History,
   Palette,
+  Trash2,
 } from "lucide-react";
 
 
 export const sections = [
   { id: "overview", label: "Overview", group: "Home", icon: LayoutDashboard },
+  { id: "school-management", label: "Manage schools", group: "Platform", icon: Trash2, roles: ["SUPER_ADMIN"] },
   {
     id: "profiles",
     label: "My profile",

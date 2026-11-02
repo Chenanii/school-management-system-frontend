@@ -9,12 +9,14 @@ import {
   GraduationCap,
   HeartHandshake,
   Menu,
+  X,
   Palette,
   Phone,
   ShieldCheck,
   UsersRound,
   UserRoundCog,
 } from "lucide-react";
+import { useState } from "react";
 import Brand from "../../components/layout/Brand.jsx";
 import "./landing-page.css";
 
@@ -72,15 +74,23 @@ function ContactOptions({ number, digits }) {
 }
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <main className="landing-page">
       <header className="landing-header">
         <a className="landing-brand" href="/" aria-label="Nexa School home"><Brand /></a>
-        <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#platform">Platform</a><a href="#why-nexa">Why Nexa</a><a href="#contact">Contact</a>
+        <nav id="landing-mobile-nav" className={`landing-nav${mobileMenuOpen ? " landing-nav-open" : ""}`} aria-label="Main navigation">
+          <a href="#platform" onClick={() => setMobileMenuOpen(false)}>Platform</a>
+          <a href="#why-nexa" onClick={() => setMobileMenuOpen(false)}>Why Nexa</a>
+          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a>
+          <a className="landing-mobile-nav-auth" href="/login" onClick={() => setMobileMenuOpen(false)}>Sign in</a>
+          <a className="landing-mobile-nav-auth landing-mobile-nav-register" href="/login?mode=signup" onClick={() => setMobileMenuOpen(false)}>Get Started</a>
         </nav>
         <div className="landing-header-actions"><a className="landing-sign-in" href="/login">Sign in</a><a className="landing-button landing-button-small" href="/login?mode=signup">Register your school <ArrowRight size={16} /></a></div>
-        <a className="landing-mobile-menu" href="#platform" aria-label="Explore the platform"><Menu size={23} /></a>
+        <button className="landing-mobile-menu" type="button" aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileMenuOpen} aria-controls="landing-mobile-nav" onClick={() => setMobileMenuOpen((open) => !open)}>
+          {mobileMenuOpen ? <X size={23} /> : <Menu size={23} />}
+        </button>
       </header>
 
       <section className="landing-hero">
