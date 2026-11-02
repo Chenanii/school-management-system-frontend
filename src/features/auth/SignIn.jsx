@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { GraduationCap, LoaderCircle, ShieldCheck } from 'lucide-react';
 import Brand from '../../components/layout/Brand.jsx';
 import { apiRequest } from '../../api.js';
@@ -16,6 +16,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
   const [developmentResetUrl, setDevelopmentResetUrl] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const signInFormRef = useRef(null);
 
   function changeMode(nextMode) {
     setMode(nextMode);
@@ -35,6 +36,16 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
     setBusy(true);
     try {
       await onSignIn(identifier, password);
+      // Let supported browsers offer to save credentials in their own password
+      // manager. Never persist the password in app storage.
+      if (window.isSecureContext && window.PasswordCredential && navigator.credentials?.store && signInFormRef.current) {
+        try {
+          const credential = new window.PasswordCredential(signInFormRef.current);
+          await navigator.credentials.store(credential);
+        } catch {
+          // Browser password managers may not support this API or may decline.
+        }
+      }
     } catch (cause) {
       setError(cause.message);
     } finally {
@@ -123,9 +134,11 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
         </div>
         {notice && <p className="form-success mt-5" role="status">{notice}</p>}
         <form
+          ref={signInFormRef}
           onSubmit={parentSetup
             ? (enteringCode ? createParentAccount : requestParentCode)
             : forgotPassword ? requestPasswordReset : handleSignIn}
+          autoComplete="on"
           className="mt-8 space-y-5"
         >
           <label className="field-label">
@@ -133,6 +146,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
             <input
               className="text-input"
               type={forgotPassword ? 'email' : 'text'}
+              name={forgotPassword ? 'email' : 'username'}
               autoComplete={forgotPassword ? 'email' : 'username'}
               placeholder={parentSetup ? 'Use the contact registered with the school' : 'you@school.edu or +265...'}
               value={identifier}
@@ -148,7 +162,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
           {!parentSetup && !forgotPassword ? (
             <label className="field-label">
               Password
-              <PasswordInput autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <PasswordInput name="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.target.value)} required />
             </label>
           ) : forgotPassword ? (
             <p className="parent-access-help">For security, this page will give the same confirmation whether or not the email is registered.</p>
