@@ -42,6 +42,7 @@ import SchoolSetupWizard from "../features/onboarding/SchoolSetupWizard.jsx";
 import { fetchSchoolSetupStatus } from "../features/onboarding/schoolSetupApi.js";
 import ResetPasswordPage from "../features/auth/ResetPasswordPage.jsx";
 import ProfilesPage from "../features/users/ProfilesPage.jsx";
+import LandingPage from "../features/landing/LandingPage.jsx";
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
@@ -57,6 +58,7 @@ export default function App() {
   } = useDashboardData(signOut);
   const isTeacherInvitation = window.location.pathname === "/accept-invitation";
   const isPasswordReset = window.location.pathname === "/reset-password";
+  const isLandingPage = window.location.pathname === "/";
   const [page, setPage] = useState(
     () => workspaceRoute(window.location.pathname, pageIds).page,
   );
@@ -213,6 +215,7 @@ export default function App() {
 
   if (isTeacherInvitation) return <TeacherInvitationPage />;
   if (isPasswordReset) return <ResetPasswordPage />;
+  if (!user && isLandingPage) return <LandingPage />;
   if (!user)
     return (
       <AuthPage

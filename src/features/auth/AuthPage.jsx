@@ -3,7 +3,7 @@ import SchoolSignup from './SchoolSignup.jsx';
 import SignIn from './SignIn.jsx';
 
 export default function AuthPage({ onSignIn, onAuthenticated }) {
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'signin');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [notice, setNotice] = useState('');
 
