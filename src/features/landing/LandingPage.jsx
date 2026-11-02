@@ -16,7 +16,7 @@ import {
   UsersRound,
   UserRoundCog,
 } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import Brand from "../../components/layout/Brand.jsx";
 import "./landing-page.css";
 
@@ -76,6 +76,32 @@ function ContactOptions({ number, digits }) {
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useLayoutEffect(() => {
+    const elements = [...document.querySelectorAll('.landing-page [data-reveal]')];
+    if (!elements.length) return undefined;
+
+    if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      elements.forEach((element) => element.classList.add('landing-revealed'));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('landing-revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -28px 0px' });
+
+    elements.forEach((element) => {
+      element.classList.add('landing-reveal-pending');
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main className="landing-page">
       <header className="landing-header">
@@ -101,30 +127,30 @@ export default function LandingPage() {
           <div className="landing-hero-actions"><a className="landing-button" href="/login?mode=signup">Get started <ArrowRight size={17} /></a><a className="landing-text-link" href="/login">Already using Nexa? <b>Sign in</b></a></div>
           <div className="landing-privacy-note"><ShieldCheck size={17} /> Role-based access keeps school information in the right hands.</div>
         </div>
-        <div className="landing-hero-art"><div className="hero-blob hero-blob-back" /><div className="hero-blob hero-blob-front" /><WorkspacePreview /></div>
+        <div className="landing-hero-art"><div className="hero-blob hero-blob-back" /><div className="landing-motion-orb" aria-hidden="true" /><WorkspacePreview /></div>
       </section>
 
-      <section className="landing-value-strip" aria-label="Nexa School benefits">
+      <section className="landing-value-strip" aria-label="Nexa School benefits" data-reveal>
         <div><span className="value-icon"><UsersRound size={19} /></span><p><b>One connected school</b><small>People, classes and records</small></p></div>
         <div><span className="value-icon"><BookOpen size={19} /></span><p><b>Learning stays central</b><small>Attendance, assessment and results</small></p></div>
         <div><span className="value-icon"><HeartHandshake size={19} /></span><p><b>Families stay informed</b><small>Secure parent access</small></p></div>
       </section>
 
       <section className="landing-platform" id="platform">
-        <div className="landing-section-title" id="why-nexa"><span className="landing-eyebrow">MADE FOR THE WHOLE SCHOOL COMMUNITY</span><h2>All the moving parts<br />of school, <span>working together.</span></h2><p>Spend less time chasing information and more time supporting learners.</p></div>
+        <div className="landing-section-title" id="why-nexa" data-reveal><span className="landing-eyebrow">MADE FOR THE WHOLE SCHOOL COMMUNITY</span><h2>All the moving parts<br />of school, <span>working together.</span></h2><p>Spend less time chasing information and more time supporting learners.</p></div>
         <div className="landing-feature-grid">
-          {features.map(({ icon: Icon, title, text }, index) => <article className={`landing-feature landing-feature-${index + 1}`} key={title}><span className="landing-feature-icon"><Icon size={21} strokeWidth={1.8} /></span><h3>{title}</h3><p>{text}</p></article>)}
+          {features.map(({ icon: Icon, title, text }, index) => <article className={`landing-feature landing-feature-${index + 1}`} data-reveal key={title} style={{ '--reveal-delay': `${Math.min(index, 4) * 55}ms` }}><span className="landing-feature-icon"><Icon size={21} strokeWidth={1.8} /></span><h3>{title}</h3><p>{text}</p></article>)}
         </div>
       </section>
 
-      <section className="landing-parent-callout">
+      <section className="landing-parent-callout" data-reveal>
         <div className="parent-callout-art" aria-hidden="true"><div className="parent-phone"><div className="phone-speaker" /><div className="phone-screen"><span className="phone-avatar"><GraduationCap size={20} /></span><small>FAMILY PORTAL</small><b>Learning, shared.</b><span className="phone-row"><Check size={13} /> Term reports</span><span className="phone-row"><Check size={13} /> Assessment progress</span></div></div></div>
         <div className="parent-callout-copy"><span className="landing-eyebrow">A BETTER CONNECTION WITH FAMILIES</span><h2>Parents are part<br />of the <span>picture.</span></h2><p>The parent portal gives families secure access to student progress, assessment results and report cards, so school and home can stay connected.</p><a className="landing-inline-link" href="/login">Explore family access <ArrowRight size={16} /></a></div>
       </section>
 
-      <section className="landing-cta-panel"><div><span className="landing-eyebrow">READY WHEN YOUR SCHOOL IS</span><h2>Make the school day<br />work <span>better.</span></h2></div><a className="landing-button landing-button-light" href="/login?mode=signup">Register your school <ArrowRight size={17} /></a></section>
+      <section className="landing-cta-panel" data-reveal><div><span className="landing-eyebrow">READY WHEN YOUR SCHOOL IS</span><h2>Make the school day<br />work <span>better.</span></h2></div><a className="landing-button landing-button-light" href="/login?mode=signup">Register your school <ArrowRight size={17} /></a></section>
 
-      <footer className="landing-footer" id="contact">
+      <footer className="landing-footer" id="contact" data-reveal>
         <div className="landing-footer-main"><div className="landing-footer-brand"><a href="/" aria-label="Nexa School home"><Brand /></a><p>Thoughtful tools for better school days.</p></div><div className="landing-footer-contact"><span className="landing-footer-label">TALK TO OUR TEAM</span><ContactOptions number="+265 885 435 964" digits="265885435964" /><ContactOptions number="+265 998 351 834" digits="265998351834" /><a className="landing-email-link" href="mailto:nexacircuit@gmail.com">nexacircuit@gmail.com <ArrowUpRight size={15} /></a></div></div>
         <div className="landing-footer-bottom"><span>© {new Date().getFullYear()} Nexa Circuit Ltd.</span><span>School management, made clearer.</span></div>
       </footer>
