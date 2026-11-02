@@ -67,7 +67,7 @@ function ContactOptions({ number, digits }) {
   return (
     <div className="landing-contact-row">
       <span className="landing-contact-number">{number}</span>
-      <a href={`tel:${digits}`}><Phone size={15} /> Call</a>
+      <a href={`tel:+${digits}`}><Phone size={15} /> Call</a>
       <a className="landing-whatsapp-link" href={`https://wa.me/${digits}`} target="_blank" rel="noreferrer"><WhatsAppIcon /> WhatsApp</a>
     </div>
   );
