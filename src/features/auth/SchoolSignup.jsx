@@ -102,7 +102,7 @@ export default function SchoolSignup({ onBack, onCreated }) {
 
     setBusy(true);
     try {
-      await apiRequest('/schools/signup', {
+      const result = await apiRequest('/schools/signup', {
         method: 'POST',
         body: JSON.stringify({
           schoolName,
@@ -114,7 +114,7 @@ export default function SchoolSignup({ onBack, onCreated }) {
           planId
         })
       });
-      onCreated(adminEmail);
+      onCreated(adminEmail, result.data?.registrationEmailSent !== false);
     } catch (cause) {
       setError(cause.message);
     } finally {

@@ -11,9 +11,11 @@ export default function AuthPage({ onSignIn, onAuthenticated }) {
     return (
       <SchoolSignup
         onBack={() => setMode('signin')}
-        onCreated={(email) => {
+        onCreated={(email, confirmationEmailSent) => {
           setRegisteredEmail(email);
-          setNotice('Your school is registered. Sign in with your administrator account to start the guided school setup.');
+          setNotice(confirmationEmailSent
+            ? `Registration is complete. A confirmation email has been sent to ${email}. Sign in to begin setting up your school.`
+            : `Registration is complete, but we could not deliver the confirmation email. Sign in with ${email} and the password you created during registration.`);
           setMode('signin');
         }}
       />
