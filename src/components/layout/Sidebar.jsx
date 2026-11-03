@@ -98,13 +98,13 @@ export default function Sidebar({
               </div>
             </div>
           ))}
+          <div className="nav-caption mt-8">Your school</div>
+          <div className="sidebar-note">
+            <div className="sidebar-note-icon"><CalendarDays size={17} /></div>
+            <p className="mt-3 text-sm font-semibold text-ink">A fresh start</p>
+            <p className="mt-1 text-xs leading-5 text-muted">Your school workspace is ready. Add your students and staff to get going.</p>
+          </div>
         </nav>
-        <div className="nav-caption mt-8">Your school</div>
-        <div className="sidebar-note">
-          <div className="sidebar-note-icon"><CalendarDays size={17} /></div>
-          <p className="mt-3 text-sm font-semibold text-ink">A fresh start</p>
-          <p className="mt-1 text-xs leading-5 text-muted">Your school workspace is ready. Add your students and staff to get going.</p>
-        </div>
         <div className="sidebar-bottom">
           <button className="nav-item"><CircleHelp size={18} strokeWidth={1.8} /><span>Help & support</span></button>
           <div className="profile-row">
