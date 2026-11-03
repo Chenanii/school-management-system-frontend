@@ -125,12 +125,13 @@ export default function UsersPage({ signOut }) {
                     <td className="whitespace-nowrap text-muted">{roleLabel(user.role)}</td>
                     <td className="whitespace-nowrap text-muted">{user.teacher?.staffNumber || '—'}</td>
                     <td><StatusBadge status={user.status} /></td>
-                    <td className="whitespace-nowrap text-muted">{user.invitationStatus === 'PENDING' ? 'Pending' : user.invitationStatus === 'EXPIRED' ? 'Expired or revoked' : '—'}</td>
+                    <td className="whitespace-nowrap text-muted">{user.invitationStatus === 'PENDING' ? 'Pending' : user.invitationStatus === 'EXPIRED' ? 'Expired' : user.invitationStatus === 'REVOKED' ? 'Revoked' : '—'}</td>
                     <td className="whitespace-nowrap text-muted">{formatDate(user.createdAt)}</td>
                     <td className="whitespace-nowrap">
-                      <button className="table-action" onClick={() => setDetailsUser(user)}>View</button>
-                      <button className="table-action ml-2" onClick={() => openEdit(user)}>Edit</button>
-                      {(user.invitationStatus === 'PENDING' || user.invitationStatus === 'EXPIRED') && <>
+                      {user.recordType === 'LEGACY_TEACHER_INVITATION'
+                        ? <span className="text-muted">Teacher invitation</span>
+                        : <><button className="table-action" onClick={() => setDetailsUser(user)}>View</button><button className="table-action ml-2" onClick={() => openEdit(user)}>Edit</button></>}
+                      {(user.invitationStatus === 'PENDING' || user.invitationStatus === 'EXPIRED' || user.invitationStatus === 'REVOKED') && <>
                         <button className="table-action ml-2" type="button" onClick={() => resendInvite(user)} disabled={busyInviteId === user.id} aria-label={`Resend invitation to ${user.email}`}><Mail size={14} /> {busyInviteId === user.id ? 'Sending…' : 'Resend invite'}</button>
                         {user.invitationStatus === 'PENDING' && <button className="table-action ml-2" type="button" onClick={() => setPendingRevocation(user)} disabled={busyInviteId === user.id} aria-label={`Revoke invitation for ${user.email}`}><XCircle size={14} /> Revoke</button>}
                       </>}
