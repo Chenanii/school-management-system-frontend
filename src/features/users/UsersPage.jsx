@@ -115,10 +115,16 @@ export default function UsersPage({ signOut }) {
           onSaved={(result) => {
             setModalOpen(false);
             setNotice(modalUser
-              ? 'User account updated.'
+              ? result.roleChanged
+                ? result.roleChangeEmailSent
+                  ? `User role updated. A notification was sent to ${result.data?.email || 'the user'}.`
+                  : 'User role updated, but its notification email could not be sent.'
+                : 'User account updated.'
               : result.invitationEmailSent
               ? `Invitation sent to ${result.data?.email || 'the user'}. They can set their password from the email link.`
-              : `User account created for ${result.data?.email || 'the user'}.`);
+              : result.registrationEmailSent === false
+                ? `User account created for ${result.data?.email || 'the user'}, but the notification email could not be sent.`
+                : `User account created for ${result.data?.email || 'the user'}.`);
             directory.refresh();
           }}
         />
