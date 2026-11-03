@@ -269,6 +269,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
                     <div><span>Current term</span><strong>{student.currentEnrollment?.term?.name || 'Not enrolled'}</strong></div>
                     <div><span>Academic year</span><strong>{student.currentEnrollment?.term?.academicYear?.name || '—'}</strong></div>
                     <div><span>Date of birth</span><strong>{formatDate(student.dateOfBirth)}</strong></div>
+                    <div><span>Nationality</span><strong>{student.nationality || 'Not provided'}</strong></div>
                   </div>
                 </section>
 

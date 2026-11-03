@@ -4,7 +4,7 @@ import Brand from '../../components/layout/Brand.jsx';
 import { apiRequest } from '../../api.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
 
-export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, initialEmail = '', notice = '' }) {
+export default function SignIn({ onSignIn, onCreateAccount, initialEmail = '', notice = '' }) {
   const [mode, setMode] = useState('signin');
   const [identifier, setIdentifier] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -103,7 +103,7 @@ export default function SignIn({ onSignIn, onAuthenticated, onCreateAccount, ini
       if (!result.data?.accessToken || result.data.user?.role !== 'PARENT') {
         throw new Error('Your parent account could not be created. Please try again.');
       }
-      onAuthenticated(result.data);
+      window.location.assign('/login');
     } catch (cause) {
       setError(cause.message);
     } finally {

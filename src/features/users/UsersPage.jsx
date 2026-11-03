@@ -9,9 +9,10 @@ import UserDetailsModal from './UserDetailsModal.jsx';
 import { roleLabel, userRoles } from './userRoles.js';
 import useUsers from './useUsers.js';
 
-export default function UsersPage({ signOut }) {
+export default function UsersPage({ signOut, user }) {
   const [modalUser, setModalUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [creatingSuperAdmin, setCreatingSuperAdmin] = useState(false);
   const [detailsUser, setDetailsUser] = useState(null);
   const [notice, setNotice] = useState('');
   const [busyInviteId, setBusyInviteId] = useState('');
@@ -20,6 +21,13 @@ export default function UsersPage({ signOut }) {
   const { users, pagination, loading, error, search, role, status, page } = directory;
 
   function openCreate() {
+    setCreatingSuperAdmin(false);
+    setModalUser(null);
+    setModalOpen(true);
+  }
+
+  function openCreateSuperAdmin() {
+    setCreatingSuperAdmin(true);
     setModalUser(null);
     setModalOpen(true);
   }
@@ -68,7 +76,10 @@ export default function UsersPage({ signOut }) {
           <h1 className="page-title">User management<span className="title-dot">.</span></h1>
           <p className="mt-2 text-sm text-muted">Manage all staff accounts, including teachers, their roles, and access to your school workspace.</p>
         </div>
-        <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add user</button>
+        <div className="flex flex-wrap gap-2">
+          {user?.role === 'SUPER_ADMIN' && <button className="secondary-button" onClick={openCreateSuperAdmin}><Plus size={17} /> Add super admin</button>}
+          <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add user</button>
+        </div>
       </div>
       {notice && <div className="teaching-assignment-notice" role="status">{notice}<button className="text-button" type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
       <section className="panel user-directory-panel">
@@ -155,9 +166,11 @@ export default function UsersPage({ signOut }) {
       {modalOpen && (
         <UserFormModal
           user={modalUser}
-          onClose={() => setModalOpen(false)}
+          superAdminMode={creatingSuperAdmin}
+          onClose={() => { setModalOpen(false); setCreatingSuperAdmin(false); }}
           onSaved={(result) => {
             setModalOpen(false);
+            setCreatingSuperAdmin(false);
             setNotice(modalUser
               ? result.roleChanged
                 ? result.roleChangeEmailSent

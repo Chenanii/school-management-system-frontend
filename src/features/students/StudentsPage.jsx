@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, LoaderCircle, Plus, Search, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, FileSpreadsheet, LoaderCircle, Plus, Search, Users } from 'lucide-react';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import StudentDetailsModal from './StudentDetailsModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
+import StudentImportModal from './StudentImportModal.jsx';
 import useStudents from './useStudents.js';
 import { API_BASE_URL, apiRequest, getAccessToken, getSchoolContextId } from '../../api.js';
 import ClassDistributionPanel from './ClassDistributionPanel.jsx';
@@ -25,6 +26,7 @@ export default function StudentsPage({ user, signOut }) {
   const [exporting, setExporting] = useState(false);
   const [formStudent, setFormStudent] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailStudent, setDetailStudent] = useState(null);
   const [updatingStudentId, setUpdatingStudentId] = useState('');
   const [actionError, setActionError] = useState('');
@@ -121,10 +123,10 @@ export default function StudentsPage({ user, signOut }) {
         if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
         return `"${text.replaceAll('"', '""')}"`;
       };
-      const heading = ['Student', 'Admission number', 'Parent phone', 'Date of birth', 'Gender', 'Class level', 'Class group', 'Enrollment status', 'Student status'];
+      const heading = ['Student', 'Admission number', 'Parent phone', 'Date of birth', 'Gender', 'Nationality', 'Class level', 'Class group', 'Enrollment status', 'Student status'];
       const lines = [heading, ...rows.map((student) => {
         const enrollment = student.enrollments?.[0];
-        return [formatName(student), student.admissionNumber, student.parents?.[0]?.parent?.phone, student.dateOfBirth?.slice(0, 10), student.gender, enrollment?.classLevel?.name, enrollment?.classGroup?.name, enrollment?.status, student.status];
+        return [formatName(student), student.admissionNumber, student.parents?.[0]?.parent?.phone, student.dateOfBirth?.slice(0, 10), student.gender, student.nationality, enrollment?.classLevel?.name, enrollment?.classGroup?.name, enrollment?.status, student.status];
       })].map((row) => row.map(cell).join(',')).join('\r\n');
       const blob = new Blob([`\uFEFF${lines}`], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -214,7 +216,10 @@ export default function StudentsPage({ user, signOut }) {
           <h1 className="page-title">Students<span className="title-dot">.</span></h1>
           <p className="mt-2 text-sm text-muted">{isTeacher ? 'View learners enrolled in your assigned classes.' : 'Keep track of every learner in your school.'}</p>
         </div>
-        {!isTeacher && <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Register student</button>}
+        {!isTeacher && <div className="flex flex-wrap gap-2">
+          <button className="secondary-button" onClick={() => setImportOpen(true)}><FileSpreadsheet size={16} /> Import Excel/CSV</button>
+          <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Register student</button>
+        </div>}
       </div>
       {actionError && <div className="notice-error" role="alert"><span>{actionError}</span><button className="text-button" onClick={() => setActionError('')}>Dismiss</button></div>}
       {!isTeacher && <ClassDistributionPanel distribution={classDistribution} loading={loadingDistribution} />}
@@ -244,7 +249,7 @@ export default function StudentsPage({ user, signOut }) {
             {visibleClassGroups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}
           </select>
           <button className="secondary-button" type="button" onClick={downloadFilteredStudents} disabled={exporting || loading}>
-            {exporting ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{exporting ? 'Preparing…' : 'Export Excel'}
+            {exporting ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{exporting ? 'Preparing…' : 'Export CSV'}
           </button>
           {canExportQr && <button className="secondary-button" type="button" onClick={downloadStudentIdsWithQr} disabled={exporting || loading}>
             {exporting ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}{exporting ? 'Preparing…' : 'Export IDs + QR'}
@@ -269,7 +274,7 @@ export default function StudentsPage({ user, signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table students-table">
               <thead>
-                <tr><th>Student</th><th>Student ID</th><th>Parent phone</th><th>Class level</th><th>Class group</th><th>Date of birth</th><th>Gender</th><th>Enrolments</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Student</th><th>Student ID</th><th>Parent phone</th><th>Class level</th><th>Class group</th><th>Date of birth</th><th>Gender</th><th>Nationality</th><th>Enrolments</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {students.map((student) => (
@@ -286,6 +291,7 @@ export default function StudentsPage({ user, signOut }) {
                     <td className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classGroup?.name || 'Unassigned'}</td>
                     <td className="whitespace-nowrap text-muted">{formatDate(student.dateOfBirth)}</td>
                     <td className="whitespace-nowrap text-muted">{student.gender || '—'}</td>
+                    <td className="whitespace-nowrap text-muted">{student.nationality || '—'}</td>
                     <td className="text-muted">{student._count?.enrollments ?? 0}</td>
                     <td><StatusBadge status={student.status} /></td>
                     <td>
@@ -332,6 +338,7 @@ export default function StudentsPage({ user, signOut }) {
           }}
         />
       )}
+      {!isTeacher && importOpen && <StudentImportModal onClose={() => setImportOpen(false)} onImported={directory.refresh} />}
       {detailStudent && <StudentDetailsModal student={detailStudent} isTeacher={isTeacher} onClose={() => setDetailStudent(null)} />}
     </>
   );

@@ -50,6 +50,7 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
                   <div><dt>Status</dt><dd><StatusBadge status={details.status} /></dd></div>
                   <div><dt>Date of birth</dt><dd><CalendarDays size={14} />{formatDate(details.dateOfBirth)}</dd></div>
                   <div><dt>Gender</dt><dd>{details.gender || 'Not provided'}</dd></div>
+                  <div><dt>Nationality</dt><dd>{details.nationality || 'Not provided'}</dd></div>
                   <div><dt>Enrolments</dt><dd>{details._count?.enrollments ?? details.enrollments?.length ?? 0}</dd></div>
                   {!isTeacher && <div><dt>Parents/guardians</dt><dd><Users size={14} />{details._count?.parents ?? details.parents?.length ?? 0}</dd></div>}
                 </dl>

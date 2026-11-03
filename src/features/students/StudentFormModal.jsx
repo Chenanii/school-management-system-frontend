@@ -8,7 +8,8 @@ const blankStudent = {
   middleName: '',
   lastName: '',
   dateOfBirth: '',
-  gender: ''
+  gender: '',
+  nationality: ''
 };
 const blankParent = { firstName: '', lastName: '', phone: '', email: '', relationship: '' };
 
@@ -55,7 +56,8 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
       middleName: student.middleName || '',
       lastName: student.lastName || '',
       dateOfBirth: inputDate(student.dateOfBirth),
-      gender: student.gender || ''
+      gender: student.gender || '',
+      nationality: student.nationality || ''
     } : blankStudent);
   }, [student]);
 
@@ -114,6 +116,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
       lastName: form.lastName.trim(),
       dateOfBirth: form.dateOfBirth || null,
       gender: form.gender.trim() || null,
+      nationality: form.nationality.trim() || null,
       parents: parents.map((parent) => ({
         ...parent,
         firstName: parent.firstName.trim(),
@@ -202,6 +205,10 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               </select>
             </label>
           </div>
+          <label className="field-label">
+            Nationality <span className="optional-label">Optional</span>
+            <input className="text-input" name="nationality" autoComplete="country-name" maxLength={100} value={form.nationality} onChange={updateField} placeholder="e.g. Malawian" />
+          </label>
           </>}
           {!editing && step === 1 && <div className="user-name-grid student-enrollment-fields">
             <label className="field-label">Academic term

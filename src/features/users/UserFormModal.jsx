@@ -12,9 +12,9 @@ const blankForm = {
   staffNumber: ''
 };
 
-export default function UserFormModal({ user, onClose, onSaved }) {
+export default function UserFormModal({ user, superAdminMode = false, onClose, onSaved }) {
   const editing = Boolean(user);
-  const [form, setForm] = useState(blankForm);
+  const [form, setForm] = useState(() => ({ ...blankForm, role: superAdminMode ? 'SUPER_ADMIN' : blankForm.role }));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const teacherRole = form.role === 'TEACHER' || form.role === 'FORM_TUTOR';
@@ -31,9 +31,9 @@ export default function UserFormModal({ user, onClose, onSaved }) {
         staffNumber: user.teacher?.staffNumber || '',
       });
     } else {
-      setForm(blankForm);
+      setForm({ ...blankForm, role: superAdminMode ? 'SUPER_ADMIN' : blankForm.role });
     }
-  }, [user]);
+  }, [user, superAdminMode]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -49,7 +49,7 @@ export default function UserFormModal({ user, onClose, onSaved }) {
       email: form.email.trim(),
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
-      role: form.role
+      role: superAdminMode ? 'SUPER_ADMIN' : form.role
     };
     if (editing) {
       payload.status = form.status;
@@ -59,7 +59,8 @@ export default function UserFormModal({ user, onClose, onSaved }) {
     }
 
     try {
-      const result = await apiRequest(editing ? `/users/${user.id}` : '/users', {
+      const endpoint = editing ? `/users/${user.id}` : superAdminMode ? '/users/super-admins' : '/users';
+      const result = await apiRequest(endpoint, {
         method: editing ? 'PATCH' : 'POST',
         body: JSON.stringify(payload)
       });
@@ -77,7 +78,7 @@ export default function UserFormModal({ user, onClose, onSaved }) {
         <div className="modal-heading">
           <div>
             <p className="eyebrow">{editing ? 'Update account' : 'User onboarding'}</p>
-            <h2 id="user-form-title">{editing ? 'Edit user' : 'Add a user'}</h2>
+            <h2 id="user-form-title">{editing ? 'Edit user' : superAdminMode ? 'Add a super admin' : 'Add a user'}</h2>
             <p>{editing ? 'Update this user account’s details and access.' : 'An invitation email will let the user set their own password.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
@@ -101,10 +102,10 @@ export default function UserFormModal({ user, onClose, onSaved }) {
           <div className="user-name-grid">
             <label className="field-label">
               Role
-              <select className="text-input" name="role" value={form.role} onChange={updateField} required disabled={parentAccount}>
+              {superAdminMode ? <input className="text-input" value="Super admin" readOnly aria-label="Role" /> : <select className="text-input" name="role" value={form.role} onChange={updateField} required disabled={parentAccount}>
                 {parentAccount && <option value="PARENT">Parent</option>}
                 {userRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
+              </select>}
             </label>
             {editing ? (
               <label className="field-label">

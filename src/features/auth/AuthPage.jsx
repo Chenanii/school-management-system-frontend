@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SchoolSignup from './SchoolSignup.jsx';
 import SignIn from './SignIn.jsx';
 
-export default function AuthPage({ onSignIn, onAuthenticated }) {
+export default function AuthPage({ onSignIn }) {
   const [mode, setMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'signin');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [notice, setNotice] = useState('');
@@ -12,6 +12,7 @@ export default function AuthPage({ onSignIn, onAuthenticated }) {
       <SchoolSignup
         onBack={() => setMode('signin')}
         onCreated={(email, confirmationEmailSent) => {
+          window.history.replaceState({}, '', '/login');
           setRegisteredEmail(email);
           setNotice(confirmationEmailSent
             ? `Registration is complete. A confirmation email has been sent to ${email}. Sign in to begin setting up your school.`
@@ -25,7 +26,6 @@ export default function AuthPage({ onSignIn, onAuthenticated }) {
   return (
     <SignIn
       onSignIn={onSignIn}
-      onAuthenticated={onAuthenticated}
       onCreateAccount={() => { setNotice(''); setMode('signup'); }}
       initialEmail={registeredEmail}
       notice={notice}

@@ -47,7 +47,7 @@ import SchoolManagementPage from "../features/schools/SchoolManagementPage.jsx";
 const pageIds = new Set(sections.map(({ id }) => id));
 
 export default function App() {
-  const { user, signIn, acceptAuthenticatedSession, signOut, updateUser } = useAuth();
+  const { user, signIn, signOut, updateUser } = useAuth();
   const {
     summary,
     loading,
@@ -220,7 +220,6 @@ export default function App() {
     return (
       <AuthPage
         onSignIn={signIn}
-        onAuthenticated={acceptAuthenticatedSession}
       />
     );
   if (user.role === "PARENT")
@@ -439,7 +438,7 @@ export default function App() {
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,
             ) ? (
-            <UsersPage signOut={signOut} />
+            <UsersPage signOut={signOut} user={user} />
           ) : page === "audit-logs" &&
             [
               "SCHOOL_ADMIN",
