@@ -152,21 +152,21 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
                 <tbody>
                   {rows.map((row) => (
                     <tr key={row.enrollmentId}>
-                      <td>
+                      <td data-label="Student">
                         <div className="assessment-student-name">
                           <strong>{[row.student.firstName, row.student.middleName, row.student.lastName].filter(Boolean).join(' ')}</strong>
                           {row.approvedAbsenceCorrection && <span className="assessment-absence-correction-badge">Absent on exam date · Admin approved correction</span>}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Result status">
                         <select className="assessment-result-select" value={row.status} disabled={!row.canEnterResult || saving} onChange={(event) => updateRow(row.enrollmentId, 'status', event.target.value)} aria-label={`Result status for ${row.student.firstName} ${row.student.lastName}`}>
                           {resultStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
                       </td>
-                      <td>
+                      <td data-label="Mark">
                         <input className="assessment-mark-input" type="number" min="0" max={Number(assessment.maxMark)} step="0.01" value={row.mark} disabled={!row.canEnterResult || saving || row.status !== 'PRESENT'} onChange={(event) => updateRow(row.enrollmentId, 'mark', event.target.value)} aria-label={`Mark for ${row.student.firstName} ${row.student.lastName}`} />
                       </td>
-                      <td>
+                      <td data-label="Teacher comment">
                         <input className="assessment-comment-input" type="text" maxLength={1000} value={row.teacherComment} disabled={!row.canEnterResult || saving} onChange={(event) => updateRow(row.enrollmentId, 'teacherComment', event.target.value)} aria-label={`Teacher comment for ${row.student.firstName} ${row.student.lastName}`} />
                       </td>
                     </tr>

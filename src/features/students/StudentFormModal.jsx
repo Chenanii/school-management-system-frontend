@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { fetchAllPages } from '../enrollments/enrollmentApi.js';
@@ -19,6 +19,8 @@ function inputDate(value) {
 
 export default function StudentFormModal({ student, onClose, onSaved }) {
   const editing = Boolean(student);
+  const [step, setStep] = useState(0);
+  const formRef = useRef(null);
   const [form, setForm] = useState(blankStudent);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,6 +49,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
   }, [editing]);
 
   useEffect(() => {
+    setStep(0);
     setForm(student ? {
       firstName: student.firstName || '',
       middleName: student.middleName || '',
@@ -94,8 +97,15 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
     setParents((current) => current.map((parent, parentIndex) => parentIndex === index ? { ...parent, [name]: value } : parent));
   }
 
+  function advanceStep() {
+    if (!formRef.current?.reportValidity()) return;
+    setError('');
+    setStep((current) => Math.min(current + 1, 2));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!editing && step < 2) return;
     setError('');
     setBusy(true);
     const payload = {
@@ -137,7 +147,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
   }
 
   return (
-    <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="modal-backdrop student-form-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="user-modal student-modal" role="dialog" aria-modal="true" aria-labelledby="student-form-title">
         <div className="modal-heading">
           <div>
@@ -147,7 +157,15 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
-        <form className="user-form" onSubmit={handleSubmit}>
+        {!editing && <ol className="student-form-steps" aria-label="Student registration progress">
+          {['Student details', 'Enrollment', 'Parent or guardian'].map((label, index) => (
+            <li className={index === step ? 'student-form-step student-form-step-active' : index < step ? 'student-form-step student-form-step-complete' : 'student-form-step'} aria-current={index === step ? 'step' : undefined} key={label}>
+              <span>{index + 1}</span><span>{label}</span>
+            </li>
+          ))}
+        </ol>}
+        <form ref={formRef} className="user-form student-form" onSubmit={handleSubmit}>
+          {(editing || step === 0) && <>
           {editing ? (
             <label className="field-label">
               Student ID <span className="optional-label">System-generated · 10 characters</span>
@@ -184,7 +202,8 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               </select>
             </label>
           </div>
-          {!editing && <div className="user-name-grid">
+          </>}
+          {!editing && step === 1 && <div className="user-name-grid student-enrollment-fields">
             <label className="field-label">Academic term
               <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required disabled={optionsLoading || busy}>
                 <option value="">{optionsLoading ? 'Loading terms…' : 'Select a term'}</option>
@@ -198,7 +217,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               </select>
             </label>
           </div>}
-          <section className="student-parent-registration">
+          {(editing || step === 2) && <section className="student-parent-registration">
             <div className="student-parent-heading">
               <div>
                 <strong>Parent or guardian details</strong>
@@ -216,15 +235,27 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
               <label className="field-label">Relationship <span className="optional-label">Optional</span><input className="text-input" value={parent.relationship} onChange={(event) => updateParent(index, 'relationship', event.target.value)} placeholder="Parent, guardian…" maxLength={40} disabled={busy || parentsLoading} /></label>
               <button className="text-button student-parent-remove" type="button" onClick={() => setParents((current) => current.filter((_, parentIndex) => parentIndex !== index))} disabled={busy || parentsLoading}>Remove</button>
             </div>)}
-          </section>
-          {!editing && <p className="field-hint">The student, term enrollment, and parent contacts are saved together. Assign a home class group later from Enrollments; if any save fails, registration is rolled back.</p>}
+          </section>}
+          {!editing && step === 2 && <p className="field-hint">The student, term enrollment, and parent contacts are saved together. Assign a home class group later from Enrollments; if any save fails, registration is rolled back.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="modal-actions">
-            <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
-            <button className="primary-button" type="submit" disabled={busy || optionsLoading || parentsLoading || (!editing && (!terms.length || !classLevels.length || !parents.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || !parent.phone.trim())))}>
-              {busy && <LoaderCircle size={16} className="animate-spin" />}
-              {busy ? 'Saving…' : editing ? 'Save changes' : 'Register and enroll'}
-            </button>
+            {editing ? <>
+              <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
+              <button className="primary-button" type="submit" disabled={busy || parentsLoading || !parents.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || (!parent.phone.trim() && !parent.email.trim()))}>
+                {busy && <LoaderCircle size={16} className="animate-spin" />}
+                {busy ? 'Saving…' : 'Save changes'}
+              </button>
+            </> : <>
+              {step === 0
+                ? <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
+                : <button className="secondary-button" type="button" onClick={() => { setError(''); setStep((current) => current - 1); }} disabled={busy}>Back</button>}
+              {step < 2 ? <button className="primary-button" type="button" onClick={advanceStep} disabled={busy || (step === 1 && (optionsLoading || !terms.length || !classLevels.length))}>Continue</button> : (
+                <button className="primary-button" type="submit" disabled={busy || optionsLoading || parentsLoading || !terms.length || !classLevels.length || !parents.length || parents.some((parent) => !parent.firstName.trim() || !parent.lastName.trim() || (!parent.phone.trim() && !parent.email.trim()))}>
+                  {busy && <LoaderCircle size={16} className="animate-spin" />}
+                  {busy ? 'Saving…' : 'Register and enroll'}
+                </button>
+              )}
+            </>}
           </div>
         </form>
       </section>

@@ -316,23 +316,23 @@ export default function AssessmentsPage({ user, signOut }) {
                     && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
                   return (
                     <tr key={assessment.id}>
-                      <td>
+                      <td data-label="Assessment">
                         <div className="assessment-title-cell">
                           <span className="assessment-icon"><ClipboardList size={15} /></span>
                           <div><strong>{assessment.title}</strong><span>{assignment?.teacher ? `${assignment.teacher.firstName} ${assignment.teacher.lastName}` : '—'}</span></div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Class & subject">
                         <div className="assessment-class-cell">
                           <strong>{className || '—'}</strong>
                           <span>{assessment.subject?.code ? `${assessment.subject.code} · ` : ''}{assessment.subject?.name || '—'}</span>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '—'}</td>
-                      <td className="whitespace-nowrap text-muted">{assessmentTypeLabel(assessment.assessmentType)}</td>
-                      <td className="whitespace-nowrap text-muted">{Number(assessment._count?.results ?? 0)}</td>
-                      <td><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessmentStatusLabel(assessment.status)}</span></td>
-                      <td>
+                      <td data-label="Term" className="text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '—'}</td>
+                      <td data-label="Type" className="text-muted">{assessmentTypeLabel(assessment.assessmentType)}</td>
+                      <td data-label="Result records" className="text-muted">{Number(assessment._count?.results ?? 0)}</td>
+                      <td data-label="Status"><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessmentStatusLabel(assessment.status)}</span></td>
+                      <td data-label="Actions">
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Enter or review marks">Results</button>
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
