@@ -24,7 +24,6 @@ import PromotionsPage from "../features/promotions/PromotionsPage.jsx";
 import SubscriptionsPage from "../features/subscriptions/SubscriptionsPage.jsx";
 import TermExpiryReminder from "../features/subscriptions/TermExpiryReminder.jsx";
 import TeacherInvitationPage from "../features/teachers/TeacherInvitationPage.jsx";
-import TeachersPage from "../features/teachers/TeachersPage.jsx";
 import SubjectsPage from "../features/subjects/SubjectsPage.jsx";
 import StudentsPage from "../features/students/StudentsPage.jsx";
 import EnrollmentsPage from "../features/enrollments/EnrollmentsPage.jsx";
@@ -503,11 +502,6 @@ export default function App() {
           ) : page === "report-designer" &&
             ["SCHOOL_ADMIN", "HEADTEACHER"].includes(user.role) ? (
             <ReportDesignerPage signOut={signOut} />
-          ) : page === "staff" &&
-            ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
-              user.role,
-            ) ? (
-            <TeachersPage signOut={signOut} />
           ) : (
             <DirectoryPage
               type={page}

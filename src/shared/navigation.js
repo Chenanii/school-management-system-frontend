@@ -12,7 +12,6 @@ import {
   Network,
   UsersRound,
   UserRoundCog,
-  Users,
   Files,
   FileSliders,
   UserRoundPlus,
@@ -143,13 +142,6 @@ export const sections = [
     label: "Class subjects",
     group: "Settings",
     icon: Network,
-    roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"],
-  },
-  {
-    id: "staff",
-    label: "Teachers",
-    group: "Administration",
-    icon: Users,
     roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"],
   },
   {

@@ -7,7 +7,7 @@ import ClassLevelsPage from '../class-levels/ClassLevelsPage.jsx';
 import ClassGroupsPage from '../class-groups/ClassGroupsPage.jsx';
 import SubjectsPage from '../subjects/SubjectsPage.jsx';
 import ClassSubjectsPage from '../class-subjects/ClassSubjectsPage.jsx';
-import TeachersPage from '../teachers/TeachersPage.jsx';
+import UsersPage from '../users/UsersPage.jsx';
 import StudentsPage from '../students/StudentsPage.jsx';
 import { fetchSchoolSetupStatus } from './schoolSetupApi.js';
 
@@ -16,7 +16,7 @@ const steps = [
   { id: 'grading', title: 'Choose a grading scale', description: 'Define the grade boundaries your school uses to assess student results.', pages: [['grading-scales', 'Grading scales']] },
   { id: 'classes', title: 'Build your class structure', description: 'Add class levels, assign a grading scale to each one, and create at least one class group.', pages: [['class-levels', 'Class levels'], ['class-groups', 'Class groups']] },
   { id: 'curriculum', title: 'Set up your curriculum', description: 'Add subjects and link at least one subject to a class level.', pages: [['subjects', 'Subjects'], ['class-subjects', 'Class curriculum']] },
-  { id: 'staff', title: 'Add a teacher', description: 'Add at least one teacher before managing teaching assignments and classes.', pages: [['staff', 'Teaching staff']] },
+  { id: 'staff', title: 'Add staff accounts', description: 'Create staff accounts and assign roles from User management before managing teaching assignments and classes.', pages: [['users', 'User management']] },
   { id: 'students', title: 'Enrol your first student', description: 'Add a student to an academic term so class registers and reports can start using real school data.', pages: [['students', 'Students']] }
 ];
 
@@ -58,7 +58,7 @@ function SetupPage({ page, user, signOut, onNavigate, onScaleCreated }) {
   if (page === 'class-groups') return <ClassGroupsPage signOut={signOut} />;
   if (page === 'subjects') return <SubjectsPage signOut={signOut} />;
   if (page === 'class-subjects') return <ClassSubjectsPage signOut={signOut} />;
-  if (page === 'staff') return <TeachersPage signOut={signOut} />;
+  if (page === 'users') return <UsersPage signOut={signOut} />;
   if (page === 'students') return <StudentsPage user={user} signOut={signOut} />;
   return null;
 }

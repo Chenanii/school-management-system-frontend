@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, LoaderCircle, Plus, Search, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LoaderCircle, Mail, Plus, Search, Users, XCircle } from 'lucide-react';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import { apiRequest } from '../../api.js';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import UserFormModal from './UserFormModal.jsx';
@@ -12,6 +14,8 @@ export default function UsersPage({ signOut }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [detailsUser, setDetailsUser] = useState(null);
   const [notice, setNotice] = useState('');
+  const [busyInviteId, setBusyInviteId] = useState('');
+  const [pendingRevocation, setPendingRevocation] = useState(null);
   const directory = useUsers({ enabled: true, signOut });
   const { users, pagination, loading, error, search, role, status, page } = directory;
 
@@ -25,13 +29,44 @@ export default function UsersPage({ signOut }) {
     setModalOpen(true);
   }
 
+  async function resendInvite(user) {
+    setBusyInviteId(user.id);
+    setNotice('');
+    try {
+      const result = await apiRequest(`/users/${user.id}/resend-invitation`, { method: 'POST' });
+      setNotice(result.message || `A new invitation was sent to ${user.email}.`);
+      directory.refresh();
+    } catch (cause) {
+      setNotice(cause.message);
+    } finally {
+      setBusyInviteId('');
+    }
+  }
+
+  async function revokeInvite() {
+    const user = pendingRevocation;
+    if (!user) return;
+    setPendingRevocation(null);
+    setBusyInviteId(user.id);
+    setNotice('');
+    try {
+      const result = await apiRequest(`/users/${user.id}/revoke-invitation`, { method: 'POST' });
+      setNotice(result.message || `The invitation for ${user.email} was revoked.`);
+      directory.refresh();
+    } catch (cause) {
+      setNotice(cause.message);
+    } finally {
+      setBusyInviteId('');
+    }
+  }
+
   return (
     <>
       <div className="welcome-row users-welcome">
         <div>
           <p className="eyebrow">People & permissions</p>
           <h1 className="page-title">User management<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">Manage user accounts, roles, and access to your school workspace.</p>
+          <p className="mt-2 text-sm text-muted">Manage all staff accounts, including teachers, their roles, and access to your school workspace.</p>
         </div>
         <button className="primary-button add-user-button" onClick={openCreate}><Plus size={17} /> Add user</button>
       </div>
@@ -75,7 +110,7 @@ export default function UsersPage({ signOut }) {
           <div className="overflow-x-auto">
             <table className="people-table users-table">
               <thead>
-                <tr><th>Name</th><th>Email address</th><th>Role</th><th>Staff no.</th><th>Status</th><th>Created</th><th><span className="sr-only">Actions</span></th></tr>
+                <tr><th>Name</th><th>Email address</th><th>Role</th><th>Staff no.</th><th>Status</th><th>Invitation</th><th>Created</th><th><span className="sr-only">Actions</span></th></tr>
               </thead>
               <tbody>
                 {users.map((user) => (
@@ -90,8 +125,16 @@ export default function UsersPage({ signOut }) {
                     <td className="whitespace-nowrap text-muted">{roleLabel(user.role)}</td>
                     <td className="whitespace-nowrap text-muted">{user.teacher?.staffNumber || '—'}</td>
                     <td><StatusBadge status={user.status} /></td>
+                    <td className="whitespace-nowrap text-muted">{user.invitationStatus === 'PENDING' ? 'Pending' : user.invitationStatus === 'EXPIRED' ? 'Expired or revoked' : '—'}</td>
                     <td className="whitespace-nowrap text-muted">{formatDate(user.createdAt)}</td>
-                    <td><button className="table-action" onClick={() => setDetailsUser(user)}>View</button><button className="table-action ml-2" onClick={() => openEdit(user)}>Edit</button></td>
+                    <td className="whitespace-nowrap">
+                      <button className="table-action" onClick={() => setDetailsUser(user)}>View</button>
+                      <button className="table-action ml-2" onClick={() => openEdit(user)}>Edit</button>
+                      {(user.invitationStatus === 'PENDING' || user.invitationStatus === 'EXPIRED') && <>
+                        <button className="table-action ml-2" type="button" onClick={() => resendInvite(user)} disabled={busyInviteId === user.id} aria-label={`Resend invitation to ${user.email}`}><Mail size={14} /> {busyInviteId === user.id ? 'Sending…' : 'Resend invite'}</button>
+                        {user.invitationStatus === 'PENDING' && <button className="table-action ml-2" type="button" onClick={() => setPendingRevocation(user)} disabled={busyInviteId === user.id} aria-label={`Revoke invitation for ${user.email}`}><XCircle size={14} /> Revoke</button>}
+                      </>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -130,6 +173,13 @@ export default function UsersPage({ signOut }) {
         />
       )}
       {detailsUser && <UserDetailsModal user={detailsUser} signOut={signOut} onClose={() => setDetailsUser(null)} onEdit={(user) => { setDetailsUser(null); openEdit(user); }} />}
+      {pendingRevocation && <ConfirmActionModal
+        title="Revoke invitation?"
+        message={`The pending invitation for ${formatName(pendingRevocation)} will be invalidated. You can send a new one later.`}
+        confirmLabel="Revoke invitation"
+        onCancel={() => setPendingRevocation(null)}
+        onConfirm={revokeInvite}
+      />}
     </>
   );
 }
