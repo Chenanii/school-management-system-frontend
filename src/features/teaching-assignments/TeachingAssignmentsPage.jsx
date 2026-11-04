@@ -291,9 +291,11 @@ export default function TeachingAssignmentsPage({ signOut }) {
           terms={terms}
           signOut={signOut}
           onClose={() => setFormOpen(false)}
-          onSaved={() => {
+          onSaved={(result) => {
             setFormOpen(false);
-            setNotice({ message: formAssignment ? 'Teaching assignment updated for the academic year.' : 'Teaching assignment created for all three terms.', error: false });
+            const action = formAssignment ? 'Teaching assignment updated for the academic year.' : 'Teaching assignment created for all three terms.';
+            const emailNotice = result?.notificationEmailSent === false ? ' The teacher notification email could not be sent.' : result?.notificationEmailSent ? ' The teacher notification email was sent.' : '';
+            setNotice({ message: `${action}${emailNotice}`, error: false });
             refresh();
           }}
         />

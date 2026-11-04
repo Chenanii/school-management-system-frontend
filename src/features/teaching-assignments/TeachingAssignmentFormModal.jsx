@@ -129,8 +129,8 @@ export default function TeachingAssignmentFormModal({
     setError('');
     setSaving(true);
     try {
-      await saveAssignment(assignment?.id, buildPayload());
-      onSaved();
+      const result = await saveAssignment(assignment?.id, buildPayload());
+      onSaved(result);
     } catch (cause) {
       setError(cause.message);
       if (cause.status === 401) signOut();
