@@ -429,7 +429,7 @@ export default function App() {
             ["SCHOOL_ADMIN", "SUPER_ADMIN"].includes(user.role) ? (
             <SubscriptionsPage user={user} signOut={signOut} />
           ) : page === "school-profile" &&
-            ["SCHOOL_ADMIN", "HEADTEACHER"].includes(user.role) ? (
+            ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(user.role) ? (
             <SchoolProfilePage
               signOut={signOut}
               onSaved={onSchoolProfileSaved}
@@ -499,7 +499,7 @@ export default function App() {
             ) ? (
             <SchoolAppearancePage signOut={signOut} user={user} />
           ) : page === "report-designer" &&
-            ["SCHOOL_ADMIN", "HEADTEACHER"].includes(user.role) ? (
+            ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(user.role) ? (
             <ReportDesignerPage signOut={signOut} />
           ) : (
             <DirectoryPage

@@ -37,14 +37,14 @@ export const sections = [
     label: "School profile",
     group: "Settings",
     icon: Building2,
-    roles: ["SCHOOL_ADMIN", "HEADTEACHER"],
+    roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"],
   },
   {
     id: "report-designer",
     label: "Report designer",
     group: "Settings",
     icon: FileSliders,
-    roles: ["SCHOOL_ADMIN", "HEADTEACHER"],
+    roles: ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"],
   },
   {
     id: "academic-years",

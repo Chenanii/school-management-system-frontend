@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, FileSpreadsheet, LoaderCircle, Plus, Search, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, FileSpreadsheet, LoaderCircle, Plus, Search, Trash2, Users } from 'lucide-react';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import StudentDetailsModal from './StudentDetailsModal.jsx';
@@ -8,6 +8,7 @@ import StudentImportModal from './StudentImportModal.jsx';
 import useStudents from './useStudents.js';
 import { API_BASE_URL, apiRequest, getAccessToken, getSchoolContextId } from '../../api.js';
 import ClassDistributionPanel from './ClassDistributionPanel.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 
 const statuses = [
   { value: '', label: 'All statuses' },
@@ -30,6 +31,9 @@ export default function StudentsPage({ user, signOut }) {
   const [detailStudent, setDetailStudent] = useState(null);
   const [updatingStudentId, setUpdatingStudentId] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionNotice, setActionNotice] = useState('');
+  const [pendingDeleteStudent, setPendingDeleteStudent] = useState(null);
+  const [deletingStudentId, setDeletingStudentId] = useState('');
   const [classDistribution, setClassDistribution] = useState(null);
   const [loadingDistribution, setLoadingDistribution] = useState(!isTeacher);
 
@@ -206,6 +210,28 @@ export default function StudentsPage({ user, signOut }) {
     }
   }
 
+  async function deleteStudentRecord() {
+    if (!pendingDeleteStudent) return;
+    const student = pendingDeleteStudent;
+    setDeletingStudentId(student.id);
+    setActionError('');
+    setActionNotice('');
+    try {
+      await apiRequest(`/students/${student.id}`, { method: 'DELETE' });
+      setPendingDeleteStudent(null);
+      setActionNotice(`${formatName(student)} (${student.admissionNumber}) and the linked school records were deleted.`);
+      directory.refresh();
+      apiRequest('/students/distribution')
+        .then((distribution) => setClassDistribution(distribution.data))
+        .catch(() => {});
+    } catch (cause) {
+      setActionError(cause.message);
+      if (cause.status === 401) signOut();
+    } finally {
+      setDeletingStudentId('');
+    }
+  }
+
   const noFilters = !search && !status && !academicYearId && !classLevelId && !classGroupId;
 
   return (
@@ -222,6 +248,7 @@ export default function StudentsPage({ user, signOut }) {
         </div>}
       </div>
       {actionError && <div className="notice-error" role="alert"><span>{actionError}</span><button className="text-button" onClick={() => setActionError('')}>Dismiss</button></div>}
+      {actionNotice && <div className="notice-success" role="status"><span>{actionNotice}</span><button className="text-button" onClick={() => setActionNotice('')}>Dismiss</button></div>}
       {!isTeacher && <ClassDistributionPanel distribution={classDistribution} loading={loadingDistribution} />}
       <section className="panel directory-panel student-directory-panel">
         <div className="student-toolbar">
@@ -298,6 +325,7 @@ export default function StudentsPage({ user, signOut }) {
                       <div className="student-actions">
                         <button className="table-action" onClick={() => setDetailStudent(student)} aria-label={`View ${formatName(student)}`} title="View profile"><Eye size={14} /></button>
                         {!isTeacher && <button className="table-action" onClick={() => openEdit(student)} aria-label={`Edit ${formatName(student)}`}>Edit</button>}
+                        {user.role === 'SUPER_ADMIN' && <button className="table-action text-red-700" type="button" onClick={() => setPendingDeleteStudent(student)} disabled={deletingStudentId === student.id} aria-label={`Delete ${formatName(student)}`} title="Permanently delete student"><Trash2 size={14} /></button>}
                         {!isTeacher && <>
                         <select
                           className="status-action"
@@ -340,6 +368,15 @@ export default function StudentsPage({ user, signOut }) {
       )}
       {!isTeacher && importOpen && <StudentImportModal onClose={() => setImportOpen(false)} onImported={directory.refresh} />}
       {detailStudent && <StudentDetailsModal student={detailStudent} isTeacher={isTeacher} onClose={() => setDetailStudent(null)} />}
+      {pendingDeleteStudent && <ConfirmActionModal
+        title="Permanently delete this student?"
+        message={`This removes ${formatName(pendingDeleteStudent)} and their enrollments, marks, attendance records, report details, annual results, and parent links from the selected school. Any linked student login will be deactivated. This cannot be undone.`}
+        confirmationText={pendingDeleteStudent.admissionNumber}
+        confirmLabel={deletingStudentId ? 'Deleting…' : 'Delete student and records'}
+        confirmDisabled={Boolean(deletingStudentId)}
+        onCancel={() => { if (!deletingStudentId) setPendingDeleteStudent(null); }}
+        onConfirm={deleteStudentRecord}
+      />}
     </>
   );
 }
