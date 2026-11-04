@@ -145,7 +145,7 @@ export default function StudentImportModal({ onClose, onImported }) {
     const rowProblems = rows.map(({ rowNumber, student }) => {
       if (!student.firstName || !student.lastName) return { rowNumber, message: 'Student first and last names are required.' };
       const parent = student.parents[0];
-      if (parent && (!parent.firstName || !parent.lastName)) return { rowNumber, message: 'Parent/guardian first and last names are required when parent/guardian details are provided.' };
+      if (parent && !parent.firstName && !parent.lastName) return { rowNumber, message: 'Provide at least a first or last name for the parent/guardian.' };
       if (student.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(student.dateOfBirth)) return { rowNumber, message: 'Date of birth must be YYYY-MM-DD or DD/MM/YYYY.' };
       return null;
     });
