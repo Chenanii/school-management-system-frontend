@@ -17,7 +17,7 @@ export default function UserFormModal({ user, superAdminMode = false, onClose, o
   const [form, setForm] = useState(() => ({ ...blankForm, role: superAdminMode ? 'SUPER_ADMIN' : blankForm.role }));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const teacherRole = form.role === 'TEACHER' || form.role === 'FORM_TUTOR';
+  const teacherRole = ['SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER', 'FORM_TUTOR'].includes(form.role);
   const parentAccount = user?.role === 'PARENT';
 
   useEffect(() => {
