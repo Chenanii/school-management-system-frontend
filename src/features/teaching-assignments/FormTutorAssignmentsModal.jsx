@@ -10,7 +10,7 @@ export default function FormTutorAssignmentsModal({ teachers, terms, signOut, on
   const [savingGroupId, setSavingGroupId] = useState('');
   const [error, setError] = useState('');
   const years = useMemo(() => [...new Map(terms.filter((term) => term.academicYear).map((term) => [term.academicYear.id, term.academicYear])).values()].sort((a, b) => b.name.localeCompare(a.name)), [terms]);
-  const availableTeachers = teachers.filter((teacher) => teacher.user?.status === 'ACTIVE' && ['TEACHER', 'FORM_TUTOR'].includes(teacher.user?.role));
+  const availableTeachers = teachers.filter((teacher) => teacher.user?.status === 'ACTIVE' && ['TEACHER', 'FORM_TUTOR', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(teacher.user?.role));
 
   useEffect(() => {
     if (!academicYearId && years.length) {
@@ -49,12 +49,17 @@ export default function FormTutorAssignmentsModal({ teachers, terms, signOut, on
     setError('');
     try {
       const teacherId = selectedTeachers[group.id] || null;
-      await saveFormTutorAssignment({ academicYearId, classGroupId: group.id, teacherId });
+      const result = await saveFormTutorAssignment({ academicYearId, classGroupId: group.id, teacherId });
       setGroups((current) => current.map((item) => item.id === group.id ? {
         ...item,
         formTutorAssignments: teacherId ? [{ teacherId, teacher: availableTeachers.find((teacher) => teacher.id === teacherId) }] : []
       } : item));
-      onNotice({ message: teacherId ? 'Form tutor assignment saved.' : 'Form tutor assignment removed.', error: false });
+      const emailNotice = result.notificationEmailSent === true
+        ? ' Notification email sent.'
+        : result.notificationEmailSent === false
+          ? ' Notification email could not be sent.'
+          : '';
+      onNotice({ message: `${teacherId ? 'Form tutor assignment saved.' : 'Form tutor assignment removed.'}${emailNotice}`, error: false });
     } catch (cause) {
       setError(cause.message);
       if (cause.status === 401) signOut();
