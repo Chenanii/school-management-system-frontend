@@ -109,9 +109,10 @@ export default function StudentImportModal({ onClose, onImported }) {
     Promise.all([fetchAllPages('/terms'), fetchAllPages('/class-levels')])
       .then(([termRows, levels]) => {
         if (cancelled) return;
-        setTerms(termRows);
+        const openCurrentTerm = termRows.find((term) => term.status === 'OPEN' && term.academicYear?.isCurrent);
+        setTerms(openCurrentTerm ? [openCurrentTerm] : []);
         setClassLevels(levels);
-        if (termRows.length === 1 && ['DRAFT', 'OPEN'].includes(termRows[0].status)) setTermId(termRows[0].id);
+        if (openCurrentTerm) setTermId(openCurrentTerm.id);
         if (levels.length === 1) setClassLevelId(levels[0].id);
       })
       .catch((cause) => { if (!cancelled) setError(cause.message); });
@@ -143,6 +144,8 @@ export default function StudentImportModal({ onClose, onImported }) {
     setResults([]);
     const rowProblems = rows.map(({ rowNumber, student }) => {
       if (!student.firstName || !student.lastName) return { rowNumber, message: 'Student first and last names are required.' };
+      const parent = student.parents[0];
+      if (parent && (!parent.firstName || !parent.lastName)) return { rowNumber, message: 'Parent/guardian first and last names are required when parent/guardian details are provided.' };
       if (student.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(student.dateOfBirth)) return { rowNumber, message: 'Date of birth must be YYYY-MM-DD or DD/MM/YYYY.' };
       return null;
     });
@@ -210,13 +213,12 @@ export default function StudentImportModal({ onClose, onImported }) {
               <select className="text-input" value={termId} onChange={(event) => setTermId(event.target.value)} required disabled={busy}>
                 <option value="">Select a term</option>
                 {terms.map((term) => {
-                  const acceptingEnrollments = ['DRAFT', 'OPEN'].includes(term.status);
-                  return <option key={term.id} value={term.id} disabled={!acceptingEnrollments}>
+                  return <option key={term.id} value={term.id}>
                     {term.academicYear?.name} · {term.sequence}. {term.name} ({term.status.toLowerCase().replaceAll('_', ' ')})
                   </option>;
                 })}
               </select>
-              <span className="field-hint">All terms are shown. Only terms in draft or open status accept new enrollments.</span>
+              <span className="field-hint">Only the open term in the current academic year is available.</span>
             </label>
             <label className="field-label">Class level
               <select className="text-input" value={classLevelId} onChange={(event) => setClassLevelId(event.target.value)} required disabled={busy}>
