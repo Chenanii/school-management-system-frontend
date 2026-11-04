@@ -13,6 +13,13 @@ function normalizeHeader(value) {
   return String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function studentIdentity(student) {
+  const names = [student.firstName, student.middleName, student.lastName]
+    .map((value) => String(value ?? '').trim().toLocaleLowerCase());
+  const dateOfBirth = student.dateOfBirth ? String(student.dateOfBirth).slice(0, 10) : '';
+  return [...names, dateOfBirth].join('|');
+}
+
 const headerAliases = {
   firstname: 'firstName', studentfirstname: 'firstName',
   middlename: 'middleName', studentmiddlename: 'middleName',
@@ -103,6 +110,7 @@ export default function StudentImportModal({ onClose, onImported }) {
   const [finished, setFinished] = useState(false);
   const [progress, setProgress] = useState('');
   const [results, setResults] = useState([]);
+  const [duplicateRows, setDuplicateRows] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +134,7 @@ export default function StudentImportModal({ onClose, onImported }) {
     setResults([]);
     setReviewing(false);
     setFinished(false);
+    setDuplicateRows({});
     try {
       setRows(await parseFile(file));
       setFileName(file.name);
@@ -161,6 +170,28 @@ export default function StudentImportModal({ onClose, onImported }) {
     }
 
     if (!reviewing) {
+      try {
+        const registeredStudents = await fetchAllPages('/students');
+        const registeredIdentities = new Set(registeredStudents.map(studentIdentity));
+        const seenRows = new Map();
+        const duplicateRowMap = {};
+        for (const { rowNumber, student } of rows) {
+          const identity = studentIdentity(student);
+          const previousRow = seenRows.get(identity);
+          if (previousRow) {
+            duplicateRowMap[rowNumber] = `Duplicate of row ${previousRow} in this file`;
+          } else {
+            seenRows.set(identity, rowNumber);
+          }
+          if (registeredIdentities.has(identity)) {
+            duplicateRowMap[rowNumber] = 'Already registered with the same name and date of birth';
+          }
+        }
+        setDuplicateRows(duplicateRowMap);
+      } catch (cause) {
+        setError(cause.message || 'Could not check the student register for duplicates.');
+        return;
+      }
       setReviewing(true);
       return;
     }
@@ -170,6 +201,11 @@ export default function StudentImportModal({ onClose, onImported }) {
     try {
       for (let index = 0; index < rows.length; index += 1) {
         const item = rows[index];
+        if (duplicateRows[item.rowNumber]) {
+          outcomes.push({ rowNumber: item.rowNumber, skipped: true, message: duplicateRows[item.rowNumber] });
+          setResults([...outcomes]);
+          continue;
+        }
         setProgress(`Importing student ${index + 1} of ${rows.length}…`);
         try {
           await apiRequest('/students', {
@@ -183,7 +219,8 @@ export default function StudentImportModal({ onClose, onImported }) {
         setResults([...outcomes]);
       }
       const imported = outcomes.filter((outcome) => outcome.success).length;
-      setProgress(`Imported ${imported} of ${rows.length} students.`);
+      const skipped = outcomes.filter((outcome) => outcome.skipped).length;
+      setProgress(`Imported ${imported} of ${rows.length} students${skipped ? `; skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`);
       setFinished(true);
       if (imported) onImported();
     } finally {
@@ -244,7 +281,7 @@ export default function StudentImportModal({ onClose, onImported }) {
           {error && <p className="form-error" role="alert">{error}</p>}
           {progress && <p className="form-success" role="status">{progress}</p>}
           {results.some((result) => !result.success) && <div className="max-h-36 overflow-y-auto rounded-lg border border-red-200 p-3 text-sm" role="status">
-            {results.filter((result) => !result.success).map((result) => <p key={result.rowNumber}>Row {result.rowNumber}: {result.message}</p>)}
+            {results.filter((result) => !result.success).map((result) => <p key={result.rowNumber}>Row {result.rowNumber}: {result.skipped ? `Skipped — ${result.message}` : result.message}</p>)}
           </div>}
           {completeCount > 0 && <p className="field-hint">Successful imports: {completeCount}</p>}
           <div className="modal-actions">
