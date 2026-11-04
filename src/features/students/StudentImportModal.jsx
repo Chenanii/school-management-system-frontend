@@ -5,7 +5,7 @@ import { apiRequest } from '../../api.js';
 import { fetchAllPages } from '../enrollments/enrollmentApi.js';
 
 const templateHeaders = [
-  'firstName', 'middleName', 'lastName', 'dateOfBirth', 'gender', 'nationality',
+  'firstName', 'middleName', 'lastName', 'address', 'dateOfBirth', 'gender', 'nationality',
   'parentFirstName', 'parentLastName', 'parentPhone', 'parentEmail', 'relationship'
 ];
 
@@ -17,6 +17,7 @@ const headerAliases = {
   firstname: 'firstName', studentfirstname: 'firstName',
   middlename: 'middleName', studentmiddlename: 'middleName',
   lastname: 'lastName', studentlastname: 'lastName', surname: 'lastName',
+  address: 'address', studentaddress: 'address',
   dateofbirth: 'dateOfBirth', dob: 'dateOfBirth',
   gender: 'gender', sex: 'gender', nationality: 'nationality',
   parentfirstname: 'parentFirstName', guardianfirstname: 'parentFirstName', parentguardianfirstname: 'parentFirstName',
@@ -63,16 +64,17 @@ async function parseFile(file) {
         firstName: String(row.firstName ?? '').trim(),
         middleName: String(row.middleName ?? '').trim() || null,
         lastName: String(row.lastName ?? '').trim(),
+        address: String(row.address ?? '').trim() || null,
         dateOfBirth: excelDate(row.dateOfBirth),
         gender: String(row.gender ?? '').trim() || null,
         nationality: String(row.nationality ?? '').trim() || null,
-        parents: [{
+        parents: [row.parentFirstName, row.parentLastName, row.parentPhone, row.parentEmail, row.relationship].some((value) => String(value ?? '').trim()) ? [{
           firstName: String(row.parentFirstName ?? '').trim(),
           lastName: String(row.parentLastName ?? '').trim(),
           phone: String(row.parentPhone ?? '').trim(),
           email: String(row.parentEmail ?? '').trim(),
           relationship: String(row.relationship ?? '').trim() || undefined
-        }]
+        }] : []
       }
     };
   });
@@ -80,7 +82,7 @@ async function parseFile(file) {
 
 function downloadTemplate() {
   const worksheet = XLSX.utils.aoa_to_sheet([templateHeaders, [
-    'Amina', '', 'Banda', '2012-04-18', 'Female', 'Malawian',
+    'Amina', '', 'Banda', '', '2012-04-18', 'Female', 'Malawian',
     'Chisomo', 'Banda', '+265991234567', 'parent@example.com', 'Mother'
   ]]);
   const workbook = XLSX.utils.book_new();
@@ -141,8 +143,6 @@ export default function StudentImportModal({ onClose, onImported }) {
     setResults([]);
     const rowProblems = rows.map(({ rowNumber, student }) => {
       if (!student.firstName || !student.lastName) return { rowNumber, message: 'Student first and last names are required.' };
-      if (!student.parents[0].firstName || !student.parents[0].lastName) return { rowNumber, message: 'Parent/guardian first and last names are required.' };
-      if (!student.parents[0].phone && !student.parents[0].email) return { rowNumber, message: 'Provide a parent/guardian phone or email.' };
       if (student.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(student.dateOfBirth)) return { rowNumber, message: 'Date of birth must be YYYY-MM-DD or DD/MM/YYYY.' };
       return null;
     });
@@ -199,7 +199,7 @@ export default function StudentImportModal({ onClose, onImported }) {
           <div>
             <p className="eyebrow">Student register</p>
             <h2 id="student-import-title">Import students</h2>
-            <p>Upload an Excel workbook or CSV. Each row needs a student name and a parent/guardian contact.</p>
+            <p>Upload an Excel workbook or CSV. Each row needs a student name; parent/guardian details and address are optional.</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} disabled={busy} aria-label="Close"><X size={19} /></button>
         </div>
@@ -226,7 +226,7 @@ export default function StudentImportModal({ onClose, onImported }) {
             </label>
             <label className="field-label">Excel or CSV file
               <input className="text-input" type="file" accept=".xlsx,.xls,.csv" onChange={chooseFile} required={!rows.length} disabled={busy} />
-              <span className="field-hint">First worksheet only · up to 250 rows and 5 MB. Columns: {templateHeaders.join(', ')}.</span>
+              <span className="field-hint">First worksheet only · up to 250 rows and 5 MB. Parent/guardian columns and address are optional. Columns: {templateHeaders.join(', ')}.</span>
             </label>
             {fileName && <p className="field-hint">{fileName} · {rows.length} student rows ready</p>}
           </> : <section className="rounded-xl border border-slate-200 bg-slate-50 p-4" aria-label="Confirm import choices">

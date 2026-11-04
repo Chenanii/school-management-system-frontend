@@ -13,6 +13,7 @@ const emptyProfile = {
   secondaryLogoDataUrl: '',
   classTeacherSignerName: '',
   headteacherSignerName: '',
+  attendanceMethod: 'QR_SCAN',
 };
 
 const maxLogoBytes = 512 * 1024;
@@ -45,6 +46,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
             secondaryLogoDataUrl: data.secondaryLogoDataUrl || '',
             classTeacherSignerName: data.classTeacherSignerName || '',
             headteacherSignerName: data.headteacherSignerName || '',
+            attendanceMethod: data.attendanceMethod || 'QR_SCAN',
           });
         }
       })
@@ -112,6 +114,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
           secondaryLogoDataUrl: profile.secondaryLogoDataUrl || null,
           classTeacherSignerName: optionalValue(profile.classTeacherSignerName),
           headteacherSignerName: optionalValue(profile.headteacherSignerName),
+          attendanceMethod: profile.attendanceMethod,
         }),
       });
       setProfile((current) => ({
@@ -124,6 +127,7 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
         secondaryLogoDataUrl: data.secondaryLogoDataUrl || '',
         classTeacherSignerName: data.classTeacherSignerName || '',
         headteacherSignerName: data.headteacherSignerName || '',
+        attendanceMethod: data.attendanceMethod || 'QR_SCAN',
       }));
       setNotice('School profile saved. New report cards will use these details.');
       onSaved?.(data);
@@ -166,6 +170,16 @@ export default function SchoolProfilePage({ signOut, onSaved }) {
             <label className="field-label">Phone<input className="text-input" type="tel" name="phone" value={profile.phone} onChange={updateField} maxLength={40} /></label>
             <label className="field-label">School URL slug<input className="text-input" name="slug" value={profile.slug} onChange={updateField} maxLength={80} required /><span className="field-hint">Workspace URL: {window.location.origin}/{profile.slug || 'school-slug'}</span></label>
             <label className="field-label school-profile-address">Address<textarea className="text-input" name="address" value={profile.address} onChange={updateField} maxLength={500} rows={3} /></label>
+          </div>
+          <div>
+            <h2 className="school-profile-section-title">Attendance method</h2>
+            <p className="field-hint">Choose how staff record student attendance across the school.</p>
+            <label className="field-label">How should attendance be taken?
+              <select className="text-input" name="attendanceMethod" value={profile.attendanceMethod} onChange={updateField} disabled={saving}>
+                <option value="QR_SCAN">QR scanning with manual status adjustments</option>
+                <option value="MANUAL">Manual register without QR scanning</option>
+              </select>
+            </label>
           </div>
           <div>
             <h2 className="school-profile-section-title">Report-card signatories</h2>

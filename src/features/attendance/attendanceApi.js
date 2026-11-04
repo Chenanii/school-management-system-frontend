@@ -16,6 +16,10 @@ export function fetchAttendanceTerms() {
   return fetchAllPages('/terms');
 }
 
+export function fetchAttendanceMethod() {
+  return apiRequest('/schools/current');
+}
+
 export function fetchAttendanceClasses(termId, date) {
   const params = new URLSearchParams({ termId, date });
   return apiRequest(`/attendance/classes?${params}`);

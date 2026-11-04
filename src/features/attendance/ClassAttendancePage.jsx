@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Check, CheckCheck, LoaderCircle, UsersRound, Camera, Download } from 'lucide-react';
-import { downloadAttendanceReport, downloadStudentQr, fetchAttendanceClasses, fetchAttendanceReport, fetchAttendanceSheet, fetchAttendanceTerms, resolveAttendanceQr, saveAttendanceSheet } from './attendanceApi.js';
+import { downloadAttendanceReport, downloadStudentQr, fetchAttendanceClasses, fetchAttendanceMethod, fetchAttendanceReport, fetchAttendanceSheet, fetchAttendanceTerms, resolveAttendanceQr, saveAttendanceSheet } from './attendanceApi.js';
 import AssessmentPopup from '../assessments/AssessmentPopup.jsx';
 
 const MARKS = [
@@ -24,7 +24,8 @@ function className(group) {
 }
 
 export default function ClassAttendancePage({ user, signOut }) {
-  const canDownloadStudentQr = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
+  const [attendanceMethod, setAttendanceMethod] = useState('QR_SCAN');
+  const canDownloadStudentQr = attendanceMethod === 'QR_SCAN' && ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
   const [terms, setTerms] = useState([]);
   const [termId, setTermId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
@@ -83,6 +84,14 @@ export default function ClassAttendancePage({ user, signOut }) {
 
   useEffect(() => {
     let cancelled = false;
+    fetchAttendanceMethod()
+      .then(({ data }) => { if (!cancelled) setAttendanceMethod(data.attendanceMethod || 'QR_SCAN'); })
+      .catch((cause) => { if (!cancelled) { setError(cause.message); if (cause.status === 401) signOut(); } });
+    return () => { cancelled = true; };
+  }, [signOut]);
+
+  useEffect(() => {
+    let cancelled = false;
     setClasses([]);
     setClassGroupId('');
     setSheet(null);
@@ -133,14 +142,14 @@ export default function ClassAttendancePage({ user, signOut }) {
   const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
   const canEditAttendance = Boolean(sheet && (canManageAttendance || sheet.canRecord));
   useEffect(() => {
-    if (!sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
+    if (attendanceMethod !== 'QR_SCAN' || !sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
     startCamera();
     return () => {
       cameraControls.current?.stop();
       cameraControls.current = null;
       setCameraActive(false);
     };
-  }, [Boolean(sheet), loadingSheet, canEditAttendance, sheet?.term?.status, classGroupId, termId, date, scannerCycle]);
+  }, [attendanceMethod, Boolean(sheet), loadingSheet, canEditAttendance, sheet?.term?.status, classGroupId, termId, date, scannerCycle]);
   const selectedTerm = terms.find((term) => term.id === termId);
   const counts = useMemo(() => (sheet?.students || []).reduce((summary, row) => {
     if (row.status) summary[row.status] += 1;
@@ -342,7 +351,7 @@ export default function ClassAttendancePage({ user, signOut }) {
           <div className="attendance-register-heading" hidden><span><strong>{sheet.students.length}</strong> students · <strong>{markedCount}</strong> marked {sheet.saved && <span className="attendance-saved"><Check size={14} /> Saved</span>}</span>
             <div className="attendance-register-actions"><button className="text-button" type="button" onClick={() => setClassGroupId('')}>Choose another class</button>{canEditAttendance && <button className="secondary-button" type="button" onClick={markAllPresent} disabled={!sheet.students.length || sheet.term.status !== 'OPEN'}><CheckCheck size={15} /> Mark all present</button>}</div>
           </div>
-          {canEditAttendance && sheet.term.status === 'OPEN' && <div className="attendance-scan-panel">
+          {attendanceMethod === 'QR_SCAN' && canEditAttendance && sheet.term.status === 'OPEN' && <div className="attendance-scan-panel">
             <div><strong>Scan student QR code</strong><span>Downloaded student codes contain the student admission number. Scanned students are marked present in this register.</span></div>
             <form onSubmit={(event) => { event.preventDefault(); if (scanCode.trim()) markScanned(scanCode); }}>
               <input autoFocus autoComplete="off" className="search-input" value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="USB scanner or enter admission number" aria-label="USB scanner input or student admission number" />
