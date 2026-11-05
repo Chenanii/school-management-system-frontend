@@ -168,15 +168,15 @@ export default function TermsPage({ user, signOut }) {
                   const transitions = (termTransitions[term.status] || []).filter((nextStatus) => nextStatus !== 'FINALIZED' || user?.role === 'HEADTEACHER');
                   return (
                     <tr key={term.id}>
-                      <td>
+                      <td data-label="Term">
                         <div className="term-name-cell">
                           <span className="term-sequence">{term.sequence}</span>
                           <span className="font-medium text-ink">{term.name}</span>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap text-muted">{term.academicYear?.name || '—'}</td>
-                      <td className="whitespace-nowrap text-muted">{formatTermDate(term.startDate)} – {formatTermDate(term.endDate)}</td>
-                      <td>
+                      <td data-label="Academic year" className="whitespace-nowrap text-muted">{term.academicYear?.name || '—'}</td>
+                      <td data-label="Dates" className="whitespace-nowrap text-muted">{formatTermDate(term.startDate)} – {formatTermDate(term.endDate)}</td>
+                      <td data-label="Status">
                         <div className="term-status-cell">
                           <span className={`subject-status subject-status-${term.status.toLowerCase().replace('_', '-')}`}>{termStatusLabel(term.status)}</span>
                           {transitions.length > 0 && (
@@ -193,10 +193,10 @@ export default function TermsPage({ user, signOut }) {
                           )}
                         </div>
                       </td>
-                      <td><span className="term-count"><ClipboardList size={13} /> {term._count?.assessments ?? 0}</span></td>
-                      <td><span className="term-count"><Users size={13} /> {term._count?.enrollments ?? 0}</span></td>
-                      <td className="text-muted">{term._count?.assignments ?? 0}</td>
-                      <td><button className="table-action" onClick={() => setDetailTerm(term)} aria-label={`View ${term.name}`} title="View term details"><Eye size={14} /></button></td>
+                      <td data-label="Assessments"><span className="term-count"><ClipboardList size={13} /> {term._count?.assessments ?? 0}</span></td>
+                      <td data-label="Enrolments"><span className="term-count"><Users size={13} /> {term._count?.enrollments ?? 0}</span></td>
+                      <td data-label="Assignments" className="text-muted">{term._count?.assignments ?? 0}</td>
+                      <td data-label="Actions"><button className="table-action" onClick={() => setDetailTerm(term)} aria-label={`View ${term.name}`} title="View term details"><Eye size={14} /></button></td>
                     </tr>
                   );
                 })}

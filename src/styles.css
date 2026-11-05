@@ -910,6 +910,19 @@ select:focus-visible,
   text-align: left;
   font-size: 13px;
 }
+.page-content .overflow-x-auto {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.page-content .directory-panel,
+.page-content .panel {
+  min-width: 0;
+}
 .people-table thead {
   color: #657168;
   background: var(--app-surface-muted);
@@ -9449,5 +9462,142 @@ body {
   }
   .term-expiry-reminder-offset {
     bottom: 190px;
+  }
+}
+
+/* Match the assessment page's compact, labeled rows and fluid form controls. */
+@media (max-width: 760px) {
+  .modal-backdrop {
+    align-items: flex-start;
+    padding: max(12px, env(safe-area-inset-top)) 12px
+      max(12px, env(safe-area-inset-bottom));
+  }
+  .modal-backdrop > .user-modal {
+    width: min(560px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 16px;
+  }
+  .user-modal .user-form,
+  .user-modal .field-label,
+  .user-modal .user-name-grid,
+  .user-modal .student-parent-fields {
+    width: 100%;
+    min-width: 0;
+  }
+  .user-modal .field-label,
+  .user-modal .text-input,
+  .user-modal select.text-input,
+  .user-modal textarea {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+  .user-modal .user-name-grid,
+  .user-modal .student-parent-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .user-modal .modal-heading,
+  .user-modal .student-parent-heading {
+    gap: 9px;
+  }
+  .user-modal .modal-heading > div,
+  .user-modal .modal-heading p,
+  .user-modal .field-hint {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .user-modal .modal-actions {
+    flex-wrap: wrap;
+  }
+  .user-modal .modal-actions > button {
+    flex: 1 1 120px;
+  }
+
+  .students-table,
+  .users-table,
+  .term-table,
+  .teaching-assignment-table,
+  .subscription-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+  .students-table thead,
+  .users-table thead,
+  .term-table thead,
+  .teaching-assignment-table thead,
+  .subscription-table thead {
+    display: none;
+  }
+  .students-table tbody,
+  .users-table tbody,
+  .term-table tbody,
+  .teaching-assignment-table tbody,
+  .subscription-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 10px 0;
+  }
+  .students-table tbody tr,
+  .users-table tbody tr,
+  .term-table tbody tr,
+  .teaching-assignment-table tbody tr,
+  .subscription-table tbody tr {
+    display: grid;
+    min-width: 0;
+    gap: 9px;
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+    padding: 12px;
+    background: var(--app-surface);
+  }
+  .students-table tbody td,
+  .users-table tbody td,
+  .term-table tbody td,
+  .teaching-assignment-table tbody td,
+  .subscription-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1.3fr);
+    align-items: start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .students-table tbody td::before,
+  .users-table tbody td::before,
+  .term-table tbody td::before,
+  .teaching-assignment-table tbody td::before,
+  .subscription-table tbody td::before {
+    content: attr(data-label);
+    color: var(--app-text-secondary);
+    font-size: 11px;
+    font-weight: 650;
+  }
+  .students-table tbody td > *,
+  .users-table tbody td > *,
+  .term-table tbody td > *,
+  .teaching-assignment-table tbody td > *,
+  .subscription-table tbody td > * {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .students-table .flex,
+  .users-table .flex,
+  .teaching-assignment-identity {
+    min-width: 0;
+  }
+  .student-actions,
+  .teaching-assignment-actions {
+    flex-wrap: wrap;
+  }
+  .term-status-cell {
+    flex-wrap: wrap;
   }
 }

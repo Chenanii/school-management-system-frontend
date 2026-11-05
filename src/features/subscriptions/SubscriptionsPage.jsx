@@ -186,13 +186,13 @@ function SubscriptionManager({ signOut }) {
             <tbody>
               {subscriptions.map((subscription) => (
                 <tr key={subscription.id}>
-                  <td><div className="subscription-school-cell"><strong>{subscription.school?.name || 'School'}</strong><span>{subscription.school?.slug}{subscription.school?.email ? ` · ${subscription.school.email}` : ''}</span></div></td>
-                  <td><div className="subscription-plan-cell"><strong>{subscription.plan?.name}</strong><span>{formatPlanPrice(subscription.plan)}</span></div></td>
-                  <td><span className={`subject-status subject-status-${subscription.status.toLowerCase().replace('_', '-')}`}>{statusLabel(subscription.status)}</span></td>
-                  <td className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.currentPeriodEnd)}</td>
-                  <td className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.trialEndsAt)}</td>
-                  <td className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.createdAt)}</td>
-                  <td><button className="table-action" onClick={() => setStatusSubscription(subscription)}>Update</button></td>
+                  <td data-label="School"><div className="subscription-school-cell"><strong>{subscription.school?.name || 'School'}</strong><span>{subscription.school?.slug}{subscription.school?.email ? ` · ${subscription.school.email}` : ''}</span></div></td>
+                  <td data-label="Plan"><div className="subscription-plan-cell"><strong>{subscription.plan?.name}</strong><span>{formatPlanPrice(subscription.plan)}</span></div></td>
+                  <td data-label="Status"><span className={`subject-status subject-status-${subscription.status.toLowerCase().replace('_', '-')}`}>{statusLabel(subscription.status)}</span></td>
+                  <td data-label="Period ends" className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.currentPeriodEnd)}</td>
+                  <td data-label="Trial ends" className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.trialEndsAt)}</td>
+                  <td data-label="Created" className="whitespace-nowrap text-muted">{formatSubscriptionDate(subscription.createdAt)}</td>
+                  <td data-label="Actions"><button className="table-action" onClick={() => setStatusSubscription(subscription)}>Update</button></td>
                 </tr>
               ))}
             </tbody>
@@ -216,11 +216,11 @@ function SubscriptionManager({ signOut }) {
           <thead><tr><th>School</th><th>Plan</th><th>Reference</th><th>Amount</th><th>Status</th><th>Paid/created</th></tr></thead>
           <tbody>{payments.map((payment) => (
             <tr key={payment.id}>
-              <td><div className="subscription-school-cell"><strong>{payment.school?.name || 'School'}</strong><span>{payment.school?.slug}</span></div></td>
-              <td>{payment.plan?.name}</td><td className="font-mono text-xs">{payment.txRef}</td>
-              <td>{payment.currency} {(payment.amount / 100).toFixed(2)}</td>
-              <td><span className={`subject-status subject-status-${payment.status.toLowerCase()}`}>{statusLabel(payment.status)}</span></td>
-              <td className="whitespace-nowrap text-muted">{formatSubscriptionDate(payment.verifiedAt || payment.createdAt)}</td>
+              <td data-label="School"><div className="subscription-school-cell"><strong>{payment.school?.name || 'School'}</strong><span>{payment.school?.slug}</span></div></td>
+              <td data-label="Plan">{payment.plan?.name}</td><td data-label="Reference" className="font-mono text-xs">{payment.txRef}</td>
+              <td data-label="Amount">{payment.currency} {(payment.amount / 100).toFixed(2)}</td>
+              <td data-label="Status"><span className={`subject-status subject-status-${payment.status.toLowerCase()}`}>{statusLabel(payment.status)}</span></td>
+              <td data-label="Paid/created" className="whitespace-nowrap text-muted">{formatSubscriptionDate(payment.verifiedAt || payment.createdAt)}</td>
             </tr>
           ))}</tbody>
         </table>

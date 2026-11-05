@@ -306,22 +306,22 @@ export default function StudentsPage({ user, signOut }) {
               <tbody>
                 {students.map((student) => (
                   <tr key={student.id}>
-                    <td>
+                    <td data-label="Student">
                       <div className="flex min-w-[180px] items-center gap-3">
                         <div className="person-avatar person-student">{initials(student) || '?'}</div>
                         <span className="whitespace-nowrap font-medium text-ink">{formatName(student)}</span>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap text-muted">{student.admissionNumber}</td>
-                    <td className="whitespace-nowrap text-muted">{student.parents?.[0]?.parent?.phone || '—'}</td>
-                    <td className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classLevel?.name || '—'}</td>
-                    <td className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classGroup?.name || 'Unassigned'}</td>
-                    <td className="whitespace-nowrap text-muted">{formatDate(student.dateOfBirth)}</td>
-                    <td className="whitespace-nowrap text-muted">{student.gender || '—'}</td>
-                    <td className="whitespace-nowrap text-muted">{student.nationality || '—'}</td>
-                    <td className="text-muted">{student._count?.enrollments ?? 0}</td>
-                    <td><StatusBadge status={student.status} /></td>
-                    <td>
+                    <td data-label="Student ID" className="whitespace-nowrap text-muted">{student.admissionNumber}</td>
+                    <td data-label="Parent phone" className="whitespace-nowrap text-muted">{student.parents?.[0]?.parent?.phone || '—'}</td>
+                    <td data-label="Class level" className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classLevel?.name || '—'}</td>
+                    <td data-label="Class group" className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classGroup?.name || 'Unassigned'}</td>
+                    <td data-label="Date of birth" className="whitespace-nowrap text-muted">{formatDate(student.dateOfBirth)}</td>
+                    <td data-label="Gender" className="whitespace-nowrap text-muted">{student.gender || '—'}</td>
+                    <td data-label="Nationality" className="whitespace-nowrap text-muted">{student.nationality || '—'}</td>
+                    <td data-label="Enrolments" className="text-muted">{student._count?.enrollments ?? 0}</td>
+                    <td data-label="Status"><StatusBadge status={student.status} /></td>
+                    <td data-label="Actions">
                       <div className="student-actions">
                         <button className="table-action" onClick={() => setDetailStudent(student)} aria-label={`View ${formatName(student)}`} title="View profile"><Eye size={14} /></button>
                         {!isTeacher && <button className="table-action" onClick={() => openEdit(student)} aria-label={`Edit ${formatName(student)}`}>Edit</button>}

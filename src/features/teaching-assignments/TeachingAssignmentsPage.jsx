@@ -235,27 +235,27 @@ export default function TeachingAssignmentsPage({ signOut }) {
                   const assessments = assignment._count?.assessments ?? 0;
                   return (
                     <tr key={assignment.id}>
-                      <td>
+                      <td data-label="Teacher">
                         <div className="teaching-assignment-identity">
                           <span className="teaching-assignment-icon"><Users size={15} /></span>
                           <div><strong>{teacherDisplayName(teacher)}</strong><span>{teacher?.staffNumber || teacher?.email || 'Teacher profile'}</span></div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap text-muted">{assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : assignment.subjectStream?.classLevel?.name || 'Class level'}</td>
-                      <td>
+                      <td data-label="Teaching group" className="whitespace-nowrap text-muted">{assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : assignment.subjectStream?.classLevel?.name || 'Class level'}</td>
+                      <td data-label="Subject / section">
                         <div className="teaching-assignment-identity">
                           <span className="teaching-assignment-subject-icon"><BookOpen size={14} /></span>
                           <div><strong>{assignment.subject?.name || 'Subject'}{assignment.subjectStream?.name ? ` · ${assignment.subjectStream.name}` : ''}</strong><span>{assignment.subject?.code || 'Class subject'}{assignment.subjectStream?.classLevel?.name ? ` · ${assignment.subjectStream.classLevel.name}` : ''}</span></div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Term">
                         <div className="teaching-assignment-identity">
                           <span className="teaching-assignment-term-icon"><CalendarDays size={14} /></span>
                           <div><strong>{assignment.term?.name || 'Term'}</strong><span>{termMap.get(assignment.termId)?.academicYear?.name || 'Academic year'}</span></div>
                         </div>
                       </td>
-                      <td><span className="teaching-assessment-count"><ClipboardList size={14} /> {assessments}</span></td>
-                      <td>
+                      <td data-label="Assessments"><span className="teaching-assessment-count"><ClipboardList size={14} /> {assessments}</span></td>
+                      <td data-label="Actions">
                         <div className="teaching-assignment-actions">
                           <button className="table-action" onClick={() => openEdit(assignment)}>Edit</button>
                           <button className="table-action teaching-assignment-delete" onClick={() => setPendingDeleteAssignment(assignment)} disabled={assessments > 0 || busyId === assignment.id} title={assessments > 0 ? 'Cannot delete while assessments exist' : 'Delete assignment'}>
