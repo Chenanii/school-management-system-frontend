@@ -28,7 +28,7 @@ export default function Sidebar({
   onToggleCollapse
 }) {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [openGroups, setOpenGroups] = useState({});
   const schoolName = school?.name || (isSuperAdmin ? 'Select a school' : user.schoolName || 'My school');
   const visibleSections = sections.filter(({ roles }) => !roles || roles.includes(user.role));
   const sectionGroups = visibleSections.reduce((groups, section) => {
@@ -76,12 +76,15 @@ export default function Sidebar({
         <nav className="sidebar-navigation" aria-label="Main navigation">
           {orderedSectionGroups.map(([group, items]) => (
             <div className="sidebar-nav-group" key={group}>
-              {group === 'Settings' ? (
-                <button className="nav-caption nav-group-toggle" type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen((value) => !value)}>
-                  <span>{group}</span><ChevronDown size={14} className={settingsOpen ? '' : 'nav-group-chevron-closed'} />
-                </button>
-              ) : <div className="nav-caption">{group}</div>}
-              <div className="space-y-1" hidden={group === 'Settings' && !settingsOpen && !collapsed}>
+              <button
+                className="nav-caption nav-group-toggle"
+                type="button"
+                aria-expanded={Boolean(openGroups[group])}
+                onClick={() => setOpenGroups((current) => ({ ...current, [group]: !current[group] }))}
+              >
+                <span>{group}</span><ChevronDown size={14} className={openGroups[group] ? '' : 'nav-group-chevron-closed'} />
+              </button>
+              <div className="space-y-1" hidden={!openGroups[group] && !collapsed}>
                 {items.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
