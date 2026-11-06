@@ -139,8 +139,7 @@ export default function ClassAttendancePage({ user, signOut }) {
   useEffect(() => { setLastScanned(null); }, [termId, classGroupId, date]);
 
   const markedCount = sheet?.students.filter((row) => row.status).length || 0;
-  const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACADEMIC_ADMIN'].includes(user.role);
-  const canEditAttendance = Boolean(sheet && (canManageAttendance || sheet.canRecord));
+  const canEditAttendance = Boolean(sheet?.canRecord);
   useEffect(() => {
     if (attendanceMethod !== 'QR_SCAN' || !sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
     startCamera();
@@ -261,7 +260,6 @@ export default function ClassAttendancePage({ user, signOut }) {
     }
   }
 
-  const canRecord = canManageAttendance || ['TEACHER', 'EXAMS_OFFICER', 'FORM_TUTOR'].includes(user.role);
   const canViewReport = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
   const reportStudents = reportRows;
   const visibleReportRows = reportStudentId ? reportRows.filter((row) => row.studentId === reportStudentId) : reportRows;
@@ -293,7 +291,7 @@ export default function ClassAttendancePage({ user, signOut }) {
       <AssessmentPopup message={error} onDismiss={() => setError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       <div className="welcome-row students-welcome">
-        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors, including teachers, headteachers, and exam officers assigned to a class, take the daily register for that class. School and academic administrators can record registers and follow class summaries.</p></div>
+        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Only the currently assigned form tutor can take or edit the daily register. Administrators can review attendance and reports.</p></div>
       </div>
       <section className="panel attendance-panel">
         <div className="attendance-toolbar">
@@ -328,7 +326,7 @@ export default function ClassAttendancePage({ user, signOut }) {
           </tbody></table></div>}
         </div>}
         {!loadingTerms && !termId && <div className="table-message">There are no academic terms available for attendance.</div>}
-        {!loadingClasses && termId && !classes.length && !error && <div className="table-message"><UsersRound size={20} />{canManageAttendance ? 'No form tutor assignments are available for this term.' : 'No class groups are assigned to you as a form tutor for this term.'}</div>}
+        {!loadingClasses && termId && !classes.length && !error && <div className="table-message"><UsersRound size={20} />No form tutor assignments are available for this term.</div>}
         {classes.length > 0 && <div className="attendance-class-list">{classes.map((item) => {
           const summary = item.attendance;
           const selected = classGroupId === item.classGroupId;
@@ -346,7 +344,7 @@ export default function ClassAttendancePage({ user, signOut }) {
             <div><span className="attendance-class-icon"><CalendarDays size={17} /></span><div><strong>{className(sheet.classGroup)}</strong><span>{sheet.term.academicYear.name} · {sheet.term.name} · Form tutor: {sheet.formTutor.firstName} {sheet.formTutor.lastName}</span></div></div>
             <div className="attendance-counts"><span>{counts.PRESENT} present</span><span>{counts.ABSENT} absent</span><span>{counts.LATE} late</span><span>{counts.EXCUSED} excused</span></div>
           </div>
-          {!canEditAttendance && <div className="attendance-readonly-note">Only the assigned form tutor or a school administrator can take or edit this register.</div>}
+          {!canEditAttendance && <div className="attendance-readonly-note">This register is view-only. Only the currently assigned form tutor can take or edit attendance.</div>}
           {sheet.term.status !== 'OPEN' && <div className="attendance-readonly-note">Attendance can only be changed while the term is open.</div>}
           <div className="attendance-register-heading" hidden><span><strong>{sheet.students.length}</strong> students · <strong>{markedCount}</strong> marked {sheet.saved && <span className="attendance-saved"><Check size={14} /> Saved</span>}</span>
             <div className="attendance-register-actions"><button className="text-button" type="button" onClick={() => setClassGroupId('')}>Choose another class</button>{canEditAttendance && <button className="secondary-button" type="button" onClick={markAllPresent} disabled={!sheet.students.length || sheet.term.status !== 'OPEN'}><CheckCheck size={15} /> Mark all present</button>}</div>
@@ -371,7 +369,7 @@ export default function ClassAttendancePage({ user, signOut }) {
             <span className="attendance-row-number">{index + 1}</span>
             <div className="attendance-student"><strong>{studentName(row.student)}</strong><span>{row.student.admissionNumber}</span></div>
             {canDownloadStudentQr && <button className="attendance-qr-download" type="button" onClick={() => downloadQr(row.student.id)} title={`Download ${studentName(row.student)} QR code`} aria-label={`Download QR code for ${studentName(row.student)}`}><Download size={15} /> QR</button>}
-            <select className={`filter-select attendance-status-select ${row.status ? `attendance-status-${row.status.toLowerCase()}` : ''}`} value={row.status || ''} onChange={(event) => updateStudent(row.enrollmentId, 'status', event.target.value)} disabled={!canEditAttendance || sheet.term.status !== 'OPEN'} title={!canEditAttendance ? 'Only the assigned form tutor or a school administrator can mark attendance.' : sheet.term.status !== 'OPEN' ? 'Attendance can only be changed while the term is open.' : undefined} aria-label={`Attendance for ${studentName(row.student)}`}>
+            <select className={`filter-select attendance-status-select ${row.status ? `attendance-status-${row.status.toLowerCase()}` : ''}`} value={row.status || ''} onChange={(event) => updateStudent(row.enrollmentId, 'status', event.target.value)} disabled={!canEditAttendance || sheet.term.status !== 'OPEN'} title={!canEditAttendance ? 'Only the currently assigned form tutor can mark attendance.' : sheet.term.status !== 'OPEN' ? 'Attendance can only be changed while the term is open.' : undefined} aria-label={`Attendance for ${studentName(row.student)}`}>
               <option value="">Mark attendance</option>{MARKS.map((mark) => <option key={mark.value} value={mark.value}>{mark.label}</option>)}
             </select>
             <input className="search-input attendance-note" value={row.note || ''} onChange={(event) => updateStudent(row.enrollmentId, 'note', event.target.value)} placeholder="Note (optional)" maxLength={300} aria-label={`Note for ${studentName(row.student)}`} disabled={!canEditAttendance || sheet.term.status !== 'OPEN'} />

@@ -85,7 +85,6 @@ export const sections = [
       "HEADTEACHER",
       "ACADEMIC_ADMIN",
       "EXAMS_OFFICER",
-      "TEACHER",
     ],
   },
   {
