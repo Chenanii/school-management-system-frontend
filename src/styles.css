@@ -3563,6 +3563,34 @@ select:focus-visible,
   color: var(--app-text-secondary);
   font-size: 11px;
 }
+.teaching-assignment-name-link {
+  width: fit-content;
+  color: var(--app-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.teaching-assignment-name-link:hover,
+.directory-person-link:hover {
+  color: #38764d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.teaching-assignment-name-link:focus-visible,
+.directory-person-link:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid #4d9564;
+  outline-offset: 3px;
+}
+.directory-person-link {
+  color: var(--app-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: #b7c8b7;
+  text-underline-offset: 3px;
+}
 .teaching-assignment-icon,
 .teaching-assignment-subject-icon,
 .teaching-assignment-term-icon {
@@ -3815,14 +3843,167 @@ select:focus-visible,
 .assessment-panel {
   overflow: hidden;
 }
+.assessment-panel [hidden] {
+  display: none !important;
+}
+.assessment-panel-heading {
+  display: flex;
+  min-height: 66px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--app-border);
+  padding: 12px 15px;
+  background: linear-gradient(110deg, #f3f8f2, #f5f7fb 55%, #fbf5ee);
+}
+.assessment-panel-heading h2 {
+  color: var(--app-text-primary);
+  font-size: 14px;
+  font-weight: 650;
+}
+.assessment-panel-heading p {
+  margin-top: 3px;
+  color: var(--app-text-secondary);
+  font-size: 11px;
+}
+.assessment-panel-toggle {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dce8dd;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #386547;
+  background: rgb(255 255 255 / 82%);
+  font-size: 11px;
+  font-weight: 650;
+}
+.assessment-panel-toggle:hover {
+  border-color: #b7cfbb;
+  background: #fff;
+}
+.assessment-panel-toggle:focus-visible {
+  outline: 2px solid #4d9564;
+  outline-offset: 2px;
+}
+.assessment-panel-toggle svg {
+  transition: transform 140ms ease;
+}
+.assessment-panel-toggle svg.is-expanded {
+  transform: rotate(180deg);
+}
+.assessment-scope-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--app-border);
+  padding: 12px 14px;
+  background: linear-gradient(110deg, #f3f8f2, #f5f7fb 55%, #fbf5ee);
+}
+.assessment-scope-option {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 11px;
+  color: #58665c;
+  background: rgb(255 255 255 / 72%);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.assessment-scope-option:hover {
+  border-color: #d7e5d8;
+  background: #fff;
+}
+.assessment-scope-option strong {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  padding: 0 6px;
+  color: #48604d;
+  background: #e7f0e6;
+  font-size: 10px;
+}
+.assessment-scope-option.is-active {
+  border-color: #6b9c73;
+  color: #285d38;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(34 79 46 / 8%);
+}
+.assessment-scope-mine strong {
+  color: #315d78;
+  background: #e5f1f8;
+}
+.assessment-scope-other strong {
+  color: #8a6438;
+  background: #f8eddd;
+}
+.assessment-scope-option:focus-visible {
+  outline: 2px solid #4d9564;
+  outline-offset: 2px;
+}
 .form-tutor-report-panel {
   margin-bottom: 18px;
   padding: 18px;
 }
 .form-tutor-report-panel > .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: -18px -18px 15px;
   border-bottom: 1px solid var(--app-border);
   padding: 15px 18px;
+}
+.form-tutor-report-panel > .panel-heading h2 {
+  color: var(--app-text-primary);
+  font-size: 15px;
+  font-weight: 650;
+}
+.form-tutor-report-panel > .panel-heading p {
+  margin-top: 4px;
+  color: var(--app-text-secondary);
+  font-size: 11px;
+}
+.form-tutor-report-toggle {
+  display: inline-flex;
+  min-height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dce8dd;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #386547;
+  background: #f5f9f4;
+  font-size: 11px;
+  font-weight: 650;
+}
+.form-tutor-report-toggle:hover {
+  border-color: #b7cfbb;
+  background: #edf5ec;
+}
+.form-tutor-report-toggle:focus-visible {
+  outline: 2px solid #4d9564;
+  outline-offset: 2px;
+}
+.form-tutor-report-toggle svg {
+  transition: transform 140ms ease;
+}
+.form-tutor-report-toggle svg.is-expanded {
+  transform: rotate(180deg);
+}
+.form-tutor-report-panel [hidden] {
+  display: none !important;
 }
 .form-tutor-report-toolbar {
   display: grid;
@@ -3903,6 +4084,33 @@ select:focus-visible,
   }
 }
 @media (max-width: 600px) {
+  .assessment-panel-heading {
+    min-height: 60px;
+    padding: 10px 12px;
+  }
+  .assessment-panel-toggle {
+    min-height: 34px;
+    gap: 4px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  .form-tutor-report-panel {
+    padding: 14px;
+  }
+  .form-tutor-report-panel > .panel-heading {
+    align-items: flex-start;
+    margin: -14px -14px 0;
+    padding: 13px 14px;
+  }
+  .form-tutor-report-panel > .panel-heading h2 {
+    font-size: 13px;
+  }
+  .form-tutor-report-toggle {
+    min-height: 34px;
+    gap: 4px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
   .form-tutor-report-toolbar,
   .form-tutor-report-fields {
     grid-template-columns: 1fr;
@@ -3961,6 +4169,23 @@ select:focus-visible,
 .assessment-class-cell > span {
   color: var(--app-text-secondary);
   font-size: 11px;
+}
+.assessment-class-badge {
+  width: fit-content;
+  margin-top: 2px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 9px !important;
+  font-weight: 650;
+  line-height: 1.2;
+}
+.assessment-class-badge.is-mine {
+  color: #315d78;
+  background: #e5f1f8;
+}
+.assessment-class-badge.is-other {
+  color: #8a6438;
+  background: #f8eddd;
 }
 .assessment-icon {
   display: flex;

@@ -2,7 +2,7 @@ import { ChevronRight, GraduationCap, LoaderCircle, Users } from 'lucide-react';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from './StatusBadge.jsx';
 
-export default function PeopleTable({ people, type, loading, error, onRetry, compact = false, onViewAll }) {
+export default function PeopleTable({ people, type, loading, error, onRetry, compact = false, onViewAll, onViewAssignments }) {
   const isStudent = type === 'students';
   const title = isStudent ? 'Recently added students' : 'Staff directory';
 
@@ -47,7 +47,18 @@ export default function PeopleTable({ people, type, loading, error, onRetry, com
                     <td>
                       <div className="flex min-w-[175px] items-center gap-3">
                         <div className={`person-avatar ${isStudent ? 'person-student' : 'person-staff'}`}>{initials(profile) || '?'}</div>
-                        <span className="whitespace-nowrap font-medium text-ink">{formatName(profile)}</span>
+                        {isStudent || !onViewAssignments ? (
+                          <span className="whitespace-nowrap font-medium text-ink">{formatName(profile)}</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="directory-person-link"
+                            onClick={() => onViewAssignments(person)}
+                            aria-label={`View teaching assignments for ${formatName(profile)}`}
+                          >
+                            {formatName(profile)}
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="whitespace-nowrap text-muted">{isStudent ? (person.admissionNumber || '—') : (profile.email || person.email || '—')}</td>

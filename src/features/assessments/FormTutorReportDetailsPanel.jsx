@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LoaderCircle, Save } from 'lucide-react';
+import { ChevronDown, LoaderCircle, Save } from 'lucide-react';
 import { fetchAllPages, fetchClassGroupReportCards, saveEndOfTermReportDetails } from '../report-cards/reportCardApi.js';
 import { fetchClassGroupMidTermReportCards, fetchFormTutorAttendanceClasses, saveMidTermReportDetails } from '../mid-term-report-cards/midTermReportCardApi.js';
 import AssessmentPopup from './AssessmentPopup.jsx';
@@ -50,8 +50,10 @@ function StudentReportDetailsForm({ card, reportType }) {
   </form>;
 }
 
-export default function FormTutorReportDetailsPanel({ signOut }) {
+export default function FormTutorReportDetailsPanel({ signOut, canManageAllClasses = false }) {
+  const [expanded, setExpanded] = useState(false);
   const [terms, setTerms] = useState([]);
+  const [termsLoaded, setTermsLoaded] = useState(false);
   const [groups, setGroups] = useState([]);
   const [termId, setTermId] = useState('');
   const [classGroupId, setClassGroupId] = useState('');
@@ -63,14 +65,23 @@ export default function FormTutorReportDetailsPanel({ signOut }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!expanded || termsLoaded) return undefined;
     let cancelled = false;
-    fetchAllPages('/terms').then((rows) => { if (!cancelled) setTerms(rows); })
+    setLoading(true);
+    // Load report options only when the user opens this secondary task.
+    fetchAllPages('/terms').then((rows) => {
+      if (!cancelled) {
+        setTerms(rows);
+        setTermsLoaded(true);
+      }
+    })
       .catch((cause) => { if (!cancelled) { setError(cause.message); if (cause.status === 401) signOut(); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [signOut]);
+  }, [expanded, signOut, termsLoaded]);
 
   useEffect(() => {
+    if (!expanded) return undefined;
     let cancelled = false;
     setGroups([]); setClassGroupId(''); setCards(null);
     if (!termId) return undefined;
@@ -80,10 +91,10 @@ export default function FormTutorReportDetailsPanel({ signOut }) {
     }).catch((cause) => { if (!cancelled) { setError(cause.message); if (cause.status === 401) signOut(); } })
       .finally(() => { if (!cancelled) setLoadingGroups(false); });
     return () => { cancelled = true; };
-  }, [termId, signOut]);
+  }, [expanded, termId, signOut]);
 
   async function loadStudents() {
-    if (!termId || !classGroupId) return;
+    if (!expanded || !termId || !classGroupId) return;
     setLoadingCards(true); setError(''); setCards(null);
     try {
       const result = reportType === 'MID_TERM'
@@ -96,14 +107,32 @@ export default function FormTutorReportDetailsPanel({ signOut }) {
 
   return <section className="panel form-tutor-report-panel">
     <AssessmentPopup message={error} onDismiss={() => setError('')} />
-    <div className="panel-heading"><div><h2>Form tutor report details</h2><p>Enter behaviour and activity comments for each student. End-of-term reports also include promotion details.</p></div></div>
-    <div className="form-tutor-report-toolbar">
-      <label className="field-label">Report period<select className="filter-select" value={reportType} onChange={(event) => { setReportType(event.target.value); setCards(null); }}><option value="MID_TERM">Mid-term</option><option value="END_OF_TERM">End-of-term</option></select></label>
-      <label className="field-label">Academic term<select className="filter-select" value={termId} onChange={(event) => setTermId(event.target.value)} disabled={loading}><option value="">{loading ? 'Loading terms…' : 'Select a term'}</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.academicYear?.name} · {term.sequence}. {term.name}</option>)}</select></label>
-      <label className="field-label">Assigned class<select className="filter-select" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} disabled={!termId || loadingGroups}><option value="">{loadingGroups ? 'Loading classes…' : 'Select a class'}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}</select></label>
-      <button className="primary-button" type="button" onClick={loadStudents} disabled={!termId || !classGroupId || loadingCards}>{loadingCards ? <LoaderCircle size={15} className="animate-spin" /> : null}{loadingCards ? 'Loading…' : 'Load students'}</button>
+    <div className="panel-heading form-tutor-report-heading">
+    <div>
+      <h2>Form tutor report details</h2>
+      <p>{canManageAllClasses
+        ? 'Form tutors complete these details for their classes. Exams officers and administrators can select any class to help when needed.'
+        : 'Complete behaviour, activity, and promotion comments for your assigned class. Exams officers and administrators can also help when needed.'}</p>
     </div>
-    {termId && !loadingGroups && !error && groups.length === 0 && <div className="attendance-readonly-note">No classes are assigned to you as form tutor for this term.</div>}
-    {cards && <div className="form-tutor-report-students">{cards.length ? cards.map((card) => <StudentReportDetailsForm key={card.enrollment.id} card={card} reportType={reportType} />) : <div className="table-message">No active students are enrolled in this class for the selected term.</div>}</div>}
+      <button
+        className="form-tutor-report-toggle"
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="form-tutor-report-content"
+        onClick={() => setExpanded((current) => !current)}
+      >
+        {expanded ? 'Hide details' : 'Add report details'} <ChevronDown size={16} className={expanded ? 'is-expanded' : ''} />
+      </button>
+    </div>
+    <div id="form-tutor-report-content" hidden={!expanded}>
+      <div className="form-tutor-report-toolbar">
+        <label className="field-label">Report period<select className="filter-select" value={reportType} onChange={(event) => { setReportType(event.target.value); setCards(null); }}><option value="MID_TERM">Mid-term</option><option value="END_OF_TERM">End-of-term</option></select></label>
+        <label className="field-label">Academic term<select className="filter-select" value={termId} onChange={(event) => setTermId(event.target.value)} disabled={loading}><option value="">{loading ? 'Loading terms…' : 'Select a term'}</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.academicYear?.name} · {term.sequence}. {term.name}</option>)}</select></label>
+        <label className="field-label">Class<select className="filter-select" value={classGroupId} onChange={(event) => setClassGroupId(event.target.value)} disabled={!termId || loadingGroups}><option value="">{loadingGroups ? 'Loading classes…' : 'Select a class'}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.classLevel?.name} · {group.name}</option>)}</select></label>
+        <button className="primary-button" type="button" onClick={loadStudents} disabled={!termId || !classGroupId || loadingCards}>{loadingCards ? <LoaderCircle size={15} className="animate-spin" /> : null}{loadingCards ? 'Loading…' : 'Load students'}</button>
+      </div>
+      {termId && !loadingGroups && !error && groups.length === 0 && <div className="attendance-readonly-note">{canManageAllClasses ? 'No form-tutor classes are available for this term.' : 'No classes are assigned to you as form tutor for this term.'}</div>}
+      {cards && <div className="form-tutor-report-students">{cards.length ? cards.map((card) => <StudentReportDetailsForm key={card.enrollment.id} card={card} reportType={reportType} />) : <div className="table-message">No active students are enrolled in this class for the selected term.</div>}</div>}
+    </div>
   </section>;
 }

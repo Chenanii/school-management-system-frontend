@@ -15,11 +15,11 @@ import {
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
 
-export default function TeachingAssignmentsPage({ signOut }) {
+export default function TeachingAssignmentsPage({ signOut, initialTeacherId = '' }) {
   const [assignments, setAssignments] = useState([]);
   const [pagination, setPagination] = useState(emptyPagination);
   const [page, setPage] = useState(1);
-  const [teacherFilter, setTeacherFilter] = useState('');
+  const [teacherFilter, setTeacherFilter] = useState(initialTeacherId);
   const [groupFilter, setGroupFilter] = useState('');
   const [termFilter, setTermFilter] = useState('');
   const [teachers, setTeachers] = useState([]);
@@ -106,6 +106,17 @@ export default function TeachingAssignmentsPage({ signOut }) {
     };
   }, [page, teacherFilter, groupFilter, termFilter, refreshKey, signOut]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (teacherFilter) params.set('teacherId', teacherFilter);
+    else params.delete('teacherId');
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== nextUrl) {
+      window.history.replaceState(window.history.state, '', nextUrl);
+    }
+  }, [teacherFilter]);
+
   const teacherMap = useMemo(() => new Map(teachers.map((teacher) => [teacher.id, teacher])), [teachers]);
   const termMap = useMemo(() => new Map(terms.map((term) => [term.id, term])), [terms]);
   const filteredAssignments = useMemo(() => {
@@ -150,6 +161,18 @@ export default function TeachingAssignmentsPage({ signOut }) {
     setPage(1);
   }
 
+  function viewTeacherAssignments(teacherId) {
+    setTeacherFilter(teacherId);
+    setGroupFilter('');
+    setTermFilter('');
+    setQuickSearch('');
+    setPage(1);
+  }
+
+  function returnToAllAssignments() {
+    clearFilters();
+  }
+
   async function removeAssignment(assignment) {
     if (assignment._count?.assessments > 0) return;
     setNotice('');
@@ -173,13 +196,13 @@ export default function TeachingAssignmentsPage({ signOut }) {
       <div className="welcome-row students-welcome">
         <div>
           <p className="eyebrow">Academic programme</p>
-          <h1 className="page-title">Teaching assignments<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">A teacher assignment covers the academic year. If a teacher changes, the replacement takes over from the selected term onward, while earlier terms keep their teacher. Existing assessments and student subject-stream records remain term-specific.</p>
-          <p className="mt-2 text-sm text-muted">Teachers can be assigned to a required class subject or to a named section of an elective subject, such as Mathematics Core · A. Select students for each term under Enrollments → Subject streams.</p>
-          <p className="mt-2 text-sm text-muted">Subject sections are attached to a class level. Students keep their home class group and join a separate section for each subject.</p>
-          <p className="mt-2 text-sm text-muted">The list shows one term allocation per row so assessment history, teacher changes, and student stream rosters stay term-specific.</p>
+          <h1 className="page-title">{teacherFilter ? `Assignments for ${teacherDisplayName(teacherMap.get(teacherFilter))}` : 'Teaching assignments'}<span className="title-dot">.</span></h1>
+          <p className="mt-2 text-sm text-muted">{teacherFilter
+            ? 'Review this teacher’s class and subject allocations across the academic year.'
+            : 'Review each teacher’s class, subject, and term allocation. Annual assignments appear as separate term rows so teacher changes and assessment history stay clear.'}</p>
         </div>
         <div className="teaching-assignment-header-actions">
+          {teacherFilter && <button className="secondary-button" type="button" onClick={returnToAllAssignments}>Back to all assignments</button>}
           <button className="secondary-button" type="button" onClick={() => setFormTutorModalOpen(true)} disabled={loadingOptions || Boolean(optionsError)}>Form tutor assignments</button>
           <button className="primary-button add-user-button" onClick={openCreate} disabled={loadingOptions || Boolean(optionsError)}><Plus size={17} /> Create assignment</button>
         </div>
@@ -238,7 +261,10 @@ export default function TeachingAssignmentsPage({ signOut }) {
                       <td data-label="Teacher">
                         <div className="teaching-assignment-identity">
                           <span className="teaching-assignment-icon"><Users size={15} /></span>
-                          <div><strong>{teacherDisplayName(teacher)}</strong><span>{teacher?.staffNumber || teacher?.email || 'Teacher profile'}</span></div>
+                          <div>
+                            <button type="button" className="teaching-assignment-name-link" onClick={() => viewTeacherAssignments(assignment.teacherId)} aria-label={`View all assignments for ${teacherDisplayName(teacher)}`}>{teacherDisplayName(teacher)}</button>
+                            <span>{teacher?.staffNumber || teacher?.email || 'Teacher profile'}</span>
+                          </div>
                         </div>
                       </td>
                       <td data-label="Teaching group" className="whitespace-nowrap text-muted">{assignment.classGroup ? formatAssignmentClass(assignment.classGroup) : assignment.subjectStream?.classLevel?.name || 'Class level'}</td>

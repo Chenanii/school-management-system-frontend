@@ -139,7 +139,7 @@ export default function ClassAttendancePage({ user, signOut }) {
   useEffect(() => { setLastScanned(null); }, [termId, classGroupId, date]);
 
   const markedCount = sheet?.students.filter((row) => row.status).length || 0;
-  const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
+  const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
   const canEditAttendance = Boolean(sheet && (canManageAttendance || sheet.canRecord));
   useEffect(() => {
     if (attendanceMethod !== 'QR_SCAN' || !sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
@@ -261,7 +261,7 @@ export default function ClassAttendancePage({ user, signOut }) {
     }
   }
 
-  const canRecord = canManageAttendance || user.role === 'TEACHER' || user.role === 'FORM_TUTOR';
+  const canRecord = canManageAttendance || ['TEACHER', 'EXAMS_OFFICER', 'FORM_TUTOR'].includes(user.role);
   const canViewReport = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
   const reportStudents = reportRows;
   const visibleReportRows = reportStudentId ? reportRows.filter((row) => row.studentId === reportStudentId) : reportRows;
@@ -293,7 +293,7 @@ export default function ClassAttendancePage({ user, signOut }) {
       <AssessmentPopup message={error} onDismiss={() => setError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       <div className="welcome-row students-welcome">
-        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors take the daily register for their assigned class. School administrators can record registers and follow class summaries.</p></div>
+        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors, including teachers and exam officers assigned to a class, take the daily register for that class. School administrators can record registers and follow class summaries.</p></div>
       </div>
       <section className="panel attendance-panel">
         <div className="attendance-toolbar">
@@ -328,7 +328,7 @@ export default function ClassAttendancePage({ user, signOut }) {
           </tbody></table></div>}
         </div>}
         {!loadingTerms && !termId && <div className="table-message">There are no academic terms available for attendance.</div>}
-        {!loadingClasses && termId && !classes.length && !error && <div className="table-message"><UsersRound size={20} />{canRecord ? 'No class groups are assigned to you as a form tutor for this term.' : 'No form tutor assignments are available for this term.'}</div>}
+        {!loadingClasses && termId && !classes.length && !error && <div className="table-message"><UsersRound size={20} />{canManageAttendance ? 'No form tutor assignments are available for this term.' : 'No class groups are assigned to you as a form tutor for this term.'}</div>}
         {classes.length > 0 && <div className="attendance-class-list">{classes.map((item) => {
           const summary = item.attendance;
           const selected = classGroupId === item.classGroupId;

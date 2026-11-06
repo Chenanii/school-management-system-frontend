@@ -12,7 +12,8 @@ export default function DirectoryPage({
   page,
   setPage,
   total,
-  totalPages
+  totalPages,
+  onViewAssignments
 }) {
   const isStudent = type === 'students';
 
@@ -22,7 +23,11 @@ export default function DirectoryPage({
         <div>
           <p className="eyebrow">Your school community</p>
           <h1 className="page-title">{isStudent ? 'Students' : 'Staff'}<span className="title-dot">.</span></h1>
-          <p className="mt-2 text-sm text-muted">{isStudent ? 'Keep track of every learner in your school.' : 'Meet the people who make your school special.'}</p>
+          <p className="mt-2 text-sm text-muted">{isStudent
+            ? 'Keep track of every learner in your school.'
+            : onViewAssignments
+              ? 'Select a teacher’s name to review their class and subject assignments.'
+              : 'Meet the people who make your school special.'}</p>
         </div>
         <div className="directory-count"><span>{total}</span><span>{isStudent ? 'students' : 'staff members'}</span></div>
       </div>
@@ -34,7 +39,7 @@ export default function DirectoryPage({
           </div>
           <span className="text-xs text-muted">{total === 0 ? 'No records' : `Showing ${Math.min((page - 1) * 20 + 1, total)}–${Math.min(page * 20, total)} of ${total}`}</span>
         </div>
-        <PeopleTable people={people} type={type} loading={loading} error={error} onRetry={onRetry} />
+        <PeopleTable people={people} type={type} loading={loading} error={error} onRetry={onRetry} onViewAssignments={onViewAssignments} />
         {!error && totalPages > 1 && (
           <div className="pagination">
             <span>Page {page} of {totalPages}</span>

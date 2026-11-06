@@ -178,10 +178,11 @@ export default function App() {
   }, [user?.id, user?.schoolId, user?.role, summary.school?.id, signOut]);
 
   const navigate = useCallback(
-    (nextPage) => {
+    (nextPage, params = {}) => {
       setPage(nextPage);
-      const nextPath = workspacePath(nextPage, summary.school?.slug);
-      if (window.location.pathname !== nextPath)
+      const query = params.teacherId ? `?teacherId=${encodeURIComponent(params.teacherId)}` : '';
+      const nextPath = `${workspacePath(nextPage, summary.school?.slug)}${query}`;
+      if (`${window.location.pathname}${window.location.search}` !== nextPath)
         window.history.pushState({ page: nextPage }, "", nextPath);
       setSearch("");
       setDirectoryPage(1);
@@ -375,12 +376,16 @@ export default function App() {
             ["SCHOOL_ADMIN", "SUPER_ADMIN", "HEADTEACHER"].includes(
               user.role,
             ) ? (
-            <TeachingAssignmentsPage signOut={signOut} />
+            <TeachingAssignmentsPage
+              signOut={signOut}
+              initialTeacherId={new URLSearchParams(window.location.search).get('teacherId') || ''}
+            />
           ) : page === "assessments" &&
             [
               "SCHOOL_ADMIN",
               "SUPER_ADMIN",
               "HEADTEACHER",
+              "ACADEMIC_ADMIN",
               "EXAMS_OFFICER",
               "TEACHER",
               "FORM_TUTOR",
@@ -513,6 +518,7 @@ export default function App() {
               }}
               page={directoryPage}
               setPage={setDirectoryPage}
+              onViewAssignments={(teacher) => navigate('teaching-assignments', { teacherId: teacher.id })}
             />
           )}
         </div>

@@ -111,6 +111,7 @@ export const sections = [
       "SCHOOL_ADMIN",
       "SUPER_ADMIN",
       "HEADTEACHER",
+      "ACADEMIC_ADMIN",
       "EXAMS_OFFICER",
       "TEACHER",
       "FORM_TUTOR",

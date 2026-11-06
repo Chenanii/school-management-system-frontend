@@ -26,6 +26,8 @@ export default function AssessmentsPage({ user, signOut }) {
   const [termFilter, setTermFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [classScope, setClassScope] = useState('all');
+  const [assessmentsExpanded, setAssessmentsExpanded] = useState(true);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -135,6 +137,25 @@ export default function AssessmentsPage({ user, signOut }) {
     });
   }, [assessments, search, termMap]);
 
+  const canSeparateClassAssessments = ['SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
+  const classScopedAssessments = useMemo(() => {
+    if (!canSeparateClassAssessments) return filteredAssessments;
+    if (classScope === 'all') return filteredAssessments;
+
+    // Admins may also teach, so use the assigned teacher account to distinguish their classes.
+    return filteredAssessments.filter((assessment) => (
+      (assessment.teachingAssignment?.teacher?.userId === user.id) === (classScope === 'mine')
+    ));
+  }, [canSeparateClassAssessments, classScope, filteredAssessments, user.id]);
+  const classAssessmentCounts = useMemo(() => {
+    if (!canSeparateClassAssessments) return { mine: 0, other: 0 };
+    return filteredAssessments.reduce((counts, assessment) => {
+      if (assessment.teachingAssignment?.teacher?.userId === user.id) counts.mine += 1;
+      else counts.other += 1;
+      return counts;
+    }, { mine: 0, other: 0 });
+  }, [canSeparateClassAssessments, filteredAssessments, user.id]);
+
   const availableAssignments = useMemo(() => assignments.filter((assignment) =>
     currentTerm && assignment.termId === currentTerm.id
   ), [assignments, currentTerm]);
@@ -235,7 +256,7 @@ export default function AssessmentsPage({ user, signOut }) {
     }
   }
 
-  const hasFilters = Boolean(termFilter || statusFilter || typeFilter || search.trim());
+  const hasFilters = Boolean(termFilter || statusFilter || typeFilter || search.trim() || classScope !== 'all');
 
   return (
     <>
@@ -256,12 +277,41 @@ export default function AssessmentsPage({ user, signOut }) {
       <AssessmentPopup message={optionsError ? `Assessment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
       <AssessmentPopup message={actionError} onDismiss={() => setActionError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
-      {['TEACHER', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role) && <FormTutorReportDetailsPanel signOut={signOut} />}
       <div className="assessment-weight-guide">
         <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>Mid-term reports use 40% coursework and 60% mid-term exam. End-of-term reports use 20% coursework, 30% mid-term exam and 50% final exam.</span></div>
         <div className="assessment-weight-guide-bar" aria-label="Mid-term: 40 percent coursework and 60 percent mid-term exam. End-of-term: 20 percent coursework, 30 percent mid-term exam and 50 percent final exam."><span>Mid-term <b>40% + 60%</b></span><span>End-of-term <b>20% + 30% + 50%</b></span></div>
       </div>
       <section className="panel directory-panel assessment-panel">
+        <div className="assessment-panel-heading">
+          <div>
+            <h2>Assessment list</h2>
+            <p>{classScopedAssessments.length} {classScopedAssessments.length === 1 ? 'assessment' : 'assessments'} in this view</p>
+          </div>
+          <button
+            type="button"
+            className="assessment-panel-toggle"
+            aria-expanded={assessmentsExpanded}
+            aria-controls="assessment-list-content"
+            onClick={() => setAssessmentsExpanded((expanded) => !expanded)}
+          >
+            {assessmentsExpanded ? 'Hide assessments' : 'Show assessments'}
+            <ChevronDown size={16} className={assessmentsExpanded ? 'is-expanded' : ''} />
+          </button>
+        </div>
+        <div id="assessment-list-content" hidden={!assessmentsExpanded}>
+        {canSeparateClassAssessments && (
+          <div className="assessment-scope-bar" role="group" aria-label="Filter assessments by assigned class">
+            <button type="button" className={`assessment-scope-option ${classScope === 'all' ? 'is-active' : ''}`} aria-pressed={classScope === 'all'} onClick={() => setClassScope('all')}>
+              <span>All classes</span><strong>{filteredAssessments.length}</strong>
+            </button>
+            <button type="button" className={`assessment-scope-option assessment-scope-mine ${classScope === 'mine' ? 'is-active' : ''}`} aria-pressed={classScope === 'mine'} onClick={() => setClassScope('mine')}>
+              <span>My classes</span><strong>{classAssessmentCounts.mine}</strong>
+            </button>
+            <button type="button" className={`assessment-scope-option assessment-scope-other ${classScope === 'other' ? 'is-active' : ''}`} aria-pressed={classScope === 'other'} onClick={() => setClassScope('other')}>
+              <span>Other classes</span><strong>{classAssessmentCounts.other}</strong>
+            </button>
+          </div>
+        )}
         <div className="assessment-toolbar">
           <div className="relative assessment-search">
             <Search size={17} className="search-icon" />
@@ -282,19 +332,19 @@ export default function AssessmentsPage({ user, signOut }) {
             <option value="">All types</option>
             {assessmentTypes.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}
           </select>
-          <span className="student-total">{filteredAssessments.length} {filteredAssessments.length === 1 ? 'assessment' : 'assessments'}</span>
+          <span className="student-total">{classScopedAssessments.length} {classScopedAssessments.length === 1 ? 'assessment' : 'assessments'}</span>
         </div>
         {error ? (
           <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
         ) : loading || loadingOptions ? (
           <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading assessments…</span></div>
-        ) : filteredAssessments.length === 0 ? (
+        ) : classScopedAssessments.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><BookOpen size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No assessments match these filters' : 'No assessments created yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try changing your search or filters.' : 'Create an assessment for a class and subject assignment.'}</p>
+            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No assessments match this view' : 'No assessments created yet'}</p>
+            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try another class group, search, or filter.' : 'Create an assessment for a class and subject assignment.'}</p>
             {hasFilters
-              ? <button className="text-button mt-3" onClick={() => { setSearch(''); setTermFilter(''); setStatusFilter(''); setTypeFilter(''); }}>Clear filters</button>
+              ? <button className="text-button mt-3" onClick={() => { setSearch(''); setTermFilter(''); setStatusFilter(''); setTypeFilter(''); setClassScope('all'); }}>Clear filters</button>
               : <button className="text-button mt-3" onClick={openCreate} disabled={availableAssignments.length === 0}>Create the first assessment</button>}
           </div>
         ) : (
@@ -302,8 +352,9 @@ export default function AssessmentsPage({ user, signOut }) {
             <table className="people-table assessment-table">
               <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
-                {filteredAssessments.map((assessment) => {
+                {classScopedAssessments.map((assessment) => {
                   const assignment = assessment.teachingAssignment;
+                  const isMyClass = assignment?.teacher?.userId === user.id;
                   const group = assignment?.classGroup;
                   const classLevel = group?.classLevel || assignment?.subjectStream?.classLevel || assignment?.classSubject?.classLevel;
                   const className = [classLevel?.name, group?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
@@ -326,6 +377,7 @@ export default function AssessmentsPage({ user, signOut }) {
                         <div className="assessment-class-cell">
                           <strong>{className || '—'}</strong>
                           <span>{assessment.subject?.code ? `${assessment.subject.code} · ` : ''}{assessment.subject?.name || '—'}</span>
+                          {canSeparateClassAssessments && <span className={`assessment-class-badge ${isMyClass ? 'is-mine' : 'is-other'}`}>{isMyClass ? 'My class' : 'Other class'}</span>}
                         </div>
                       </td>
                       <td data-label="Term" className="text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '—'}</td>
@@ -358,7 +410,14 @@ export default function AssessmentsPage({ user, signOut }) {
             </table>
           </div>
         )}
+        </div>
       </section>
+      {['TEACHER', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role) && (
+        <FormTutorReportDetailsPanel
+          signOut={signOut}
+          canManageAllClasses={['SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'SUPER_ADMIN'].includes(user.role)}
+        />
+      )}
       {formOpen && (
         <AssessmentFormModal
           assessment={formAssessment}
