@@ -194,8 +194,6 @@ export default function AssessmentsPage({ user, signOut }) {
 
   async function advanceStatus(assessment) {
     const nextStatus = assessmentTransitions[assessment.status];
-    const nextActionLabel = nextStatus === 'SUBMITTED' ? 'Submit' : assessmentStatusLabel(nextStatus);
-    const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
     if (!nextStatus) return;
     setActionError('');
     setNotice('');
@@ -398,6 +396,7 @@ export default function AssessmentsPage({ user, signOut }) {
                   const className = [classLevel?.name, group?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
+                  const nextActionLabel = nextStatus === 'SUBMITTED' ? 'Submit' : assessmentStatusLabel(nextStatus);
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
                   const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
