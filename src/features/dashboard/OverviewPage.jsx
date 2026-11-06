@@ -89,7 +89,7 @@ function HeadteacherOverview({ summary, loading, error, onRetry, onNavigate }) {
   const followUpCount = awaitingAssessmentReview.length + terms.filter((term) => term.status === 'MARKS_REVIEW').length;
   const actions = [
     { label: 'Students', detail: 'Review the student register', page: 'students', icon: GraduationCap },
-    { label: 'Teaching staff', detail: 'View the school team', page: 'staff', icon: Users },
+    { label: 'Teaching Assignments', detail: 'Manage classes, subjects, and teachers', page: 'teaching-assignments', icon: BookOpen },
     { label: 'Academic years', detail: 'Update school-year dates', page: 'academic-years', icon: CalendarDays },
     { label: 'Terms', detail: 'Edit term dates and results stages', page: 'terms', icon: CalendarDays },
     { label: 'Assessments', detail: 'Review submitted marks', page: 'assessments', icon: ClipboardList },
