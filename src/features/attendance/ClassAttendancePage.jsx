@@ -139,7 +139,7 @@ export default function ClassAttendancePage({ user, signOut }) {
   useEffect(() => { setLastScanned(null); }, [termId, classGroupId, date]);
 
   const markedCount = sheet?.students.filter((row) => row.status).length || 0;
-  const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN'].includes(user.role);
+  const canManageAttendance = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'ACADEMIC_ADMIN'].includes(user.role);
   const canEditAttendance = Boolean(sheet && (canManageAttendance || sheet.canRecord));
   useEffect(() => {
     if (attendanceMethod !== 'QR_SCAN' || !sheet || loadingSheet || !canEditAttendance || sheet.term.status !== 'OPEN' || !classGroupId) return undefined;
@@ -293,7 +293,7 @@ export default function ClassAttendancePage({ user, signOut }) {
       <AssessmentPopup message={error} onDismiss={() => setError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
       <div className="welcome-row students-welcome">
-        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors, including teachers and exam officers assigned to a class, take the daily register for that class. School administrators can record registers and follow class summaries.</p></div>
+        <div><p className="eyebrow">Student records</p><h1 className="page-title">Class attendance<span className="title-dot">.</span></h1><p className="mt-2 text-sm text-muted">Form tutors, including teachers, headteachers, and exam officers assigned to a class, take the daily register for that class. School and academic administrators can record registers and follow class summaries.</p></div>
       </div>
       <section className="panel attendance-panel">
         <div className="attendance-toolbar">
