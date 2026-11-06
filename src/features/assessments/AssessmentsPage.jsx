@@ -27,6 +27,7 @@ export default function AssessmentsPage({ user, signOut }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [classScope, setClassScope] = useState('all');
+  const [assessmentView, setAssessmentView] = useState('active');
   const [assessmentsExpanded, setAssessmentsExpanded] = useState(true);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -109,10 +110,18 @@ export default function AssessmentsPage({ user, signOut }) {
     const today = new Date().toISOString().slice(0, 10);
     const isInProgress = (term) => term.startDate?.slice(0, 10) <= today && term.endDate?.slice(0, 10) >= today;
     const currentYearTerms = terms.filter((term) => term.academicYear?.isCurrent);
-    return currentYearTerms.find(isInProgress)
-      || currentYearTerms.find((term) => term.status === 'OPEN')
-      || currentYearTerms.sort((left, right) => right.sequence - left.sequence)[0]
-      || terms.find(isInProgress)
+    const editableTerms = (items) => items.filter((term) => ['OPEN', 'DRAFT'].includes(term.status));
+    const orderedTerms = (items) => [...items].sort((left, right) => right.sequence - left.sequence);
+    const currentEditableTerms = editableTerms(currentYearTerms);
+    const availableEditableTerms = editableTerms(terms);
+    return currentEditableTerms.find((term) => term.status === 'OPEN' && isInProgress(term))
+      || orderedTerms(currentEditableTerms.filter((term) => term.status === 'OPEN'))[0]
+      || currentEditableTerms.find((term) => term.status === 'DRAFT' && isInProgress(term))
+      || orderedTerms(currentEditableTerms.filter((term) => term.status === 'DRAFT'))[0]
+      || availableEditableTerms.find((term) => term.status === 'OPEN' && isInProgress(term))
+      || orderedTerms(availableEditableTerms.filter((term) => term.status === 'OPEN'))[0]
+      || availableEditableTerms.find((term) => term.status === 'DRAFT' && isInProgress(term))
+      || orderedTerms(availableEditableTerms.filter((term) => term.status === 'DRAFT'))[0]
       || null;
   }, [terms]);
   const filteredAssessments = useMemo(() => {
@@ -138,27 +147,36 @@ export default function AssessmentsPage({ user, signOut }) {
   }, [assessments, search, termMap]);
 
   const canSeparateClassAssessments = ['SCHOOL_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role);
+  const activeAssessments = useMemo(() => filteredAssessments.filter((assessment) => (
+    (termMap.get(assessment.termId) || assessment.term)?.status !== 'CLOSED'
+  )), [filteredAssessments, termMap]);
+  const historyAssessments = useMemo(() => filteredAssessments.filter((assessment) => (
+    (termMap.get(assessment.termId) || assessment.term)?.status === 'CLOSED'
+  )), [filteredAssessments, termMap]);
+  const assessmentsInView = assessmentView === 'history' ? historyAssessments : activeAssessments;
   const classScopedAssessments = useMemo(() => {
-    if (!canSeparateClassAssessments) return filteredAssessments;
-    if (classScope === 'all') return filteredAssessments;
+    if (!canSeparateClassAssessments || classScope === 'all') return assessmentsInView;
 
     // Admins may also teach, so use the assigned teacher account to distinguish their classes.
-    return filteredAssessments.filter((assessment) => (
+    return assessmentsInView.filter((assessment) => (
       (assessment.teachingAssignment?.teacher?.userId === user.id) === (classScope === 'mine')
     ));
-  }, [canSeparateClassAssessments, classScope, filteredAssessments, user.id]);
+  }, [assessmentsInView, canSeparateClassAssessments, classScope, user.id]);
+  const visibleAssessments = classScopedAssessments;
   const classAssessmentCounts = useMemo(() => {
     if (!canSeparateClassAssessments) return { mine: 0, other: 0 };
-    return filteredAssessments.reduce((counts, assessment) => {
+    return assessmentsInView.reduce((counts, assessment) => {
       if (assessment.teachingAssignment?.teacher?.userId === user.id) counts.mine += 1;
       else counts.other += 1;
       return counts;
     }, { mine: 0, other: 0 });
-  }, [canSeparateClassAssessments, filteredAssessments, user.id]);
+  }, [assessmentsInView, canSeparateClassAssessments, user.id]);
 
   const availableAssignments = useMemo(() => assignments.filter((assignment) =>
-    currentTerm && assignment.termId === currentTerm.id
-  ), [assignments, currentTerm]);
+    currentTerm
+      && assignment.termId === currentTerm.id
+      && (user.role === 'SUPER_ADMIN' || assignment.teacher?.userId === user.id)
+  ), [assignments, currentTerm, user.id, user.role]);
 
   function refresh() {
     setRefreshKey((current) => current + 1);
@@ -176,6 +194,7 @@ export default function AssessmentsPage({ user, signOut }) {
 
   async function advanceStatus(assessment) {
     const nextStatus = assessmentTransitions[assessment.status];
+    const nextActionLabel = nextStatus === 'SUBMITTED' ? 'Submit' : assessmentStatusLabel(nextStatus);
     const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
     if (!nextStatus) return;
     setActionError('');
@@ -274,6 +293,15 @@ export default function AssessmentsPage({ user, signOut }) {
           <Plus size={17} /> Create assessment
         </button>
       </div>
+      {!loadingOptions && !optionsError && availableAssignments.length === 0 && user.role !== 'SUPER_ADMIN' && (
+        <div className="assessment-assignment-required" role="status">
+          <BookOpen size={17} aria-hidden="true" />
+          <p>
+            <strong>You need a teaching assignment to create an assessment.</strong>
+            {' '}Ask your school administrator to assign you to a class and subject for an open term, then try again.
+          </p>
+        </div>
+      )}
       <AssessmentPopup message={optionsError ? `Assessment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
       <AssessmentPopup message={actionError} onDismiss={() => setActionError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
@@ -285,7 +313,7 @@ export default function AssessmentsPage({ user, signOut }) {
         <div className="assessment-panel-heading">
           <div>
             <h2>Assessment list</h2>
-            <p>{classScopedAssessments.length} {classScopedAssessments.length === 1 ? 'assessment' : 'assessments'} in this view</p>
+            <p>{visibleAssessments.length} {visibleAssessments.length === 1 ? 'assessment' : 'assessments'} in this view</p>
           </div>
           <button
             type="button"
@@ -299,10 +327,18 @@ export default function AssessmentsPage({ user, signOut }) {
           </button>
         </div>
         <div id="assessment-list-content" hidden={!assessmentsExpanded}>
+        <div className="assessment-history-tabs" role="group" aria-label="Assessment period">
+          <button type="button" className={`assessment-history-tab ${assessmentView === 'active' ? 'is-active' : ''}`} aria-pressed={assessmentView === 'active'} onClick={() => setAssessmentView('active')}>
+            Assessments <span>{activeAssessments.length}</span>
+          </button>
+          <button type="button" className={`assessment-history-tab ${assessmentView === 'history' ? 'is-active' : ''}`} aria-pressed={assessmentView === 'history'} onClick={() => setAssessmentView('history')}>
+            History <span>{historyAssessments.length}</span>
+          </button>
+        </div>
         {canSeparateClassAssessments && (
           <div className="assessment-scope-bar" role="group" aria-label="Filter assessments by assigned class">
             <button type="button" className={`assessment-scope-option ${classScope === 'all' ? 'is-active' : ''}`} aria-pressed={classScope === 'all'} onClick={() => setClassScope('all')}>
-              <span>All classes</span><strong>{filteredAssessments.length}</strong>
+              <span>All classes</span><strong>{assessmentsInView.length}</strong>
             </button>
             <button type="button" className={`assessment-scope-option assessment-scope-mine ${classScope === 'mine' ? 'is-active' : ''}`} aria-pressed={classScope === 'mine'} onClick={() => setClassScope('mine')}>
               <span>My classes</span><strong>{classAssessmentCounts.mine}</strong>
@@ -332,18 +368,20 @@ export default function AssessmentsPage({ user, signOut }) {
             <option value="">All types</option>
             {assessmentTypes.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}
           </select>
-          <span className="student-total">{classScopedAssessments.length} {classScopedAssessments.length === 1 ? 'assessment' : 'assessments'}</span>
+          <span className="student-total">{visibleAssessments.length} {visibleAssessments.length === 1 ? 'assessment' : 'assessments'}</span>
         </div>
         {error ? (
           <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
         ) : loading || loadingOptions ? (
           <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading assessments…</span></div>
-        ) : classScopedAssessments.length === 0 ? (
+        ) : visibleAssessments.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><BookOpen size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No assessments match this view' : 'No assessments created yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try another class group, search, or filter.' : 'Create an assessment for a class and subject assignment.'}</p>
-            {hasFilters
+            <p className="mt-3 text-sm font-semibold text-ink">{assessmentView === 'history' ? 'No closed-term assessments' : hasFilters ? 'No assessments match this view' : 'No assessments created yet'}</p>
+            <p className="mt-1 text-xs text-muted">{assessmentView === 'history' ? 'Assessments from closed terms will appear here for reference.' : hasFilters ? 'Try another class group, search, or filter.' : 'Create an assessment for a class and subject assignment.'}</p>
+            {assessmentView === 'history'
+              ? hasFilters && <button className="text-button mt-3" onClick={() => { setSearch(''); setTermFilter(''); setStatusFilter(''); setTypeFilter(''); setClassScope('all'); }}>Clear filters</button>
+              : hasFilters
               ? <button className="text-button mt-3" onClick={() => { setSearch(''); setTermFilter(''); setStatusFilter(''); setTypeFilter(''); setClassScope('all'); }}>Clear filters</button>
               : <button className="text-button mt-3" onClick={openCreate} disabled={availableAssignments.length === 0}>Create the first assessment</button>}
           </div>
@@ -352,7 +390,7 @@ export default function AssessmentsPage({ user, signOut }) {
             <table className="people-table assessment-table">
               <thead><tr><th>Assessment</th><th>Class & subject</th><th>Term</th><th>Type</th><th>Result records</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
-                {classScopedAssessments.map((assessment) => {
+                {visibleAssessments.map((assessment) => {
                   const assignment = assessment.teachingAssignment;
                   const isMyClass = assignment?.teacher?.userId === user.id;
                   const group = assignment?.classGroup;
@@ -363,7 +401,8 @@ export default function AssessmentsPage({ user, signOut }) {
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
                   const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
-                  const canReset = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
+                  const canReset = term?.status !== 'CLOSED'
+                    && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
                     && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
                   return (
                     <tr key={assessment.id}>
@@ -390,9 +429,9 @@ export default function AssessmentsPage({ user, signOut }) {
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
                           {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete draft assessment"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (
-                            <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`Move to ${assessmentStatusLabel(nextStatus)}`}>
+                            <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`${nextActionLabel} assessment`}>
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                              {assessmentStatusLabel(nextStatus)}
+                              {nextActionLabel}
                             </button>
                           )}
                           {canReset && (
