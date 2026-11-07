@@ -39,7 +39,8 @@ export function ReportCardPaper({ reportCard, canEditDetails = false }) {
     return <td><span className="report-card-detail-print">{value || '—'}</span>{canEditDetails && <textarea className="report-card-detail-input no-print" aria-label={label} rows={2} maxLength={group === 'promotion' ? (key === 'promotedTo' ? 120 : 1000) : 500} value={value || ''} onChange={(event) => setDetails((current) => group === 'promotion' ? { ...current, [key]: event.target.value } : { ...current, [group]: { ...current[group], [key]: event.target.value } })} />}</td>;
   }
   const school = reportCard.school;
-  const design = { title: 'End-of-Term Report Card', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showTeacherComments: true, showSignatures: true, footerText: 'Coursework contributes 20%, the mid-term exam 30%, and the final exam 50%.', sections: ['studentDetails', 'academicPerformance', 'behaviorDiscipline', 'coCurricular', 'promotionRemarks', 'gradingKey', 'summary', 'signatures'], headerSections: ['studentDetails', 'classYear', 'termDates'], ...(school?.reportDesign?.endOfTerm || {}) };
+  const design = { title: 'End-of-Term Report Card', headingColor: '#285d3e', titleColor: '#285d3e', titleFontSize: 17, titleBold: true, titleAlignment: 'center', headerLineColor: '#216b49', showLogo: true, showContact: true, showSummary: true, showGradeDescription: true, showTeacherComments: true, showSignatures: true, footerText: 'Coursework contributes 20%, the mid-term exam 30%, and the final exam 50%.', sections: ['studentDetails', 'academicPerformance', 'behaviorDiscipline', 'coCurricular', 'promotionRemarks', 'gradingKey', 'summary', 'signatures'], headerSections: ['studentDetails', 'classYear', 'termDates'], ...(school?.reportDesign?.endOfTerm || {}) };
+  if (!school?.reportDesign?.endOfTerm?.titleColor) design.titleColor = design.headingColor;
   const sections = {
     studentDetails: <div className="report-card-student-summary"><div><span>Student name</span><strong>{studentName(reportCard.student)}</strong></div><div><span>Admission number</span><strong>{reportCard.student?.admissionNumber || '—'}</strong></div><div><span>Class</span><strong>{reportCard.classLevel?.name || reportCard.classGroup?.classLevel?.name || '—'}</strong></div><div><span>Academic year · Term</span><strong>{reportCard.academicYear?.name} · {reportCard.term?.sequence}. {reportCard.term?.name}</strong></div></div>,
     academicPerformance: <><h3 className="report-card-section-title">Academic performance</h3>{reportCard.summary.requiredSubjects === 0 && <p className="report-card-no-subjects">No elective subject streams are assigned to this student for the selected term.</p>}<div className="overflow-x-auto"><table className="people-table report-card-subject-table"><thead><tr><th>#</th><th>Subject</th><th>Final mark</th><th>Grade</th>{design.showGradeDescription && <th>Grade description</th>}{design.showTeacherComments && <th>Teacher comment</th>}</tr></thead><tbody>{reportCard.subjects.map((subject, index) => <tr key={subject.subjectId}><td>{index + 1}</td><td><strong>{subject.subjectName}</strong><span className="report-card-subject-code">{subject.subjectCode}</span></td><td className="report-card-mark">{subject.complete ? formatAcademicMark(subject.finalMark, reportCard.scoreOutOf) : 'Pending'}</td><td><strong>{subject.grade || '—'}</strong></td>{design.showGradeDescription && <td>{subject.gradeDescription || '—'}</td>}{design.showTeacherComments && <td>{subject.teacherComment || '—'}</td>}</tr>)}</tbody></table></div></>,
@@ -57,7 +58,7 @@ export function ReportCardPaper({ reportCard, canEditDetails = false }) {
     schoolContact: <><span>School contact</span><strong>{school?.address || '—'}</strong><small>{[school?.phone, school?.email].filter(Boolean).join(' · ') || '—'}</small></>,
   };
   return (
-    <article className="report-card-paper">
+    <article className="report-card-paper" style={{ '--report-heading-color': design.headingColor, '--report-header-line-color': design.headerLineColor }}>
       <header className="report-card-school-heading">
         <div className="report-card-school-logo-slot">{design.showLogo && (school?.logoDataUrl
           ? <img className="report-card-school-logo" src={school.logoDataUrl} alt={`${school.name} logo`} />
@@ -66,7 +67,7 @@ export function ReportCardPaper({ reportCard, canEditDetails = false }) {
           <p className="eyebrow">Student academic report</p>
           <h1>{school?.name || 'School'}</h1>
           {design.showContact && (school?.address || (!design.headerSections.includes('schoolContact') && (school?.phone || school?.email))) && <p className="report-card-school-contact">{[school.address, ...(!design.headerSections.includes('schoolContact') ? [school.phone, school.email] : [])].filter(Boolean).join(' · ')}</p>}
-          <h2>{design.title}</h2>
+          <h2 style={{ color: design.titleColor, fontSize: `${design.titleFontSize}px`, fontWeight: design.titleBold ? 700 : 400, textAlign: design.titleAlignment }}>{design.title}</h2>
         </div>
         <div className="report-card-school-logo-slot report-card-school-logo-slot-right">{design.showLogo && school?.secondaryLogoDataUrl && <img className="report-card-school-logo" src={school.secondaryLogoDataUrl} alt={`${school.name} additional logo`} />}</div>
       </header>
