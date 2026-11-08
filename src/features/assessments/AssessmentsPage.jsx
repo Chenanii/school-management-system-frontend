@@ -326,7 +326,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
         <div className="assessment-workflow-guide-heading">
           <div><strong>From mark entry to reports</strong><span>Each assessment’s status shows the next step.</span></div>
           {['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) && (
-            <button className="text-button" type="button" onClick={() => onNavigate('report-cards')}>Open report cards <ArrowRight size={14} /></button>
+            <button className="secondary-button assessment-workflow-link" type="button" onClick={() => onNavigate('report-cards')}>Open report cards <ArrowRight size={14} /></button>
           )}
         </div>
         <ol className="assessment-workflow-stages">

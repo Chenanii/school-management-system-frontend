@@ -4624,15 +4624,43 @@ select:focus-visible,
   border-radius: 1rem;
   background: var(--surface, #fff);
 }
+.assessment-workflow-guide-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.assessment-workflow-guide-heading > div {
+  display: grid;
+  gap: .3rem;
+}
+.assessment-workflow-guide-heading strong {
+  color: var(--app-text-primary);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.assessment-workflow-guide-heading span {
+  color: var(--app-text-secondary);
+  font-size: .875rem;
+  line-height: 1.45;
+}
+.assessment-workflow-link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .assessment-workflow-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin: 0; padding: 0; list-style: none; }
 .assessment-workflow-stages li { display: flex; align-items: flex-start; gap: .6rem; min-width: 0; }
 .assessment-workflow-stages li > span { display: grid; place-items: center; flex: 0 0 1.65rem; height: 1.65rem; border-radius: 999px; background: #eaf3ed; color: #25634a; font-size: .75rem; font-weight: 700; }
 .assessment-workflow-stages li div { display: grid; gap: .2rem; }
-.assessment-workflow-stages li small, .assessment-status-cell small { color: var(--muted, #66736c); font-size: .75rem; line-height: 1.35; }
+.assessment-workflow-stages li small, .assessment-status-cell small { color: var(--app-text-secondary); font-size: .75rem; line-height: 1.35; }
 .assessment-status-cell { display: grid; justify-items: start; gap: .35rem; min-width: 9rem; }
 @media (max-width: 760px) {
   .assessment-workflow-stages { grid-template-columns: 1fr; }
   .assessment-workflow-stages li { align-items: center; }
+}
+@media (max-width: 600px) {
+  .assessment-workflow-guide-heading { align-items: flex-start; flex-direction: column; }
+  .assessment-workflow-link { width: fit-content; }
 }
 
 @media screen {
@@ -10697,5 +10725,84 @@ body {
   }
   .term-status-cell {
     flex-wrap: wrap;
+  }
+}
+
+@media screen {
+  :root[data-color-mode="dark"] .assessment-assignment-required {
+    color: #f0d79d;
+    border-color: #665532;
+    background: #3b3220;
+  }
+  :root[data-color-mode="dark"] .assessment-assignment-required > svg,
+  :root[data-color-mode="dark"] .assessment-assignment-required strong {
+    color: #f0d79d;
+  }
+  :root[data-color-mode="dark"] .assessment-panel-heading,
+  :root[data-color-mode="dark"] .assessment-scope-bar {
+    border-color: var(--app-border);
+    background: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .assessment-panel-toggle {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .form-tutor-report-toggle {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .assessment-panel-toggle:hover,
+  :root[data-color-mode="dark"] .form-tutor-report-toggle:hover,
+  :root[data-color-mode="dark"] .assessment-scope-option:hover {
+    border-color: var(--app-primary);
+    background: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .assessment-scope-option,
+  :root[data-color-mode="dark"] .assessment-scope-option.is-active {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background: var(--app-surface);
+    box-shadow: none;
+  }
+  :root[data-color-mode="dark"] .assessment-scope-option.is-active,
+  :root[data-color-mode="dark"] .assessment-history-tab.is-active {
+    color: #a8e6bd;
+    border-bottom-color: var(--app-primary);
+  }
+  :root[data-color-mode="dark"] .assessment-scope-option strong,
+  :root[data-color-mode="dark"] .assessment-history-tab span {
+    color: #d9e6dd;
+    background: #303c34;
+  }
+  :root[data-color-mode="dark"] .assessment-scope-mine strong {
+    color: #c4def0;
+    background: #263744;
+  }
+  :root[data-color-mode="dark"] .assessment-scope-other strong {
+    color: #f0d7ae;
+    background: #3c3225;
+  }
+  :root[data-color-mode="dark"] .assessment-history-tab.is-active span {
+    color: #a8e6bd;
+    background: #20382a;
+  }
+  :root[data-color-mode="dark"] .assessment-weight-guide-copy span {
+    color: var(--app-text-secondary);
+  }
+  :root[data-color-mode="dark"] .assessment-weight-guide-bar {
+    border-color: var(--app-border);
+  }
+  :root[data-color-mode="dark"] .assessment-weight-guide-bar span {
+    color: #d5e1d8;
+    background: #26352c;
+  }
+  :root[data-color-mode="dark"] .assessment-weight-guide-bar span + span {
+    border-left-color: var(--app-border);
+    background: #303a34;
+  }
+  :root[data-color-mode="dark"] .assessment-weight-guide-bar b {
+    color: #a8e6bd;
   }
 }
