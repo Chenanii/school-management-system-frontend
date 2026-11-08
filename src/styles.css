@@ -4634,6 +4634,220 @@ select:focus-visible,
   .assessment-workflow-stages { grid-template-columns: 1fr; }
   .assessment-workflow-stages li { align-items: center; }
 }
+
+@media screen {
+  :root[data-color-mode="dark"] {
+    color-scheme: dark;
+  }
+  :root[data-color-mode="dark"] body,
+  :root[data-color-mode="dark"] .main-area,
+  :root[data-color-mode="dark"] .page-content {
+    color: var(--app-text-primary);
+    background-color: var(--app-background);
+  }
+  :root[data-color-mode="dark"] .sidebar,
+  :root[data-color-mode="dark"] .topbar,
+  :root[data-color-mode="dark"] .panel,
+  :root[data-color-mode="dark"] .stat-card,
+  :root[data-color-mode="dark"] .user-modal,
+  :root[data-color-mode="dark"] .notification-panel,
+  :root[data-color-mode="dark"] .subscription-plan-card,
+  :root[data-color-mode="dark"] .subscription-current-panel,
+  :root[data-color-mode="dark"] .subscription-pending-card,
+  :root[data-color-mode="dark"] .promotion-policy-card,
+  :root[data-color-mode="dark"] .promotion-modal,
+  :root[data-color-mode="dark"] .assessment-workflow-guide,
+  :root[data-color-mode="dark"] .assessment-weight-guide,
+  :root[data-color-mode="dark"] .school-switcher,
+  :root[data-color-mode="dark"] .dashboard-school-brand {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background-color: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .stat-card-accent,
+  :root[data-color-mode="dark"] .overview-setup-alert,
+  :root[data-color-mode="dark"] .dashboard-quick-action,
+  :root[data-color-mode="dark"] .exam-action-card,
+  :root[data-color-mode="dark"] .headteacher-followup-panel,
+  :root[data-color-mode="dark"] .headteacher-term-banner,
+  :root[data-color-mode="dark"] .assessment-weight-guide-bar,
+  :root[data-color-mode="dark"] .assessment-history-tab,
+  :root[data-color-mode="dark"] .assessment-panel-toggle,
+  :root[data-color-mode="dark"] .assessment-scope-option,
+  :root[data-color-mode="dark"] .table-action,
+  :root[data-color-mode="dark"] .secondary-button,
+  :root[data-color-mode="dark"] .status-action,
+  :root[data-color-mode="dark"] .pagination-button,
+  :root[data-color-mode="dark"] .report-section-add {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background-color: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .text-input,
+  :root[data-color-mode="dark"] .search-input,
+  :root[data-color-mode="dark"] .filter-select,
+  :root[data-color-mode="dark"] .enrollment-stream-select,
+  :root[data-color-mode="dark"] select,
+  :root[data-color-mode="dark"] textarea {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background-color: var(--app-surface);
+    color-scheme: dark;
+  }
+  :root[data-color-mode="dark"] option {
+    color: var(--app-text-primary);
+    background: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .people-table thead,
+  :root[data-color-mode="dark"] .assessment-history-tab.is-active,
+  :root[data-color-mode="dark"] .assessment-scope-option.is-active,
+  :root[data-color-mode="dark"] .nav-item-active,
+  :root[data-color-mode="dark"] .empty-state-icon,
+  :root[data-color-mode="dark"] .confirm-action-icon,
+  :root[data-color-mode="dark"] .dashboard-quick-action-icon,
+  :root[data-color-mode="dark"] .exam-action-icon,
+  :root[data-color-mode="dark"] .assessment-workflow-stages li > span,
+  :root[data-color-mode="dark"] .stat-green {
+    color: var(--app-text-primary);
+    background-color: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .dashboard-quick-action-icon,
+  :root[data-color-mode="dark"] .exam-action-icon,
+  :root[data-color-mode="dark"] .assessment-workflow-stages li > span,
+  :root[data-color-mode="dark"] .confirm-action-icon {
+    color: var(--app-primary);
+    background-color: var(--app-accent-soft);
+  }
+  :root[data-color-mode="dark"] .stat-peach {
+    color: #f0b99e;
+    background-color: #3b2925;
+  }
+  :root[data-color-mode="dark"] .stat-lilac {
+    color: #c9b9f0;
+    background-color: #302c3e;
+  }
+  :root[data-color-mode="dark"] .people-table td,
+  :root[data-color-mode="dark"] .people-table th,
+  :root[data-color-mode="dark"] .people-table tr,
+  :root[data-color-mode="dark"] .panel-heading,
+  :root[data-color-mode="dark"] .modal-heading,
+  :root[data-color-mode="dark"] .modal-actions {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+  }
+  :root[data-color-mode="dark"] .people-table tbody tr:hover,
+  :root[data-color-mode="dark"] .panel-footer:hover,
+  :root[data-color-mode="dark"] .nav-item:hover,
+  :root[data-color-mode="dark"] .secondary-button:hover:not(:disabled),
+  :root[data-color-mode="dark"] .table-action:hover:not(:disabled) {
+    background-color: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .stat-value,
+  :root[data-color-mode="dark"] .decoration-copy,
+  :root[data-color-mode="dark"] .decoration-kicker,
+  :root[data-color-mode="dark"] .school-context-select,
+  :root[data-color-mode="dark"] .table-message,
+  :root[data-color-mode="dark"] .empty-state,
+  :root[data-color-mode="dark"] .panel-footer {
+    color: var(--app-text-secondary);
+  }
+  :root[data-color-mode="dark"] .form-error,
+  :root[data-color-mode="dark"] .notice-error,
+  :root[data-color-mode="dark"] .form-feedback-error,
+  :root[data-color-mode="dark"] .notification-error {
+    color: #ffc0b5;
+    border-color: #69443d;
+    background-color: var(--app-danger-soft);
+  }
+  :root[data-color-mode="dark"] .form-success,
+  :root[data-color-mode="dark"] .notice-success,
+  :root[data-color-mode="dark"] .form-feedback-success {
+    color: #b6e8c5;
+    border-color: #3c6549;
+    background-color: var(--app-success-soft);
+  }
+  :root[data-color-mode="dark"] .form-feedback-warning {
+    color: #f0d79d;
+    border-color: #665532;
+    background-color: var(--app-warning-soft);
+  }
+  :root[data-color-mode="dark"] .status-inactive,
+  :root[data-color-mode="dark"] .subject-status-draft,
+  :root[data-color-mode="dark"] .status-pending,
+  :root[data-color-mode="dark"] .status-warning {
+    color: #f0d79d;
+    background-color: #3b3220;
+  }
+  :root[data-color-mode="dark"] .status-badge,
+  :root[data-color-mode="dark"] .subject-status,
+  :root[data-color-mode="dark"] .headteacher-term-status {
+    color: #d2ddd5;
+    border-color: var(--app-border);
+    background-color: #29352e;
+  }
+  :root[data-color-mode="dark"] .status-active,
+  :root[data-color-mode="dark"] .subject-status-active,
+  :root[data-color-mode="dark"] .subject-status-open,
+  :root[data-color-mode="dark"] .subject-status-finalized,
+  :root[data-color-mode="dark"] .subject-status-published,
+  :root[data-color-mode="dark"] .subject-status-approved,
+  :root[data-color-mode="dark"] .subject-status-locked,
+  :root[data-color-mode="dark"] .headteacher-term-status-open {
+    color: #a8e6bd;
+    background-color: #20382a;
+  }
+  :root[data-color-mode="dark"] .subject-status-draft,
+  :root[data-color-mode="dark"] .subject-status-pending,
+  :root[data-color-mode="dark"] .subject-status-marks-review,
+  :root[data-color-mode="dark"] .headteacher-term-status-marks_review {
+    color: #f0d79d;
+    background-color: #3b3220;
+  }
+  :root[data-color-mode="dark"] .subject-status-closed,
+  :root[data-color-mode="dark"] .subject-status-archived,
+  :root[data-color-mode="dark"] .status-inactive {
+    color: #c3cdc6;
+    background-color: #303a34;
+  }
+  :root[data-color-mode="dark"] .table-action,
+  :root[data-color-mode="dark"] .text-button,
+  :root[data-color-mode="dark"] .panel-footer {
+    color: var(--app-primary);
+  }
+  :root[data-color-mode="dark"] .icon-button:hover {
+    color: var(--app-text-primary);
+    background-color: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .title-dot,
+  :root[data-color-mode="dark"] .school-avatar {
+    color: var(--app-primary);
+  }
+  :root[data-color-mode="dark"] .school-avatar:not(.school-avatar-logo) {
+    background-color: var(--app-accent-soft);
+  }
+  :root[data-color-mode="dark"] .topbar-profile,
+  :root[data-color-mode="dark"] .profile-avatar {
+    color: var(--app-text-primary);
+    background-color: var(--app-surface-muted);
+  }
+  :root[data-color-mode="dark"] .confirm-action-modal,
+  :root[data-color-mode="dark"] .assessment-results-modal,
+  :root[data-color-mode="dark"] .subscription-modal,
+  :root[data-color-mode="dark"] .student-class-info-modal,
+  :root[data-color-mode="dark"] .class-level-details-modal,
+  :root[data-color-mode="dark"] .class-group-details-modal,
+  :root[data-color-mode="dark"] .academic-year-details-modal,
+  :root[data-color-mode="dark"] .subject-details-modal,
+  :root[data-color-mode="dark"] .term-details-modal {
+    color: var(--app-text-primary);
+    border-color: var(--app-border);
+    background-color: var(--app-surface);
+  }
+  :root[data-color-mode="dark"] .brand-logo-frame {
+    border-color: var(--app-border);
+    background-color: #fff;
+  }
+}
 .assessment-weight-guide-copy {
   display: grid;
   gap: 4px;

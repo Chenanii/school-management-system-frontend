@@ -1,9 +1,9 @@
 const DARK_OVERRIDES = {
-  pageBackground: '#151d19',
-  surfaceColor: '#202b24',
+  pageBackground: '#111713',
+  surfaceColor: '#202a24',
   textColor: '#edf4ef',
-  mutedTextColor: '#b0beb4',
-  borderColor: '#38483d',
+  mutedTextColor: '#b6c2b9',
+  borderColor: '#3e4c42',
 };
 
 const DEFAULTS = {
@@ -27,8 +27,16 @@ export function applySchoolTheme(theme = DEFAULTS, displayModeOverride) {
     : settings.mode;
 
   const effective = mode === 'DARK'
-    ? { ...settings, ...DARK_OVERRIDES }
+    ? {
+      ...settings,
+      ...DARK_OVERRIDES,
+      primaryColor: `color-mix(in srgb, ${settings.primaryColor} 48%, #9be8b9)`,
+      secondaryColor: `color-mix(in srgb, ${settings.secondaryColor} 48%, #82dba6)`,
+      accentColor: `color-mix(in srgb, ${settings.primaryColor} 20%, #1b2a21)`,
+    }
     : settings;
+
+  root.dataset.colorMode = mode.toLowerCase();
 
   root.style.setProperty('--app-primary', effective.primaryColor);
   root.style.setProperty('--app-secondary', effective.secondaryColor);
@@ -42,6 +50,9 @@ export function applySchoolTheme(theme = DEFAULTS, displayModeOverride) {
   root.style.setProperty('--app-text-secondary', effective.mutedTextColor);
   root.style.setProperty('--app-text-subtle', effective.mutedTextColor);
   root.style.setProperty('--app-border', effective.borderColor);
+  root.style.setProperty('--app-danger-soft', mode === 'DARK' ? '#3a2623' : '#fff4f1');
+  root.style.setProperty('--app-success-soft', mode === 'DARK' ? '#20352a' : '#f1f8f1');
+  root.style.setProperty('--app-warning-soft', mode === 'DARK' ? '#3b3220' : '#fff9e9');
 
   root.style.setProperty(
     '--font-sans',
