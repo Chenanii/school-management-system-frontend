@@ -24,7 +24,7 @@ function checklistFor(stepId, counts = {}) {
     classes: [
       ['Add at least one class level', counts.classLevels > 0],
       ['Add at least one class group', counts.classGroups > 0],
-      ['Assign a grading scale to each level', counts.gradeScales === 1 || counts.gradedClassLevels === counts.classLevels]
+      ['Assign a grading scale to each level', counts.classLevels > 0 && (counts.gradeScales === 1 || counts.gradedClassLevels === counts.classLevels)]
     ],
     curriculum: [
       ['Add at least one subject', counts.subjects > 0],
