@@ -701,8 +701,8 @@ export default function SchoolAppearancePage({ signOut, user }) {
                 )}
               </div>
               <div>
-                <h3>Display mode</h3>
-                <p>Preview your colours in light or dark mode.</p>
+                <h3>School default mode</h3>
+                <p>Choose the workspace default. Each person can switch modes from the top bar.</p>
               </div>
             </div>
             <div className="appearance-mode-toggle">

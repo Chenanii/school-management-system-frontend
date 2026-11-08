@@ -19,9 +19,9 @@ function studentName(student) {
 }
 
 function formatDate(value) {
-  if (!value) return '—';
+  if (!value) return '-';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('en', {
+  return Number.isNaN(date.getTime()) ? '-' : new Intl.DateTimeFormat('en', {
     day: 'numeric', month: 'short', year: 'numeric'
   }).format(date);
 }
@@ -53,8 +53,8 @@ function BatchDetails({ batch, onClose }) {
                   <td className="text-muted">{decision.sourceEnrollmentId}</td>
                   <td>{outcomeLabels[decision.outcome] || decision.outcome}</td>
                   <td>{outcomeLabels[decision.recommendedOutcome] || decision.recommendedOutcome}</td>
-                  <td>{decision.metrics?.average == null ? '—' : `${decision.metrics.average}%`}</td>
-                  <td>{decision.overrideReason || '—'}</td>
+                  <td>{decision.metrics?.average == null ? '-' : `${decision.metrics.average}%`}</td>
+                  <td>{decision.overrideReason || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -417,7 +417,7 @@ export default function PromotionsPage({ user, signOut }) {
                   return (
                     <tr key={student.enrollmentId}>
                       <td><div className="promotion-student-name"><strong>{studentName(student.student)}</strong><span>{student.student.admissionNumber}</span></div></td>
-                      <td>{student.metrics.average == null ? '—' : `${student.metrics.average}%`}</td>
+                      <td>{student.metrics.average == null ? '-' : `${student.metrics.average}%`}</td>
                       <td>{student.metrics.subjectsPassed}/{student.metrics.subjectsAssessed}</td>
                       <td>{student.eligible ? <span className="subject-status subject-status-active">Ready</span> : <span className="subject-status subject-status-inactive">{missing} missing</span>}</td>
                       <td>
@@ -435,7 +435,7 @@ export default function PromotionsPage({ user, signOut }) {
                       </td>
                       <td>{decision.outcome !== student.recommendedOutcome && student.eligible
                         ? <input className="text-input promotion-reason-input" value={decision.overrideReason || ''} maxLength={500} placeholder="Required for override" onChange={(event) => updateDecision(student, 'overrideReason', event.target.value)} />
-                        : <span className="text-muted">{student.eligible ? '—' : 'Resolve published results first'}</span>}
+                        : <span className="text-muted">{student.eligible ? '-' : 'Resolve published results first'}</span>}
                       </td>
                     </tr>
                   );

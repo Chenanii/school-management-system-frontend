@@ -1,8 +1,9 @@
-import { ChevronRight, GraduationCap, LoaderCircle, Users } from 'lucide-react';
+import { ChevronRight, GraduationCap, Users } from 'lucide-react';
 import { formatDate, formatName, initials } from '../../shared/utils/people.js';
 import StatusBadge from './StatusBadge.jsx';
+import FeedbackState from '../../components/FeedbackState.jsx';
 
-export default function PeopleTable({ people, type, loading, error, onRetry, compact = false, onViewAll, onViewAssignments }) {
+export default function PeopleTable({ people, type, loading, error, onRetry, compact = false, onViewAll, onViewAssignments, onEmptyAction }) {
   const isStudent = type === 'students';
   const title = isStudent ? 'Recently added students' : 'Staff directory';
 
@@ -16,18 +17,18 @@ export default function PeopleTable({ people, type, loading, error, onRetry, com
         {!compact && <span className="rounded-full bg-[#f1f3f0] px-3 py-1 text-xs font-medium text-muted">{people.length} shown</span>}
       </div>
       {error ? (
-        <div className="table-message">
-          <p>{error}</p>
-          <button className="text-button mt-2" onClick={onRetry}>Try again</button>
-        </div>
+        <FeedbackState status="error" title={error} onAction={onRetry} />
       ) : loading ? (
-        <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading records…</span></div>
+        <FeedbackState status="loading" title="Loading records…" />
       ) : people.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">{isStudent ? <GraduationCap size={22} /> : <Users size={22} />}</div>
-          <p className="mt-3 text-sm font-semibold text-ink">No {isStudent ? 'students' : 'staff'} to show yet</p>
-          <p className="mt-1 text-xs text-muted">Once records are added, they’ll appear here.</p>
-        </div>
+        <FeedbackState
+          status="empty"
+          icon={isStudent ? GraduationCap : Users}
+          title={`No ${isStudent ? 'students' : 'staff'} to show yet`}
+          description="Once records are added, they’ll appear here."
+          actionLabel={onEmptyAction ? (isStudent ? 'Add students' : 'Manage staff') : undefined}
+          onAction={onEmptyAction}
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="people-table">
@@ -61,7 +62,7 @@ export default function PeopleTable({ people, type, loading, error, onRetry, com
                         )}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap text-muted">{isStudent ? (person.admissionNumber || '—') : (profile.email || person.email || '—')}</td>
+                    <td className="whitespace-nowrap text-muted">{isStudent ? (person.admissionNumber || '-') : (profile.email || person.email || '-')}</td>
                     <td className="whitespace-nowrap text-muted">{isStudent ? formatDate(person.createdAt) : <StatusBadge status={person.status} />}</td>
                     {!compact && isStudent && <td><StatusBadge status={person.status} /></td>}
                   </tr>

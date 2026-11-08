@@ -23,7 +23,7 @@ import { formatAcademicMark } from '../../shared/utils/academicMarks.js';
 import cambridgeAssessmentLogo from '../../assets/cambridge-assessment-logo.png';
 
 function markLabel(value) {
-  return value == null ? '—' : Number(value).toFixed(1).replace(/\.0$/, '');
+  return value == null ? '-' : Number(value).toFixed(1).replace(/\.0$/, '');
 }
 
 function averageMark(results) {
@@ -267,7 +267,7 @@ export default function ParentPortalPage({ user, onSignOut }) {
                   <div className="parent-student-facts">
                     <div><span>Current class</span><strong>{displayClass(student.currentEnrollment)}</strong></div>
                     <div><span>Current term</span><strong>{student.currentEnrollment?.term?.name || 'Not enrolled'}</strong></div>
-                    <div><span>Academic year</span><strong>{student.currentEnrollment?.term?.academicYear?.name || '—'}</strong></div>
+                    <div><span>Academic year</span><strong>{student.currentEnrollment?.term?.academicYear?.name || '-'}</strong></div>
                     <div><span>Date of birth</span><strong>{formatDate(student.dateOfBirth)}</strong></div>
                     <div><span>Nationality</span><strong>{student.nationality || 'Not provided'}</strong></div>
                   </div>
@@ -312,10 +312,10 @@ export default function ParentPortalPage({ user, onSignOut }) {
                         <tbody>{midTermPortalReport.reportCard.subjects.map((result) => (
                           <tr key={result.subjectId}>
                             <td><strong>{result.subjectName}</strong><small>{result.subjectCode}</small></td>
-                            <td>{result.midTermExam.absent ? 'Absent' : result.midTermExam.percent == null ? '—' : `${result.midTermExam.percent}%`}</td>
+                            <td>{result.midTermExam.absent ? 'Absent' : result.midTermExam.percent == null ? '-' : `${result.midTermExam.percent}%`}</td>
                             <td>{formatAcademicMark(result.finalMark, midTermPortalReport.reportCard.scoreOutOf)}</td>
-                            <td><span className="parent-grade-chip">{result.grade || '—'}</span></td>
-                            <td>{result.gradeDescription || '—'}</td>
+                            <td><span className="parent-grade-chip">{result.grade || '-'}</span></td>
+                            <td>{result.gradeDescription || '-'}</td>
                           </tr>
                         ))}</tbody>
                       </table></div>
@@ -340,8 +340,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
                             <tr key={result.id}>
                               <td><strong>{result.subject.name}</strong><small>{result.subject.code}</small></td>
                               <td>{formatAcademicMark(result.finalMark, result.scoreOutOf || termScoreOutOf)}</td>
-                              <td><span className="parent-grade-chip">{result.grade || '—'}</span></td>
-                              <td>{result.teacherComment || result.gradeDescription || '—'}</td>
+                              <td><span className="parent-grade-chip">{result.grade || '-'}</span></td>
+                              <td>{result.teacherComment || result.gradeDescription || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -372,8 +372,8 @@ export default function ParentPortalPage({ user, onSignOut }) {
                                   <tr key={result.id}>
                                     <td><strong>{result.subject.name}</strong><small>{result.subject.code}</small></td>
                                     <td>{markLabel(result.finalMark)}</td>
-                                    <td><span className="parent-grade-chip">{result.grade || '—'}</span></td>
-                                    <td>{result.gradeDescription || '—'}</td>
+                                    <td><span className="parent-grade-chip">{result.grade || '-'}</span></td>
+                                    <td>{result.gradeDescription || '-'}</td>
                                   </tr>
                                 ))}</tbody>
                               </table>

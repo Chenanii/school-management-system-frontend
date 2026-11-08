@@ -41,9 +41,9 @@ export default function UserDetailsModal({ user, signOut, onClose, onEdit }) {
             <section className="user-details-section">
               <h3><UserRound size={16} /> Account information</h3>
               <dl className="user-details-grid">
-                <div><dt>Email address</dt><dd>{details.email || '—'}</dd></div>
+                <div><dt>Email address</dt><dd>{details.email || '-'}</dd></div>
                 <div><dt>Role</dt><dd>{roleLabel(details.role)}</dd></div>
-                <div><dt>Staff number</dt><dd>{details.teacher?.staffNumber || '—'}</dd></div>
+                <div><dt>Staff number</dt><dd>{details.teacher?.staffNumber || '-'}</dd></div>
                 <div><dt>Account status</dt><dd>{details.status}</dd></div>
                 <div><dt>Account created</dt><dd>{formatDate(details.createdAt)}</dd></div>
                 <div><dt>Last updated</dt><dd>{formatDate(details.updatedAt)}</dd></div>

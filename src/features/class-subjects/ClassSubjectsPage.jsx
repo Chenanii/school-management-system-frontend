@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Boxes, ChevronLeft, ChevronRight, LoaderCircle, Network, Plus, Search, Trash2 } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import ClassSubjectFormModal from './ClassSubjectFormModal.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import { fetchAllPages } from './classSubjectApi.js';
@@ -14,7 +15,7 @@ function levelName(level) {
 function formatCreatedDate(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? '—'
+    ? '-'
     : new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
@@ -116,7 +117,7 @@ export default function ClassSubjectsPage({ signOut }) {
   }
 
   async function removeLink(link) {
-    const label = `${link.classLevel.name} — ${link.subject.name}`;
+    const label = `${link.classLevel.name} - ${link.subject.name}`;
     setActionError('');
     setRemovingId(link.id);
     try {
@@ -188,21 +189,16 @@ export default function ClassSubjectsPage({ signOut }) {
           <label className="sr-only" htmlFor="class-subject-subject-filter">Filter by subject</label>
           <select id="class-subject-subject-filter" className="filter-select" value={subjectId} onChange={(event) => { setSubjectId(event.target.value); setPage(1); }} disabled={loadingOptions}>
             <option value="">All subjects</option>
-            {subjects.map((subject) => <option value={subject.id} key={subject.id}>{subject.code} — {subject.name}</option>)}
+            {subjects.map((subject) => <option value={subject.id} key={subject.id}>{subject.code} - {subject.name}</option>)}
           </select>
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'link' : 'links'}</span>
         </div>
         {error ? (
-          <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading curriculum links…</span></div>
+          <FeedbackState status="loading" title="Loading curriculum links…" />
         ) : links.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><Network size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No curriculum links match these filters' : 'No class subjects linked yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try changing the search or filters.' : 'Link active subjects to the levels where they are taught.'}</p>
-            {!hasFilters && <button className="text-button mt-3" disabled={!canCreate} onClick={() => setFormOpen(true)}>Create the first class subject link</button>}
-          </div>
+          <FeedbackState status="empty" icon={Network} title={hasFilters ? 'No curriculum links match these filters' : 'No class subjects linked yet'} description={hasFilters ? 'Try changing the search or filters.' : 'Link active subjects to the levels where they are taught.'} actionLabel={hasFilters ? undefined : 'Create the first class subject link'} onAction={hasFilters || !canCreate ? undefined : () => setFormOpen(true)} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table class-subject-table">

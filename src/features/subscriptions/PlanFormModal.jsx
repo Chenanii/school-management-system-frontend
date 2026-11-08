@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { savePlan } from './subscriptionApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -118,7 +119,7 @@ export default function PlanFormModal({ plan, signOut, onClose, onSaved }) {
             <input type="checkbox" name="isActive" checked={form.isActive} onChange={updateField} />
             <span><strong>Available for new subscriptions</strong><small>Inactive plans remain visible in subscription history.</small></span>
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving}>

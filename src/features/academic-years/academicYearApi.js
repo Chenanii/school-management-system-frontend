@@ -30,10 +30,10 @@ export function saveAcademicYear(id, data) {
 }
 
 export function formatAcademicDate(value) {
-  if (!value) return '—';
+  if (!value) return '-';
   const datePart = String(value).slice(0, 10);
   const date = new Date(`${datePart}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat('en', {
     day: 'numeric',
     month: 'short',

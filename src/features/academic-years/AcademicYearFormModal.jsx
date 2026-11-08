@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { saveAcademicYear } from './academicYearApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 function dateInputValue(value) {
   return value ? String(value).slice(0, 10) : '';
@@ -85,7 +86,7 @@ export default function AcademicYearFormModal({ year, signOut, onClose, onSaved 
           {editing && year.terms?.some((term) => ['FINALIZED', 'PUBLISHED', 'CLOSED'].includes(term.status)) && (
             <p className="form-hint">Dates are locked while this year contains a finalized, published, or closed term.</p>
           )}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving}>

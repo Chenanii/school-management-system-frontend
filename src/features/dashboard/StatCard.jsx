@@ -6,7 +6,7 @@ export default function StatCard({ icon: Icon, label, value, detail, tone, loadi
         <span className="stat-period">All time</span>
       </div>
       <div className="mt-5">
-        <div className="stat-value">{loading ? <span className="loading-line" /> : (value ?? '—')}</div>
+        <div className="stat-value">{loading ? <span className="loading-line" /> : (value ?? '-')}</div>
         <div className="mt-1 text-sm font-medium text-ink">{label}</div>
         <div className="mt-1 text-xs text-muted">{detail}</div>
       </div>

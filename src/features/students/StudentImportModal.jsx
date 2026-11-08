@@ -281,7 +281,7 @@ export default function StudentImportModal({ onClose, onImported }) {
           {error && <p className="form-error" role="alert">{error}</p>}
           {progress && <p className="form-success" role="status">{progress}</p>}
           {results.some((result) => !result.success) && <div className="max-h-36 overflow-y-auto rounded-lg border border-red-200 p-3 text-sm" role="status">
-            {results.filter((result) => !result.success).map((result) => <p key={result.rowNumber}>Row {result.rowNumber}: {result.skipped ? `Skipped — ${result.message}` : result.message}</p>)}
+            {results.filter((result) => !result.success).map((result) => <p key={result.rowNumber}>Row {result.rowNumber}: {result.skipped ? `Skipped - ${result.message}` : result.message}</p>)}
           </div>}
           {completeCount > 0 && <p className="field-hint">Successful imports: {completeCount}</p>}
           <div className="modal-actions">

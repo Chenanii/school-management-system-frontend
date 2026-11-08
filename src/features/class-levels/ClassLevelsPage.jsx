@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Boxes, ChevronLeft, ChevronRight, Eye, LoaderCircle, Plus, Search } from 'lucide-react';
+import { Boxes, ChevronLeft, ChevronRight, Eye, Plus, Search } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import ClassLevelDetailsModal from './ClassLevelDetailsModal.jsx';
 import ClassLevelFormModal from './ClassLevelFormModal.jsx';
 import { fetchAllClassLevels } from './classLevelApi.js';
@@ -143,19 +144,11 @@ export default function ClassLevelsPage({ signOut, onNavigate }) {
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'class level' : 'class levels'}</span>
         </div>
         {error ? (
-          <div className="table-message">
-            <p>{error}</p>
-            <button className="text-button mt-2" onClick={refresh}>Try again</button>
-          </div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading class levels…</span></div>
+          <FeedbackState status="loading" title="Loading class levels…" />
         ) : levels.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><Boxes size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{search.trim() ? 'No class levels match this search' : 'No class levels added yet'}</p>
-            <p className="mt-1 text-xs text-muted">{search.trim() ? 'Try another class-level name.' : 'Add the grade levels used by your school.'}</p>
-            {!search.trim() && <button className="text-button mt-3" onClick={openCreate}>Add your first class level</button>}
-          </div>
+          <FeedbackState status="empty" icon={Boxes} title={search.trim() ? 'No class levels match this search' : 'No class levels added yet'} description={search.trim() ? 'Try another class-level name.' : 'Add the grade levels used by your school.'} actionLabel={search.trim() ? undefined : 'Add your first class level'} onAction={search.trim() ? undefined : openCreate} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table class-level-table">
@@ -176,7 +169,7 @@ export default function ClassLevelsPage({ signOut, onNavigate }) {
                     <td className="text-muted">{level._count?.groups ?? 0}</td>
                     <td className="text-muted">{level._count?.subjects ?? 0}</td>
                     <td className="text-muted">{level._count?.previousLevels ?? 0}</td>
-                    <td className="whitespace-nowrap text-muted">{level.nextLevel ? `${level.nextLevel.levelOrder}. ${level.nextLevel.name}` : '—'}</td>
+                    <td className="whitespace-nowrap text-muted">{level.nextLevel ? `${level.nextLevel.levelOrder}. ${level.nextLevel.name}` : '-'}</td>
                     <td>
                       <div className="class-level-actions">
                         <button className="table-action" onClick={() => setDetailLevel(level)} aria-label={`View ${level.name}`} title="View class-level details"><Eye size={14} /></button>

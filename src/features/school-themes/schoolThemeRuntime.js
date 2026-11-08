@@ -19,11 +19,14 @@ const DEFAULTS = {
   fontFamily: 'Inter',
 };
 
-export function applySchoolTheme(theme = DEFAULTS) {
+export function applySchoolTheme(theme = DEFAULTS, displayModeOverride) {
   const root = document.documentElement;
   const settings = { ...DEFAULTS, ...theme };
+  const mode = displayModeOverride === "DARK" || displayModeOverride === "LIGHT"
+    ? displayModeOverride
+    : settings.mode;
 
-  const effective = settings.mode === 'DARK'
+  const effective = mode === 'DARK'
     ? { ...settings, ...DARK_OVERRIDES }
     : settings;
 
@@ -45,5 +48,5 @@ export function applySchoolTheme(theme = DEFAULTS) {
     `"${settings.fontFamily}", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
   );
 
-  root.style.colorScheme = settings.mode === 'DARK' ? 'dark' : 'light';
+  root.style.colorScheme = mode === 'DARK' ? 'dark' : 'light';
 }

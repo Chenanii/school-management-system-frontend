@@ -57,9 +57,9 @@ export function statusLabel(status) {
 }
 
 export function formatSubscriptionDate(value) {
-  if (!value) return '—';
+  if (!value) return '-';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat('en', {
     day: 'numeric',
     month: 'short',

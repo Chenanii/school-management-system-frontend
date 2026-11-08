@@ -9,6 +9,7 @@ import useStudents from './useStudents.js';
 import { API_BASE_URL, apiRequest, getAccessToken, getSchoolContextId } from '../../api.js';
 import ClassDistributionPanel from './ClassDistributionPanel.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
+import FeedbackState from '../../components/FeedbackState.jsx';
 
 const statuses = [
   { value: '', label: 'All statuses' },
@@ -284,19 +285,11 @@ export default function StudentsPage({ user, signOut }) {
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'student' : 'students'}</span>
         </div>
         {error ? (
-          <div className="table-message">
-            <p>{error}</p>
-            <button className="text-button mt-2" onClick={directory.refresh}>Try again</button>
-          </div>
+          <FeedbackState status="error" title={error} onAction={directory.refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading students…</span></div>
+          <FeedbackState status="loading" title="Loading students…" />
         ) : students.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><Users size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{isTeacher ? 'No students in your assigned classes' : noFilters ? 'No students registered yet' : 'No students match these filters'}</p>
-            <p className="mt-1 text-xs text-muted">{isTeacher ? 'Students appear here when enrolled in one of your assigned classes.' : noFilters ? 'Add your first student to start building the school register.' : 'Try a different search or status filter.'}</p>
-            {!isTeacher && noFilters && <button className="text-button mt-3" onClick={openCreate}>Register your first student</button>}
-          </div>
+          <FeedbackState status="empty" icon={Users} title={isTeacher ? 'No students in your assigned classes' : noFilters ? 'No students registered yet' : 'No students match these filters'} description={isTeacher ? 'Students appear here when enrolled in one of your assigned classes.' : noFilters ? 'Add your first student to start building the school register.' : 'Try a different search or status filter.'} actionLabel={!isTeacher && noFilters ? 'Register your first student' : undefined} onAction={!isTeacher && noFilters ? openCreate : undefined} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table students-table">
@@ -313,12 +306,12 @@ export default function StudentsPage({ user, signOut }) {
                       </div>
                     </td>
                     <td data-label="Student ID" className="whitespace-nowrap text-muted">{student.admissionNumber}</td>
-                    <td data-label="Parent phone" className="whitespace-nowrap text-muted">{student.parents?.[0]?.parent?.phone || '—'}</td>
-                    <td data-label="Class level" className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classLevel?.name || '—'}</td>
+                    <td data-label="Parent phone" className="whitespace-nowrap text-muted">{student.parents?.[0]?.parent?.phone || '-'}</td>
+                    <td data-label="Class level" className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classLevel?.name || '-'}</td>
                     <td data-label="Class group" className="whitespace-nowrap text-muted">{student.enrollments?.[0]?.classGroup?.name || 'Unassigned'}</td>
                     <td data-label="Date of birth" className="whitespace-nowrap text-muted">{formatDate(student.dateOfBirth)}</td>
-                    <td data-label="Gender" className="whitespace-nowrap text-muted">{student.gender || '—'}</td>
-                    <td data-label="Nationality" className="whitespace-nowrap text-muted">{student.nationality || '—'}</td>
+                    <td data-label="Gender" className="whitespace-nowrap text-muted">{student.gender || '-'}</td>
+                    <td data-label="Nationality" className="whitespace-nowrap text-muted">{student.nationality || '-'}</td>
                     <td data-label="Enrolments" className="text-muted">{student._count?.enrollments ?? 0}</td>
                     <td data-label="Status"><StatusBadge status={student.status} /></td>
                     <td data-label="Actions">

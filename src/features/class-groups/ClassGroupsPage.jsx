@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Boxes, ChevronLeft, ChevronRight, Eye, LoaderCircle, Plus, Search, UsersRound } from 'lucide-react';
+import { Boxes, ChevronLeft, ChevronRight, Eye, Plus, Search, UsersRound } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import ClassGroupDetailsModal from './ClassGroupDetailsModal.jsx';
 import ClassGroupFormModal from './ClassGroupFormModal.jsx';
 import { fetchAllPages, formatClassLevel } from './classGroupApi.js';
@@ -130,16 +131,11 @@ export default function ClassGroupsPage({ signOut }) {
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'class group' : 'class groups'}</span>
         </div>
         {error ? (
-          <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading class groups…</span></div>
+          <FeedbackState status="loading" title="Loading class groups…" />
         ) : groups.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><UsersRound size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No class groups match these filters' : 'No class groups added yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try another search or class level.' : 'Create groups such as streams or sections within a class level.'}</p>
-            {!hasFilters && <button className="text-button mt-3" onClick={openCreate} disabled={loadingLevels || Boolean(levelsError) || classLevels.length === 0}>Add your first class group</button>}
-          </div>
+          <FeedbackState status="empty" icon={UsersRound} title={hasFilters ? 'No class groups match these filters' : 'No class groups added yet'} description={hasFilters ? 'Try another search or class level.' : 'Create groups such as streams or sections within a class level.'} actionLabel={hasFilters ? undefined : 'Add your first class group'} onAction={hasFilters || loadingLevels || Boolean(levelsError) || classLevels.length === 0 ? undefined : openCreate} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table class-group-table">
@@ -166,7 +162,7 @@ export default function ClassGroupsPage({ signOut }) {
                     <td className="whitespace-nowrap text-muted">
                       {group.createdAt && !Number.isNaN(new Date(group.createdAt).getTime())
                         ? new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(group.createdAt))
-                        : '—'}
+                        : '-'}
                     </td>
                     <td>
                       <div className="class-group-actions">

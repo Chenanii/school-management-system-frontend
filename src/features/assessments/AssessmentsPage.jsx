@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, ChevronDown, ClipboardList, LoaderCircle, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import AssessmentFormModal from './AssessmentFormModal.jsx';
 import AssessmentResultsModal from './AssessmentResultsModal.jsx';
-import AssessmentPopup from './AssessmentPopup.jsx';
+import FormFeedback from '../../components/FormFeedback.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import FormTutorReportDetailsPanel from './FormTutorReportDetailsPanel.jsx';
 import {
@@ -19,7 +19,26 @@ import {
   transitionAssessment
 } from './assessmentApi.js';
 
-export default function AssessmentsPage({ user, signOut }) {
+const workflowStages = [
+  ['Draft', 'Prepare the assessment'],
+  ['Open', 'Enter marks'],
+  ['Submitted', 'Review submitted marks'],
+  ['Approved', 'Lock results'],
+  ['Locked', 'Generate class reports']
+];
+
+function nextStepDescription(status, role) {
+  if (status === 'DRAFT') return 'Open the assessment to begin mark entry.';
+  if (status === 'OPEN') return 'Enter marks, then submit them for review.';
+  if (status === 'SUBMITTED') return ['TEACHER', 'FORM_TUTOR'].includes(role)
+    ? 'Submitted; waiting for an administrator to review.'
+    : 'Review submitted marks before approving.';
+  if (status === 'APPROVED') return 'Lock results when they are ready for reports.';
+  if (status === 'LOCKED') return 'Results are locked and ready for report generation.';
+  return '';
+}
+
+export default function AssessmentsPage({ user, signOut, onNavigate }) {
   const [assessments, setAssessments] = useState([]);
   const [terms, setTerms] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -300,9 +319,22 @@ export default function AssessmentsPage({ user, signOut }) {
           </p>
         </div>
       )}
-      <AssessmentPopup message={optionsError ? `Assessment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
-      <AssessmentPopup message={actionError} onDismiss={() => setActionError('')} />
-      <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
+      <FormFeedback message={optionsError ? `Assessment choices could not be loaded: ${optionsError}` : ''} onDismiss={() => setOptionsError('')} actionLabel="Try again" onAction={refresh} />
+      <FormFeedback message={actionError} onDismiss={() => setActionError('')} />
+      <FormFeedback message={notice} type="success" onDismiss={() => setNotice('')} />
+      <section className="assessment-workflow-guide" aria-label="Assessment to report workflow">
+        <div className="assessment-workflow-guide-heading">
+          <div><strong>From mark entry to reports</strong><span>Each assessment’s status shows the next step.</span></div>
+          {['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) && (
+            <button className="text-button" type="button" onClick={() => onNavigate('report-cards')}>Open report cards <ArrowRight size={14} /></button>
+          )}
+        </div>
+        <ol className="assessment-workflow-stages">
+          {workflowStages.map(([label, detail], index) => (
+            <li key={label}><span>{index + 1}</span><div><strong>{label}</strong><small>{detail}</small></div></li>
+          ))}
+        </ol>
+      </section>
       <div className="assessment-weight-guide">
         <div className="assessment-weight-guide-copy"><strong>How subject weighting works</strong><span>Mid-term reports use 40% coursework and 60% mid-term exam. End-of-term reports use 20% coursework, 30% mid-term exam and 50% final exam.</span></div>
         <div className="assessment-weight-guide-bar" aria-label="Mid-term: 40 percent coursework and 60 percent mid-term exam. End-of-term: 20 percent coursework, 30 percent mid-term exam and 50 percent final exam."><span>Mid-term <b>40% + 60%</b></span><span>End-of-term <b>20% + 30% + 50%</b></span></div>
@@ -396,7 +428,7 @@ export default function AssessmentsPage({ user, signOut }) {
                   const className = [classLevel?.name, group?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
-                  const nextActionLabel = nextStatus === 'SUBMITTED' ? 'Submit' : assessmentStatusLabel(nextStatus);
+                  const nextActionLabel = ({ DRAFT: 'Open for marks', OPEN: 'Submit for review', SUBMITTED: 'Approve results', APPROVED: 'Lock results' })[assessment.status] || assessmentStatusLabel(nextStatus);
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
                   const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
@@ -408,23 +440,23 @@ export default function AssessmentsPage({ user, signOut }) {
                       <td data-label="Assessment">
                         <div className="assessment-title-cell">
                           <span className="assessment-icon"><ClipboardList size={15} /></span>
-                          <div><strong>{assessment.title}</strong><span>{assignment?.teacher ? `${assignment.teacher.firstName} ${assignment.teacher.lastName}` : '—'}</span></div>
+                          <div><strong>{assessment.title}</strong><span>{assignment?.teacher ? `${assignment.teacher.firstName} ${assignment.teacher.lastName}` : '-'}</span></div>
                         </div>
                       </td>
                       <td data-label="Class & subject">
                         <div className="assessment-class-cell">
-                          <strong>{className || '—'}</strong>
-                          <span>{assessment.subject?.code ? `${assessment.subject.code} · ` : ''}{assessment.subject?.name || '—'}</span>
+                          <strong>{className || '-'}</strong>
+                          <span>{assessment.subject?.code ? `${assessment.subject.code} · ` : ''}{assessment.subject?.name || '-'}</span>
                           {canSeparateClassAssessments && <span className={`assessment-class-badge ${isMyClass ? 'is-mine' : 'is-other'}`}>{isMyClass ? 'My class' : 'Other class'}</span>}
                         </div>
                       </td>
-                      <td data-label="Term" className="text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '—'}</td>
+                      <td data-label="Term" className="text-muted">{term ? `${term.academicYear?.name || ''} · ${term.sequence}. ${term.name}` : '-'}</td>
                       <td data-label="Type" className="text-muted">{assessmentTypeLabel(assessment.assessmentType)}</td>
                       <td data-label="Result records" className="text-muted">{Number(assessment._count?.results ?? 0)}</td>
-                      <td data-label="Status"><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessmentStatusLabel(assessment.status)}</span></td>
+                      <td data-label="Status"><div className="assessment-status-cell"><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessmentStatusLabel(assessment.status)}</span><small>{nextStepDescription(assessment.status, user.role)}</small></div></td>
                       <td data-label="Actions">
                         <div className="assessment-actions">
-                          <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Enter or review marks">Results</button>
+                          <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Open marks for this assessment">{assessment.status === 'DRAFT' || assessment.status === 'OPEN' ? ((assessment._count?.results ?? 0) > 0 ? 'Update marks' : 'Enter marks') : ['SUBMITTED', 'APPROVED'].includes(assessment.status) && !['TEACHER', 'FORM_TUTOR'].includes(user.role) ? 'Review marks' : 'View marks'}</button>
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
                           {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete draft assessment"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (

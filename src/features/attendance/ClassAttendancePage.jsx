@@ -321,7 +321,7 @@ export default function ClassAttendancePage({ user, signOut }) {
             </label>
           </div>
           {reportLoading ? <div className="table-message">Loading attendance report…</div> : <div className="attendance-report-table-wrap"><table className="attendance-report-table"><thead><tr><th>Student name</th><th>Admission number</th><th>Class level</th><th>Class group</th><th>Term</th><th>Academic year</th><th>Days present</th><th>Days absent</th><th>Attendance</th></tr></thead><tbody>
-            {visibleReportRows.map((row) => <tr key={row.studentId}><td>{row.studentName}</td><td>{row.admissionNumber}</td><td>{row.classLevel}</td><td>{row.classGroup || '—'}</td><td>{row.term}</td><td>{row.academicYear}</td><td>{row.totalDaysPresent}</td><td>{row.totalDaysAbsent}</td><td>{row.percentageAttendance}%</td></tr>)}
+            {visibleReportRows.map((row) => <tr key={row.studentId}><td>{row.studentName}</td><td>{row.admissionNumber}</td><td>{row.classLevel}</td><td>{row.classGroup || '-'}</td><td>{row.term}</td><td>{row.academicYear}</td><td>{row.totalDaysPresent}</td><td>{row.totalDaysAbsent}</td><td>{row.percentageAttendance}%</td></tr>)}
             {!visibleReportRows.length && <tr><td className="attendance-report-empty" colSpan="9">{reportRows.length ? 'No student matches this selection.' : 'No attendance report data is available for this term.'}</td></tr>}
           </tbody></table></div>}
         </div>}

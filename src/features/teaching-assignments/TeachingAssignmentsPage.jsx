@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, LoaderCircle, Plus, Search, Trash2, Users } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import TeachingAssignmentFormModal from './TeachingAssignmentFormModal.jsx';
 import FormTutorAssignmentsModal from './FormTutorAssignmentsModal.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
@@ -234,18 +235,11 @@ export default function TeachingAssignmentsPage({ signOut, initialTeacherId = ''
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'term allocation' : 'term allocations'}</span>
         </div>
         {error ? (
-          <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading || loadingOptions ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading teaching assignments…</span></div>
+          <FeedbackState status="loading" title="Loading teaching assignments…" />
         ) : filteredAssignments.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><Users size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No assignments match these filters' : 'No teaching assignments yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try changing the filters or search terms.' : 'Create an assignment to connect a teacher with a class, subject, and term.'}</p>
-            {hasFilters
-              ? <button className="text-button mt-3" onClick={clearFilters}>Clear filters</button>
-              : <button className="text-button mt-3" onClick={openCreate}>Create the first assignment</button>}
-          </div>
+          <FeedbackState status="empty" icon={Users} title={hasFilters ? 'No assignments match these filters' : 'No teaching assignments yet'} description={hasFilters ? 'Try changing the filters or search terms.' : 'Create an assignment to connect a teacher with a class, subject, and term.'} actionLabel={hasFilters ? 'Clear filters' : 'Create the first assignment'} onAction={hasFilters ? clearFilters : openCreate} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table teaching-assignment-table">

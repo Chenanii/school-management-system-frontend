@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { GraduationCap, LoaderCircle, ShieldCheck } from 'lucide-react';
 import Brand from '../../components/layout/Brand.jsx';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import { apiRequest } from '../../api.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
 
@@ -128,11 +129,11 @@ export default function SignIn({ onSignIn, onCreateAccount, initialEmail = '', n
             {parentSetup
               ? 'Verify the email address or phone number the school has on your child’s record, then choose your password.'
               : forgotPassword
-                ? 'Enter your account email. We’ll check that it belongs to an active account before sending a reset link.'
+                ? 'If an active account uses this email, we’ll send a password reset link.'
               : 'Your school day, thoughtfully organized.'}
           </p>
         </div>
-        {notice && <p className="form-success mt-5" role="status">{notice}</p>}
+        {notice && <div className="mt-5"><FeedbackState status="success" title={notice} /></div>}
         <form
           ref={signInFormRef}
           onSubmit={parentSetup
@@ -217,7 +218,7 @@ export default function SignIn({ onSignIn, onCreateAccount, initialEmail = '', n
         {!parentSetup ? (
           <>
             {!forgotPassword && <p className="mt-6 text-center text-sm text-muted">
-              New to Schoolhouse?{' '}
+              New to Nexa School?{' '}
               <button className="text-button" type="button" onClick={onCreateAccount}>Register your school</button>
             </p>}
             {!forgotPassword && <p className="mt-3 text-center text-sm text-muted">

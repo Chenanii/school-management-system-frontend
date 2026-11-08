@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function ClassSubjectFormModal({ classLevels, subjects, signOut, onClose, onSaved }) {
   const [classLevelId, setClassLevelId] = useState('');
@@ -65,7 +66,7 @@ export default function ClassSubjectFormModal({ classLevels, subjects, signOut, 
             Active subject
             <select className="text-input" value={subjectId} onChange={(event) => setSubjectId(event.target.value)} required disabled={!classLevelId}>
               <option value="">{!classLevelId ? 'Select a class level first' : 'Select a subject'}</option>
-              {availableSubjects.map((subject) => <option value={subject.id} key={subject.id}>{subject.code} — {subject.name}</option>)}
+              {availableSubjects.map((subject) => <option value={subject.id} key={subject.id}>{subject.code} - {subject.name}</option>)}
             </select>
             {classLevelId && availableSubjects.length === 0 && (
               <span className="field-hint">Every active subject is already linked to this class level.</span>
@@ -75,11 +76,11 @@ export default function ClassSubjectFormModal({ classLevels, subjects, signOut, 
             Requirement
             <select className="text-input" value={isRequired ? 'required' : 'optional'} onChange={(event) => setIsRequired(event.target.value === 'required')}>
               <option value="required">Required for every student</option>
-              <option value="optional">Optional — students are assigned individually</option>
+              <option value="optional">Optional - students are assigned individually</option>
             </select>
             <span className="field-hint">Optional subjects only appear on a student’s report after they are assigned to that subject stream.</span>
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || !classLevelId || !subjectId}>

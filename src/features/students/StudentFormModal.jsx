@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { fetchAllPages } from '../enrollments/enrollmentApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 const blankStudent = {
   firstName: '',
@@ -244,7 +245,7 @@ export default function StudentFormModal({ student, onClose, onSaved }) {
             </div>)}
           </section>}
           {!editing && step === 2 && <p className="field-hint">The student, term enrollment, and parent contacts are saved together. Assign a home class group later from Enrollments; if any save fails, registration is rolled back.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             {editing ? <>
               <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>

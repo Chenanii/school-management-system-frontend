@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { formatClassLevel } from './classGroupApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function ClassGroupFormModal({ group, classLevels, signOut, onClose, onSaved }) {
   const editing = Boolean(group);
@@ -71,7 +72,7 @@ export default function ClassGroupFormModal({ group, classLevels, signOut, onClo
             <input className="text-input" name="name" value={form.name} onChange={updateField} maxLength={50} placeholder="e.g. North, Blue, or A" required />
             <span className="field-hint">Group names must be unique within their class level.</span>
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || classLevels.length === 0}>

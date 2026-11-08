@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Eye, LoaderCircle, Plus, Users } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Eye, Plus, Users } from 'lucide-react';
 import { fetchAllPages, fetchTerms, formatTermDate, termStatusLabel, termStatuses, termTransitions, updateTermStatus } from './termApi.js';
 import TermDetailsModal from './TermDetailsModal.jsx';
 import TermFormModal from './TermFormModal.jsx';
 import ToastMessage from '../../components/ToastMessage.jsx';
+import FeedbackState from '../../components/FeedbackState.jsx';
 
 const emptyPagination = { page: 1, limit: 20, total: 0, totalPages: 1 };
 
@@ -145,18 +146,11 @@ export default function TermsPage({ user, signOut }) {
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'term' : 'terms'}</span>
         </div>
         {error ? (
-          <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading || loadingYears ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading terms…</span></div>
+          <FeedbackState status="loading" title="Loading terms…" />
         ) : terms.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><CalendarDays size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No terms match these filters' : 'No terms have been added yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try changing the academic year or term status.' : 'Create academic years first, then define their terms and dates.'}</p>
-            {hasFilters
-              ? <button className="text-button mt-3" onClick={() => { setAcademicYearId(''); setStatus(''); setPage(1); }}>Clear filters</button>
-              : <button className="text-button mt-3" onClick={openCreate} disabled={academicYears.length === 0}>Add the first term</button>}
-          </div>
+          <FeedbackState status="empty" icon={CalendarDays} title={hasFilters ? 'No terms match these filters' : 'No terms have been added yet'} description={hasFilters ? 'Try changing the academic year or term status.' : 'Create academic years first, then define their terms and dates.'} actionLabel={hasFilters ? 'Clear filters' : academicYears.length ? 'Add the first term' : undefined} onAction={hasFilters ? () => { setAcademicYearId(''); setStatus(''); setPage(1); } : academicYears.length ? openCreate : undefined} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table term-table">
@@ -174,7 +168,7 @@ export default function TermsPage({ user, signOut }) {
                           <span className="font-medium text-ink">{term.name}</span>
                         </div>
                       </td>
-                      <td data-label="Academic year" className="whitespace-nowrap text-muted">{term.academicYear?.name || '—'}</td>
+                      <td data-label="Academic year" className="whitespace-nowrap text-muted">{term.academicYear?.name || '-'}</td>
                       <td data-label="Dates" className="whitespace-nowrap text-muted">{formatTermDate(term.startDate)} – {formatTermDate(term.endDate)}</td>
                       <td data-label="Status">
                         <div className="term-status-cell">

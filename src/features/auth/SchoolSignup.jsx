@@ -195,7 +195,12 @@ export default function SchoolSignup({ onBack, onCreated }) {
                       <input type="radio" name="planId" value={plan.id} checked={planId === plan.id} onChange={() => setPlanId(plan.id)} />
                       <span className="plan-option-copy">
                         <span className="plan-option-name">{plan.name}</span>
-                        <span className="plan-option-detail">{plan.description || `${plan.trialDays} day${plan.trialDays === 1 ? '' : 's'} trial`}</span>
+                        {plan.description && <span className="plan-option-detail">{plan.description}</span>}
+                        <span className="plan-option-meta">
+                          {plan.trialDays > 0 ? `${plan.trialDays}-day trial` : 'No trial period'}
+                          {' · '}{plan.maxStudents == null ? 'No student limit' : `Up to ${plan.maxStudents} students`}
+                          {' · '}{plan.maxStaff == null ? 'No staff limit' : `Up to ${plan.maxStaff} staff`}
+                        </span>
                       </span>
                       <span className="plan-option-price">{formatPrice(plan)}</span>
                     </label>

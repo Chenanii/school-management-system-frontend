@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Eye, LoaderCircle, Plus } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import { formatAcademicDate, academicYearStatus, fetchAcademicYears } from './academicYearApi.js';
 import AcademicYearDetailsModal from './AcademicYearDetailsModal.jsx';
 import AcademicYearFormModal from './AcademicYearFormModal.jsx';
@@ -73,16 +74,11 @@ export default function AcademicYearsPage({ signOut }) {
           <span className="academic-year-total">{pagination.total} {pagination.total === 1 ? 'academic year' : 'academic years'}</span>
         </div>
         {error ? (
-          <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={refresh}>Try again</button></div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading academic years…</span></div>
+          <FeedbackState status="loading" title="Loading academic years…" />
         ) : years.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><CalendarDays size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">No academic years added yet</p>
-            <p className="mt-1 text-xs text-muted">Create a school year to organize terms and annual results.</p>
-            <button className="text-button mt-3" onClick={openCreate}>Add your first academic year</button>
-          </div>
+          <FeedbackState status="empty" icon={CalendarDays} title="No academic years added yet" description="Create a school year to organize terms and annual results." actionLabel="Add your first academic year" onAction={openCreate} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table academic-year-table">

@@ -13,7 +13,8 @@ export default function DirectoryPage({
   setPage,
   total,
   totalPages,
-  onViewAssignments
+  onViewAssignments,
+  onManageStaff,
 }) {
   const isStudent = type === 'students';
 
@@ -39,7 +40,7 @@ export default function DirectoryPage({
           </div>
           <span className="text-xs text-muted">{total === 0 ? 'No records' : `Showing ${Math.min((page - 1) * 20 + 1, total)}–${Math.min(page * 20, total)} of ${total}`}</span>
         </div>
-        <PeopleTable people={people} type={type} loading={loading} error={error} onRetry={onRetry} onViewAssignments={onViewAssignments} />
+        <PeopleTable people={people} type={type} loading={loading} error={error} onRetry={onRetry} onViewAssignments={onViewAssignments} onEmptyAction={isStudent ? undefined : onManageStaff} />
         {!error && totalPages > 1 && (
           <div className="pagination">
             <span>Page {page} of {totalPages}</span>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { LoaderCircle, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import Header from "../components/layout/Header.jsx";
 import Sidebar from "../components/layout/Sidebar.jsx";
 import AuthPage from "../features/auth/AuthPage.jsx";
@@ -37,7 +37,7 @@ import SchoolAppearancePage from "../features/school-themes/SchoolAppearancePage
 import ClassAttendancePage from "../features/attendance/ClassAttendancePage.jsx";
 import { fetchSchoolTheme } from "../features/school-themes/schoolThemeApi.js";
 import { applySchoolTheme } from "../features/school-themes/schoolThemeRuntime.js";
-import SchoolSetupWizard from "../features/onboarding/SchoolSetupWizard.jsx";
+import SchoolSetupChecklist from "../features/onboarding/SchoolSetupChecklist.jsx";
 import { fetchSchoolSetupStatus } from "../features/onboarding/schoolSetupApi.js";
 import ResetPasswordPage from "../features/auth/ResetPasswordPage.jsx";
 import ProfilesPage from "../features/users/ProfilesPage.jsx";
@@ -64,17 +64,24 @@ export default function App() {
   );
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.localStorage.getItem("nexa-sidebar-collapsed") === "true");
+  const [displayMode, setDisplayMode] = useState("SCHOOL");
+  const [schoolDisplayMode, setSchoolDisplayMode] = useState("LIGHT");
+  const [schoolTheme, setSchoolTheme] = useState(null);
   const [search, setSearch] = useState("");
   const [directoryPage, setDirectoryPage] = useState(1);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [schoolSetup, setSchoolSetup] = useState(null);
-  const [schoolSetupLoading, setSchoolSetupLoading] = useState(false);
-  const [schoolSetupError, setSchoolSetupError] = useState("");
+  const [showSetupHub, setShowSetupHub] = useState(true);
   const requestSignOut = useCallback(() => setConfirmingSignOut(true), []);
   const confirmSignOut = useCallback(() => {
     setConfirmingSignOut(false);
     signOut();
   }, [signOut]);
+
+  useEffect(() => {
+    setShowSetupHub(true);
+    setSchoolSetup(null);
+  }, [user?.id]);
 
   const directory = useDirectoryData({
     user,
@@ -93,39 +100,33 @@ export default function App() {
     window.localStorage.setItem("nexa-sidebar-collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const loadSchoolSetup = useCallback(async () => {
-    if (user?.role !== "SCHOOL_ADMIN" || !user.schoolId) {
-      setSchoolSetup(null);
-      setSchoolSetupLoading(false);
-      setSchoolSetupError("");
-      return;
-    }
-    setSchoolSetupLoading(true);
-    setSchoolSetupError("");
-    try {
-      setSchoolSetup(await fetchSchoolSetupStatus());
-    } catch (cause) {
-      setSchoolSetupError(cause.message);
-      if (cause.status === 401) signOut();
-    } finally {
-      setSchoolSetupLoading(false);
-    }
-  }, [user?.id, user?.role, user?.schoolId, signOut]);
+  useEffect(() => {
+    const savedMode = user?.id ? window.localStorage.getItem(`nexa-display-mode:${user.id}`) : null;
+    setDisplayMode(savedMode === "DARK" || savedMode === "LIGHT" ? savedMode : "SCHOOL");
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (schoolTheme) applySchoolTheme(schoolTheme, displayMode === "SCHOOL" ? undefined : displayMode);
+  }, [schoolTheme, displayMode]);
+
+  const effectiveDisplayMode = displayMode === "SCHOOL" ? schoolDisplayMode : displayMode;
+  const toggleDisplayMode = useCallback(() => {
+    if (!user?.id) return;
+    const nextMode = effectiveDisplayMode === "DARK" ? "LIGHT" : "DARK";
+    window.localStorage.setItem(`nexa-display-mode:${user.id}`, nextMode);
+    setDisplayMode(nextMode);
+  }, [effectiveDisplayMode, user?.id]);
 
   const refreshSchoolSetup = useCallback(async () => {
     if (user?.role !== "SCHOOL_ADMIN" || !user.schoolId) return;
     try {
-      setSchoolSetup(await fetchSchoolSetupStatus());
-      setSchoolSetupError("");
+      const setup = await fetchSchoolSetupStatus();
+      setSchoolSetup(setup);
+      if (setup.complete) loadSummary(user);
     } catch (cause) {
-      setSchoolSetupError(cause.message);
       if (cause.status === 401) signOut();
     }
-  }, [user?.role, user?.schoolId, signOut]);
-
-  useEffect(() => {
-    loadSchoolSetup();
-  }, [loadSchoolSetup]);
+  }, [user?.role, user?.schoolId, signOut, loadSummary, user]);
 
   useEffect(() => {
     if (isTeacherInvitation || !summary.school?.slug) return;
@@ -147,13 +148,18 @@ export default function App() {
     let cancelled = false;
 
     function handleThemeUpdate(event) {
-      applySchoolTheme(event.detail);
+      const theme = event.detail;
+      setSchoolDisplayMode(theme.mode === "DARK" ? "DARK" : "LIGHT");
+      setSchoolTheme(theme);
     }
 
     async function refreshSchoolTheme() {
       try {
         const theme = await fetchSchoolTheme();
-        if (!cancelled) applySchoolTheme(theme);
+        if (!cancelled) {
+          setSchoolDisplayMode(theme.mode === "DARK" ? "DARK" : "LIGHT");
+          setSchoolTheme(theme);
+        }
       } catch (cause) {
         if (!cancelled && cause.status === 401) signOut();
         // Theme loading should not prevent the rest of the dashboard from opening.
@@ -235,53 +241,6 @@ export default function App() {
         )}
       </>
     );
-  if (
-    user.role === "SCHOOL_ADMIN" &&
-    user.schoolId &&
-    (schoolSetupLoading || !schoolSetup)
-  ) {
-    return (
-      <main className="school-setup-loading-screen">
-        {schoolSetupError ? (
-          <section role="alert">
-            <p>{schoolSetupError}</p>
-            <button
-              className="primary-button"
-              type="button"
-              onClick={loadSchoolSetup}
-            >
-              Try again
-            </button>
-          </section>
-        ) : (
-          <>
-            <span className="school-setup-mark">
-              <LoaderCircle size={20} className="animate-spin" />
-            </span>
-            <p>Preparing your school workspace…</p>
-          </>
-        )}
-      </main>
-    );
-  }
-  if (
-    user.role === "SCHOOL_ADMIN" &&
-    user.schoolId &&
-    schoolSetup &&
-    !schoolSetup.complete
-  ) {
-    return (
-      <SchoolSetupWizard
-        user={user}
-        signOut={signOut}
-        onComplete={() => {
-          setSchoolSetup({ ...schoolSetup, complete: true });
-          loadSummary(user);
-        }}
-      />
-    );
-  }
-
   return (
     <div className={`app-shell ${sidebarCollapsed ? "app-shell-sidebar-collapsed" : ""}`}>
       <Sidebar
@@ -296,7 +255,6 @@ export default function App() {
         open={mobileNav}
         onClose={() => setMobileNav(false)}
         collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
       <main className="main-area">
         <Header
@@ -305,6 +263,14 @@ export default function App() {
           user={user}
           schoolId={summary.school?.id}
           onNavigate={navigate}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+          displayMode={effectiveDisplayMode}
+          onToggleDisplayMode={toggleDisplayMode}
+          setupPending={user.role === "SCHOOL_ADMIN" && Boolean(user.schoolId) && !schoolSetup?.complete}
+          setupHubOpen={showSetupHub}
+          setupProgress={schoolSetup ? schoolSetup.steps.filter((step) => step.complete).length + "/" + schoolSetup.steps.length : ""}
+          onOpenSetup={() => setShowSetupHub(true)}
         />
         <div
           className="page-content"
@@ -314,7 +280,24 @@ export default function App() {
               : "school-workspace"
           }
         >
-          {user.role === "SUPER_ADMIN" && !summary.school && page !== "subscriptions" && page !== "school-management" ? (
+          {showSetupHub && user.role === "SCHOOL_ADMIN" && user.schoolId && !schoolSetup?.complete ? (
+            <SchoolSetupChecklist
+              user={user}
+              school={summary.school}
+              signOut={signOut}
+              onDismiss={() => setShowSetupHub(false)}
+              onNavigate={(nextPage) => {
+                setShowSetupHub(false);
+                navigate(nextPage);
+              }}
+              onStatusChange={setSchoolSetup}
+              onComplete={() => {
+                setSchoolSetup((current) => current ? { ...current, complete: true } : current);
+                setShowSetupHub(false);
+                loadSummary(user);
+              }}
+            />
+          ) : user.role === "SUPER_ADMIN" && !summary.school && page !== "subscriptions" && page !== "school-management" ? (
             loading ? (
               <div className="panel">
                 <div className="empty-state">Loading schools...</div>
@@ -354,6 +337,8 @@ export default function App() {
               error={error}
               onRetry={retry}
               onNavigate={navigate}
+              schoolSetup={schoolSetup}
+              onOpenSetup={() => setShowSetupHub(true)}
             />
           ) : page === "profiles" ? (
             <ProfilesPage signOut={signOut} onSaved={updateUser} />
@@ -390,7 +375,7 @@ export default function App() {
               "TEACHER",
               "FORM_TUTOR",
             ].includes(user.role) ? (
-            user.role === "FORM_TUTOR" ? <FormTutorAssessmentsPage signOut={signOut} /> : <AssessmentsPage user={user} signOut={signOut} />
+            user.role === "FORM_TUTOR" ? <FormTutorAssessmentsPage signOut={signOut} /> : <AssessmentsPage user={user} signOut={signOut} onNavigate={navigate} />
           ) : page === "mid-term-report-cards" &&
             [
               "SCHOOL_ADMIN",
@@ -519,6 +504,7 @@ export default function App() {
               page={directoryPage}
               setPage={setDirectoryPage}
               onViewAssignments={(teacher) => navigate('teaching-assignments', { teacherId: teacher.id })}
+              onManageStaff={() => navigate('users')}
             />
           )}
         </div>

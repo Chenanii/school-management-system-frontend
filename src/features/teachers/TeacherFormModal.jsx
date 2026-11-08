@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { createTeacher, updateTeacher } from './teacherApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function TeacherFormModal({ teacher, onClose, onSaved }) {
   const editing = Boolean(teacher);
@@ -76,7 +77,7 @@ export default function TeacherFormModal({ teacher, onClose, onSaved }) {
             Staff number <span className="optional-label">Optional</span>
             <input className="text-input" name="staffNumber" maxLength={50} value={form.staffNumber} onChange={updateField} />
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className="primary-button" type="submit" disabled={busy}>

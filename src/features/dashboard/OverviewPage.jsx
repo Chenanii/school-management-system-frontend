@@ -6,7 +6,7 @@ import { formatName, initials } from '../../shared/utils/people.js';
 import ClassDistributionPanel from '../students/ClassDistributionPanel.jsx';
 import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
-export default function OverviewPage({ summary, loading, error, onRetry, onNavigate }) {
+export default function OverviewPage({ summary, loading, error, onRetry, onNavigate, schoolSetup, onOpenSetup }) {
   if (summary.user.role === 'TEACHER') {
     return <TeacherOverview summary={summary} loading={loading} error={error} onRetry={onRetry} onNavigate={onNavigate} />;
   }
@@ -18,6 +18,26 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
   }
   const recent = summary.students.slice(0, 5);
   const canSeeSchoolRecords = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(summary.user.role);
+  const quickActions = {
+    SCHOOL_ADMIN: [
+      { label: 'Add student', detail: 'Register a student', page: 'students', icon: GraduationCap },
+      { label: 'Mark attendance', detail: 'Open a class register', page: 'attendance', icon: ClipboardCheck },
+      { label: 'Enter results', detail: 'Work on assessments', page: 'assessments', icon: ClipboardList },
+      { label: 'Invite staff', detail: 'Add a teacher or staff member', page: 'users', icon: Users }
+    ],
+    ACADEMIC_ADMIN: [
+      { label: 'Add student', detail: 'Register a student', page: 'students', icon: GraduationCap },
+      { label: 'Mark attendance', detail: 'Open a class register', page: 'attendance', icon: ClipboardCheck },
+      { label: 'Enter results', detail: 'Work on assessments', page: 'assessments', icon: ClipboardList },
+      { label: 'View reports', detail: 'Check published results', page: 'report-cards', icon: FileText }
+    ],
+    FORM_TUTOR: [
+      { label: 'Mark attendance', detail: 'Open a class register', page: 'attendance', icon: ClipboardCheck },
+      { label: 'Enter results', detail: 'Work on assessments', page: 'assessments', icon: ClipboardList },
+      { label: 'View students', detail: 'Open your student register', page: 'students', icon: GraduationCap }
+    ]
+  }[summary.user.role] || [];
+  const nextSetupStep = schoolSetup?.steps?.find((step) => !step.complete);
 
   return (
     <>
@@ -41,6 +61,32 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
         </div>
       </div>
       {error && <div className="notice-error" role="alert"><span>{error}</span><button className="text-button" onClick={onRetry}>Retry</button></div>}
+      {summary.user.role === 'SCHOOL_ADMIN' && schoolSetup && !schoolSetup.complete && (
+        <section className="overview-setup-alert" role="status">
+          <span className="overview-setup-alert-icon"><CalendarDays size={18} /></span>
+          <div className="overview-setup-alert-copy">
+            <strong>Finish setting up your school</strong>
+            <span>{nextSetupStep ? 'Next suggested task: ' + nextSetupStep.title + '.' : 'Your setup progress is ready to review.'} You can continue at any time.</span>
+          </div>
+          <button className="secondary-button" type="button" onClick={onOpenSetup}>Continue setup <ArrowRight size={15} /></button>
+        </section>
+      )}
+      {quickActions.length > 0 && (
+        <section className="dashboard-quick-actions" aria-labelledby="dashboard-quick-actions-title">
+          <div className="dashboard-quick-actions-heading">
+            <div><h2 id="dashboard-quick-actions-title">Quick actions</h2><p>Go straight to a common task.</p></div>
+          </div>
+          <div className="dashboard-quick-actions-grid">
+            {quickActions.map(({ label, detail, page, icon: Icon }) => (
+              <button className="dashboard-quick-action" type="button" key={page} onClick={() => onNavigate(page)}>
+                <span className="dashboard-quick-action-icon"><Icon size={18} /></span>
+                <span><strong>{label}</strong><small>{detail}</small></span>
+                <ArrowUpRight size={16} className="dashboard-quick-action-arrow" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="stats-grid">
         <StatCard icon={GraduationCap} label="Total students" value={summary.studentCount} detail={summary.studentCount === null ? 'School administrator access required' : 'Registered in your school'} tone="stat-green" loading={loading} />
         <StatCard icon={Users} label="Total staff" value={summary.teacherCount} detail={summary.teacherCount === null ? 'School administrator access required' : 'Teachers on your team'} tone="stat-peach" loading={loading} />
@@ -56,7 +102,7 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
       </div>
       {canSeeSchoolRecords && summary.school && <ClassDistributionPanel distribution={summary.classDistribution} loading={loading || !summary.classDistribution} compact />}
       {canSeeSchoolRecords && summary.user.role !== 'SUPER_ADMIN' && <div className="content-grid">
-        <PeopleTable people={recent} type="students" loading={loading} error={error} onRetry={onRetry} compact onViewAll={() => onNavigate('students')} />
+        <PeopleTable people={recent} type="students" loading={loading} error={error} onRetry={onRetry} compact onViewAll={() => onNavigate('students')} onEmptyAction={() => onNavigate('students')} />
         <section className="panel staff-panel">
           <div className="panel-heading">
             <div>
@@ -108,9 +154,9 @@ function HeadteacherOverview({ summary, loading, error, onRetry, onNavigate }) {
     {error && <div className="notice-error" role="alert"><span>{error}</span><button className="text-button" onClick={onRetry}>Retry</button></div>}
 
     <div className="exam-workflow-stats headteacher-stats">
-      <div className="exam-workflow-stat"><span className="stat-icon stat-green"><GraduationCap size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : summary.studentCount ?? 0}</strong><span>Students</span><small>Across the school</small></span></div>
-      <div className="exam-workflow-stat"><span className="stat-icon stat-peach"><Users size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : summary.teacherCount ?? 0}</strong><span>Teaching staff</span><small>On the school team</small></span></div>
-      <div className="exam-workflow-stat"><span className="stat-icon stat-lilac"><ClipboardCheck size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '—' : followUpCount}</strong><span>Academic follow-ups</span><small>Assessment and term decisions</small></span><span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${followUpCount} ${followUpCount === 1 ? 'item' : 'items'}`}</span></div>
+      <div className="exam-workflow-stat"><span className="stat-icon stat-green"><GraduationCap size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '-' : summary.studentCount ?? 0}</strong><span>Students</span><small>Across the school</small></span></div>
+      <div className="exam-workflow-stat"><span className="stat-icon stat-peach"><Users size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '-' : summary.teacherCount ?? 0}</strong><span>Teaching staff</span><small>On the school team</small></span></div>
+      <div className="exam-workflow-stat"><span className="stat-icon stat-lilac"><ClipboardCheck size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '-' : followUpCount}</strong><span>Academic follow-ups</span><small>Assessment and term decisions</small></span><span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${followUpCount} ${followUpCount === 1 ? 'item' : 'items'}`}</span></div>
     </div>
 
     <section className="headteacher-term-banner">
@@ -195,7 +241,7 @@ function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
       {workflowStats.map(({ label, value, hint, icon: Icon, tone }) => (
         <div className="exam-workflow-stat" key={label}>
           <span className={`stat-icon ${tone}`}><Icon size={19} strokeWidth={1.8} /></span>
-          <span className="exam-workflow-stat-copy"><strong>{dataUnavailable ? '—' : value}</strong><span>{label}</span><small>{hint}</small></span>
+          <span className="exam-workflow-stat-copy"><strong>{dataUnavailable ? '-' : value}</strong><span>{label}</span><small>{hint}</small></span>
           <span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${value} ${value === 1 ? 'item' : 'items'}`}</span>
         </div>
       ))}
@@ -220,7 +266,7 @@ function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
           return <tr key={assessment.id}>
             <td><strong>{assessment.title}</strong><span className="exam-queue-meta">{type}</span></td>
             <td><strong>{examClassLabel(assessment)}</strong><span className="exam-queue-meta">{subject}</span></td>
-            <td>{assessment.term?.name || '—'}</td>
+            <td>{assessment.term?.name || '-'}</td>
             <td><span className={`exam-queue-status exam-queue-status-${assessment.status.toLowerCase()}`}>{status}</span></td>
           </tr>;
         })}</tbody>
@@ -268,7 +314,7 @@ function TeacherOverview({ summary, loading, error, onRetry, onNavigate }) {
         const assignment = assessment.teachingAssignment;
         const classLevel = assignment?.classGroup?.classLevel || assignment?.subjectStream?.classLevel || assignment?.classSubject?.classLevel;
         const classLabel = [classLevel?.name, assignment?.classGroup?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
-        return <tr key={assessment.id}><td className="font-medium text-ink">{assessment.title}</td><td className="text-muted">{[classLabel, assessment.subject?.name || assignment?.subject?.name].filter(Boolean).join(' · ') || '—'}</td><td><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessment.status.replaceAll('_', ' ')}</span></td></tr>;
+        return <tr key={assessment.id}><td className="font-medium text-ink">{assessment.title}</td><td className="text-muted">{[classLabel, assessment.subject?.name || assignment?.subject?.name].filter(Boolean).join(' · ') || '-'}</td><td><span className={`subject-status subject-status-${assessment.status.toLowerCase()}`}>{assessment.status.replaceAll('_', ' ')}</span></td></tr>;
       })}</tbody></table></div>}
       <button className="panel-footer" onClick={() => onNavigate('assessments')}>Go to assessments <ChevronRight size={15} /></button>
     </section>

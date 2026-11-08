@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, ChevronLeft, ChevronRight, Eye, LoaderCircle, Plus, Search } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 import { subjectStatuses } from './subjectApi.js';
 import SubjectDetailsModal from './SubjectDetailsModal.jsx';
 import SubjectFormModal from './SubjectFormModal.jsx';
@@ -136,19 +137,11 @@ export default function SubjectsPage({ signOut }) {
           <span className="student-total">{pagination.total} {pagination.total === 1 ? 'subject' : 'subjects'}</span>
         </div>
         {error ? (
-          <div className="table-message">
-            <p>{error}</p>
-            <button className="text-button mt-2" onClick={refresh}>Try again</button>
-          </div>
+          <FeedbackState status="error" title={error} onAction={refresh} />
         ) : loading ? (
-          <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading subjects…</span></div>
+          <FeedbackState status="loading" title="Loading subjects…" />
         ) : subjects.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><BookOpen size={22} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">{hasFilters ? 'No subjects match these filters' : 'No subjects added yet'}</p>
-            <p className="mt-1 text-xs text-muted">{hasFilters ? 'Try a different search or status filter.' : 'Add your school subjects to start building the curriculum.'}</p>
-            {!hasFilters && <button className="text-button mt-3" onClick={openCreate}>Add your first subject</button>}
-          </div>
+          <FeedbackState status="empty" icon={BookOpen} title={hasFilters ? 'No subjects match these filters' : 'No subjects added yet'} description={hasFilters ? 'Try a different search or status filter.' : 'Add your school subjects to start building the curriculum.'} actionLabel={hasFilters ? undefined : 'Add your first subject'} onAction={hasFilters ? undefined : openCreate} />
         ) : (
           <div className="overflow-x-auto">
             <table className="people-table subject-table">

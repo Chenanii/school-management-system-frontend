@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../../api.js';
 
-// These routes render their own feature pages and do not use the generic
-// directory endpoint. Keep this list aligned with the workspace navigation.
+// Feature pages load their own data. The staff directory remains on the
+// generic directory endpoint below.
 const FEATURE_PAGES = new Set([
   'overview',
   'school-profile',
@@ -19,7 +19,6 @@ const FEATURE_PAGES = new Set([
   'class-groups',
   'subjects',
   'class-subjects',
-  'staff',
   'users',
   'audit-logs',
   'subscriptions',

@@ -1,17 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ArrowUpRight,
-  CalendarDays,
   ChevronDown,
   CircleHelp,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
   X
 } from 'lucide-react';
 import Brand from './Brand.jsx';
 import { initials } from '../../shared/utils/people.js';
-import { sections } from '../../shared/navigation.js';
+import { navigationGroupOrder, sections } from '../../shared/navigation.js';
 
 export default function Sidebar({
   page,
@@ -24,11 +20,14 @@ export default function Sidebar({
   onSignOut,
   open,
   onClose,
-  collapsed = false,
-  onToggleCollapse
+  collapsed = false
 }) {
   const isSuperAdmin = user.role === 'SUPER_ADMIN';
-  const [openGroups, setOpenGroups] = useState({});
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches);
+  const [openGroups, setOpenGroups] = useState(() => {
+    const activeSection = sections.find(({ id, roles }) => id === page && (!roles || roles.includes(user.role)));
+    return { [activeSection?.group || 'Home']: true };
+  });
   const schoolName = school?.name || (isSuperAdmin ? 'Select a school' : user.schoolName || 'My school');
   const visibleSections = sections.filter(({ roles }) => !roles || roles.includes(user.role));
   const sectionGroups = visibleSections.reduce((groups, section) => {
@@ -36,11 +35,23 @@ export default function Sidebar({
     groups.set(group, [...(groups.get(group) || []), section]);
     return groups;
   }, new Map());
-  const orderedSectionGroups = [...sectionGroups.entries()].sort(([groupA], [groupB]) => {
-    if (groupA === 'Settings') return 1;
-    if (groupB === 'Settings') return -1;
-    return 0;
-  });
+  const orderedSectionGroups = [...sectionGroups.entries()].sort(([groupA], [groupB]) => (
+    navigationGroupOrder.indexOf(groupA) - navigationGroupOrder.indexOf(groupB)
+  ));
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 760px)');
+    const syncViewport = () => setIsMobile(media.matches);
+    syncViewport();
+    media.addEventListener('change', syncViewport);
+    return () => media.removeEventListener('change', syncViewport);
+  }, []);
+
+  useEffect(() => {
+    const activeSection = sections.find(({ id, roles }) => id === page && (!roles || roles.includes(user.role)));
+    const activeGroup = activeSection?.group;
+    if (activeGroup) setOpenGroups((current) => current[activeGroup] ? current : { ...current, [activeGroup]: true });
+  }, [page, user.role]);
 
   return (
     <>
@@ -48,7 +59,6 @@ export default function Sidebar({
       <aside className={`sidebar ${open ? 'sidebar-open' : ''} ${collapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="sidebar-brand">
           <Brand />
-          <button className="icon-button sidebar-collapse-toggle" onClick={onToggleCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Minimize sidebar'} title={collapsed ? 'Expand sidebar' : 'Minimize sidebar'}>{collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
           <button className="icon-button mobile-close" onClick={onClose} aria-label="Close menu"><X size={19} /></button>
         </div>
         <div className="school-switcher">
@@ -80,11 +90,17 @@ export default function Sidebar({
                 className="nav-caption nav-group-toggle"
                 type="button"
                 aria-expanded={Boolean(openGroups[group])}
+                aria-controls={'sidebar-group-' + items[0].id}
                 onClick={() => setOpenGroups((current) => ({ ...current, [group]: !current[group] }))}
               >
-                <span>{group}</span><ChevronDown size={14} className={openGroups[group] ? '' : 'nav-group-chevron-closed'} />
+                <span>{group}</span>
+                <ChevronDown size={15} className={openGroups[group] ? '' : 'nav-group-chevron-closed'} />
               </button>
-              <div className="space-y-1" hidden={!openGroups[group] && !collapsed}>
+              <div
+                id={'sidebar-group-' + items[0].id}
+                className="sidebar-nav-items"
+                hidden={!openGroups[group] && !(collapsed && !isMobile)}
+              >
                 {items.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -95,21 +111,14 @@ export default function Sidebar({
                   >
                     <Icon size={18} strokeWidth={1.8} />
                     <span>{label}</span>
-                    {id === 'students' && <span className="nav-arrow"><ArrowUpRight size={14} /></span>}
                   </button>
                 ))}
               </div>
             </div>
           ))}
-          <div className="nav-caption mt-8">Your school</div>
-          <div className="sidebar-note">
-            <div className="sidebar-note-icon"><CalendarDays size={17} /></div>
-            <p className="mt-3 text-sm font-semibold text-ink">A fresh start</p>
-            <p className="mt-1 text-xs leading-5 text-muted">Your school workspace is ready. Add your students and staff to get going.</p>
-          </div>
         </nav>
         <div className="sidebar-bottom">
-          <button className="nav-item"><CircleHelp size={18} strokeWidth={1.8} /><span>Help & support</span></button>
+          <a className="nav-item" href="mailto:nexacircuit@gmail.com?subject=School%20reporting%20support"><CircleHelp size={18} strokeWidth={1.8} /><span>Help & support</span></a>
           <div className="profile-row">
             <div className="profile-avatar">{initials(user) || 'A'}</div>
             <div className="min-w-0 flex-1">

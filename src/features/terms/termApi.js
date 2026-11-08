@@ -60,9 +60,9 @@ export function termStatusLabel(status) {
 }
 
 export function formatTermDate(value) {
-  if (!value) return '—';
+  if (!value) return '-';
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat('en', {
     day: 'numeric',
     month: 'short',

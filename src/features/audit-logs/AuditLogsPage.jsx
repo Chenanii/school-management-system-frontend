@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, History, LoaderCircle, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, History, Search } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FeedbackState from '../../components/FeedbackState.jsx';
 
 const emptyPagination = { page: 1, limit: 25, total: 0, totalPages: 1 };
 
@@ -54,6 +55,7 @@ export default function AuditLogsPage({ signOut }) {
   }, [page, search, entityType, from, to, refreshKey, signOut]);
 
   const clearFilters = () => { setSearch(''); setEntityType(''); setFrom(''); setTo(''); setPage(1); };
+  const hasFilters = Boolean(search.trim() || entityType || from || to);
 
   return (
     <>
@@ -72,9 +74,9 @@ export default function AuditLogsPage({ signOut }) {
           <label className="audit-date-filter">To<input className="filter-select" type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} /></label>
           <button className="text-button" type="button" onClick={clearFilters}>Clear</button>
         </div>
-        {error ? <div className="table-message"><p>{error}</p><button className="text-button mt-2" onClick={() => setRefreshKey((value) => value + 1)}>Try again</button></div>
-          : loading ? <div className="table-message"><LoaderCircle size={20} className="animate-spin text-green-700" /><span className="ml-2">Loading audit records…</span></div>
-            : logs.length === 0 ? <div className="empty-state"><div className="empty-state-icon"><History size={22} /></div><p className="mt-3 text-sm font-semibold text-ink">No audit records found</p><p className="mt-1 text-xs text-muted">Try changing the filters, or check again after an administrative action.</p></div>
+        {error ? <FeedbackState status="error" title={error} onAction={() => setRefreshKey((value) => value + 1)} />
+          : loading ? <FeedbackState status="loading" title="Loading audit records…" />
+            : logs.length === 0 ? <FeedbackState status="empty" icon={History} title={hasFilters ? 'No audit records match these filters' : 'No audit records yet'} description={hasFilters ? 'Clear the filters to search the full audit log.' : 'Administrative activity will appear here as it occurs.'} actionLabel={hasFilters ? 'Clear filters' : undefined} onAction={hasFilters ? clearFilters : undefined} />
               : <div className="overflow-x-auto"><table className="people-table audit-log-table"><thead><tr><th>Date and time</th><th>Administrator</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
                 {logs.map((log) => <tr key={log.id}>
                   <td className="whitespace-nowrap text-muted">{formatDate(log.createdAt)}</td>

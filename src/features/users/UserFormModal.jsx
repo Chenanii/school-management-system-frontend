@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
 import { userRoles } from './userRoles.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 const blankForm = {
   email: '',
@@ -129,7 +130,7 @@ export default function UserFormModal({ user, superAdminMode = false, onClose, o
             </label>
           )}
           {!editing && <p className="field-hint">The account stays inactive until the user follows the one-time email link and chooses a password.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className="primary-button" type="submit" disabled={busy}>

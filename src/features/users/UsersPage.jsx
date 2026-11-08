@@ -134,9 +134,9 @@ export default function UsersPage({ signOut, user }) {
                     </td>
                     <td data-label="Email address" className="whitespace-nowrap text-muted">{user.email}</td>
                     <td data-label="Role" className="whitespace-nowrap text-muted">{roleLabel(user.role)}</td>
-                    <td data-label="Staff no." className="whitespace-nowrap text-muted">{user.teacher?.staffNumber || '—'}</td>
+                    <td data-label="Staff no." className="whitespace-nowrap text-muted">{user.teacher?.staffNumber || '-'}</td>
                     <td data-label="Status"><StatusBadge status={user.status} /></td>
-                    <td data-label="Invitation" className="whitespace-nowrap text-muted">{user.invitationStatus === 'PENDING' ? 'Pending' : user.invitationStatus === 'EXPIRED' ? 'Expired' : user.invitationStatus === 'REVOKED' ? 'Revoked' : '—'}</td>
+                    <td data-label="Invitation" className="whitespace-nowrap text-muted">{user.invitationStatus === 'PENDING' ? 'Pending' : user.invitationStatus === 'EXPIRED' ? 'Expired' : user.invitationStatus === 'REVOKED' ? 'Revoked' : '-'}</td>
                     <td data-label="Created" className="whitespace-nowrap text-muted">{formatDate(user.createdAt)}</td>
                     <td data-label="Actions" className="whitespace-nowrap">
                       {user.recordType === 'LEGACY_TEACHER_INVITATION'

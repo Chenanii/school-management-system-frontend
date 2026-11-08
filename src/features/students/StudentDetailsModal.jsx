@@ -85,10 +85,10 @@ export default function StudentDetailsModal({ student, isTeacher = false, onClos
             <button className="icon-button" type="button" onClick={() => setSelectedEnrollment(null)} aria-label="Close class information"><X size={19} /></button>
           </div>
           <dl className="student-class-info-grid">
-            <div><dt>Class level</dt><dd>{selectedEnrollment.classLevel?.name || selectedEnrollment.classGroup?.classLevel?.name || '—'}</dd></div>
+            <div><dt>Class level</dt><dd>{selectedEnrollment.classLevel?.name || selectedEnrollment.classGroup?.classLevel?.name || '-'}</dd></div>
             <div><dt>Class group</dt><dd>{selectedEnrollment.classGroup?.name || 'Not assigned'}</dd></div>
-            <div><dt>Academic year</dt><dd>{selectedEnrollment.term?.academicYear?.name || '—'}</dd></div>
-            <div><dt>Term</dt><dd>{selectedEnrollment.term?.name || '—'}</dd></div>
+            <div><dt>Academic year</dt><dd>{selectedEnrollment.term?.academicYear?.name || '-'}</dd></div>
+            <div><dt>Term</dt><dd>{selectedEnrollment.term?.name || '-'}</dd></div>
             <div><dt>Form tutor</dt><dd>{enrollmentFormTutor ? `${enrollmentFormTutor.firstName} ${enrollmentFormTutor.lastName}` : 'Not assigned'}</dd></div>
             <div><dt>Enrollment status</dt><dd><StatusBadge status={selectedEnrollment.status} /></dd></div>
           </dl>

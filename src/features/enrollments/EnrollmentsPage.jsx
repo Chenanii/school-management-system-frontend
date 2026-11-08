@@ -1075,14 +1075,14 @@ export default function EnrollmentsPage({ user, signOut }) {
                       <tr key={enrollment.id}>
                         <td><div className="enrollment-student-cell"><strong>{studentName(enrollment.student)}</strong><span>{enrollment.student?.admissionNumber}</span></div></td>
                         <td className="whitespace-nowrap">{termLabel(enrollment.term)}</td>
-                        <td className="whitespace-nowrap">{enrollment.classLevel?.name || enrollment.classGroup?.classLevel?.name || '—'}</td>
+                        <td className="whitespace-nowrap">{enrollment.classLevel?.name || enrollment.classGroup?.classLevel?.name || '-'}</td>
                         <td className="whitespace-nowrap">{canManage
                           ? <select className="enrollment-stream-select" aria-label={`Assign ${studentName(enrollment.student)} to a home class group`} title={lockReason || 'Assign or move this student to a class group at the same class level.'} value={enrollment.classGroupId || ''} disabled={busyId === enrollment.id || Boolean(lockReason)} onChange={(event) => event.target.value && changeClassGroup(enrollment, event.target.value)}>
                               {!enrollment.classGroupId && <option value="">Assign home group</option>}
                               {groups.filter((group) => group.classLevelId === enrollment.classLevelId).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
                             </select>
                           : enrollment.classGroup ? classLabel(enrollment.classGroup) : 'Not assigned'}</td>
-                        <td className="text-muted">{enrollment.previousEnrollment ? `${enrollment.previousEnrollment.status.toLowerCase()} · linked` : '—'}</td>
+                        <td className="text-muted">{enrollment.previousEnrollment ? `${enrollment.previousEnrollment.status.toLowerCase()} · linked` : '-'}</td>
                         <td><span className={`subject-status subject-status-${enrollment.status.toLowerCase()}`}>{statusLabels[enrollment.status]}</span></td>
                         <td className="whitespace-nowrap text-muted">{new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(enrollment.createdAt))}</td>
                         {canManage && <td><div className="enrollment-status-control"><select className="status-action" aria-label={`Update ${studentName(enrollment.student)} enrollment status`} value={enrollment.status} disabled={busyId === enrollment.id} onChange={(event) => changeStatus(enrollment, event.target.value)}>{enrollmentStatuses.map((item) => <option key={item} value={item}>{statusLabels[item]}</option>)}</select>{busyId === enrollment.id && <LoaderCircle size={14} className="animate-spin text-green-700" />}</div></td>}

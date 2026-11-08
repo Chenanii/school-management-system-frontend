@@ -161,7 +161,7 @@ export default function TeachersPage({ signOut }) {
                         </div>
                       </td>
                       <td className="whitespace-nowrap text-muted">{teacher.email}</td>
-                      <td className="whitespace-nowrap text-muted">{teacher.staffNumber || '—'}</td>
+                      <td className="whitespace-nowrap text-muted">{teacher.staffNumber || '-'}</td>
                       <td><span className={`subject-status subject-status-${status.tone}`}>{status.label}</span></td>
                       <td className="text-muted">{teacher._count?.assignments ?? 0}</td>
                       <td className="whitespace-nowrap text-muted">{formatDate(teacher.createdAt)}</td>

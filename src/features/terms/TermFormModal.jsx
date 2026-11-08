@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { saveTerm } from './termApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 function dateInputValue(value) {
   return value ? String(value).slice(0, 10) : '';
@@ -115,7 +116,7 @@ export default function TermFormModal({ term, academicYears, initialAcademicYear
             <span className="field-hint">A value from 0 to 100. Leave blank if no annual weight is set.</span>
           </label>
           {locked && <p className="form-hint">This term is finalized, published, or closed. Its details cannot be edited.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || (!editing && academicYears.length === 0) || locked}>

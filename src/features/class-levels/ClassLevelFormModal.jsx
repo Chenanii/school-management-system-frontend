@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { apiRequest } from '../../api.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function ClassLevelFormModal({ level, levels, signOut, onClose, onSaved }) {
   const editing = Boolean(level);
@@ -128,8 +129,8 @@ export default function ClassLevelFormModal({ level, levels, signOut, onClose, o
           ) : (
             <p className="field-hint">Create a grading scale before calculating results.</p>
           )}
-          {gradeScaleError && <p className="form-error" role="alert">Grading scales could not be loaded: {gradeScaleError}</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {gradeScaleError && <FormFeedback message={`Grading scales could not be loaded: ${gradeScaleError}`} />}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || loadingGradeScales || Boolean(gradeScaleError) || (gradeScales.length > 1 && !form.gradeScaleId)}>

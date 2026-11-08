@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LoaderCircle, X } from 'lucide-react';
 import { datetimeInputValue, datetimePayloadValue, statusLabel, subscriptionStatuses, updateSubscription } from './subscriptionApi.js';
+import FormFeedback from '../../components/FormFeedback.jsx';
 
 export default function SubscriptionStatusModal({ subscription, signOut, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -67,7 +68,7 @@ export default function SubscriptionStatusModal({ subscription, signOut, onClose
             Admin notes <span className="optional-label">Optional</span>
             <textarea className="text-input subscription-description" name="notes" maxLength={1000} value={form.notes} onChange={updateField} />
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && <FormFeedback message={error} />}
           <div className="modal-actions">
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving}>
