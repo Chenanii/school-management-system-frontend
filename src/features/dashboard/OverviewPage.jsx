@@ -4,6 +4,7 @@ import PeopleTable from '../directory/PeopleTable.jsx';
 import StatusBadge from '../directory/StatusBadge.jsx';
 import { formatName, initials } from '../../shared/utils/people.js';
 import ClassDistributionPanel from '../students/ClassDistributionPanel.jsx';
+import ExamResultsStatus from './ExamResultsStatus.jsx';
 import nexaLogo from '../../assets/Nexa-Logo-Final.png';
 
 export default function OverviewPage({ summary, loading, error, onRetry, onNavigate, schoolSetup, onOpenSetup }) {
@@ -18,6 +19,7 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
   }
   const recent = summary.students.slice(0, 5);
   const canSeeSchoolRecords = ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(summary.user.role);
+  const canSeeExamResultsStatus = ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(summary.user.role);
   const quickActions = {
     SCHOOL_ADMIN: [
       { label: 'Add student', detail: 'Register a student', page: 'students', icon: GraduationCap },
@@ -87,6 +89,7 @@ export default function OverviewPage({ summary, loading, error, onRetry, onNavig
           </div>
         </section>
       )}
+      {canSeeExamResultsStatus && summary.school && <ExamResultsStatus schoolId={summary.school.id} onNavigate={onNavigate} />}
       <div className="stats-grid">
         <StatCard icon={GraduationCap} label="Total students" value={summary.studentCount} detail={summary.studentCount === null ? 'School administrator access required' : 'Registered in your school'} tone="stat-green" loading={loading} />
         <StatCard icon={Users} label="Total staff" value={summary.teacherCount} detail={summary.teacherCount === null ? 'School administrator access required' : 'Teachers on your team'} tone="stat-peach" loading={loading} />
@@ -158,6 +161,8 @@ function HeadteacherOverview({ summary, loading, error, onRetry, onNavigate }) {
       <div className="exam-workflow-stat"><span className="stat-icon stat-peach"><Users size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '-' : summary.teacherCount ?? 0}</strong><span>Teaching staff</span><small>On the school team</small></span></div>
       <div className="exam-workflow-stat"><span className="stat-icon stat-lilac"><ClipboardCheck size={19} /></span><span className="exam-workflow-stat-copy"><strong>{loading || error ? '-' : followUpCount}</strong><span>Academic follow-ups</span><small>Assessment and term decisions</small></span><span className="exam-stat-count">{loading ? 'Loading' : error ? 'Unavailable' : `${followUpCount} ${followUpCount === 1 ? 'item' : 'items'}`}</span></div>
     </div>
+
+    {summary.school && <ExamResultsStatus schoolId={summary.school.id} onNavigate={onNavigate} />}
 
     <section className="headteacher-term-banner">
       <span className="headteacher-term-icon"><CalendarDays size={18} /></span>
@@ -246,6 +251,8 @@ function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
         </div>
       ))}
     </div>
+
+    {summary.school && <ExamResultsStatus schoolId={summary.school.id} onNavigate={onNavigate} />}
 
     <section className="panel exam-work-queue">
       <div className="panel-heading">
