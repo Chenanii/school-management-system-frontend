@@ -16,7 +16,7 @@ export function saveMidTermReportDetails(enrollmentId, details) {
 }
 
 // Strict by default: the server answers 409 MID_TERM_RESULTS_INCOMPLETE until every subject is
-// graded from approved and locked assessments. Pass { allowIncomplete: true } to see what is missing.
+// graded from approved assessments. Pass { allowIncomplete: true } to see what is missing.
 export function fetchClassGroupMidTermReportCards(termId, classGroupId, options) {
   return apiRequest(withOptions(`${BASE_PATH}/terms/${termId}/class-groups/${classGroupId}`, options));
 }

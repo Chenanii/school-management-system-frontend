@@ -11,14 +11,13 @@ export const assessmentStatuses = [
   { value: 'OPEN', label: 'Open' },
   { value: 'SUBMITTED', label: 'Submitted' },
   { value: 'APPROVED', label: 'Approved' },
-  { value: 'LOCKED', label: 'Locked' }
+  { value: 'LOCKED', label: 'Locked (legacy)' }
 ];
 
 export const assessmentTransitions = {
   DRAFT: 'OPEN',
   OPEN: 'SUBMITTED',
-  SUBMITTED: 'APPROVED',
-  APPROVED: 'LOCKED'
+  SUBMITTED: 'APPROVED'
 };
 
 export const resultStatuses = [

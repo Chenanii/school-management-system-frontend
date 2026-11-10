@@ -66,7 +66,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
           <div>
             <p className="eyebrow">{editing ? 'Assessment setup' : 'New assessment'}</p>
             <h2 id="assessment-form-title">{editing ? 'Edit assessment' : 'Create an assessment'}</h2>
-            <p>{editing ? 'Draft or open assessments without saved results can be edited.' : 'Choose a teaching assignment to set the class, subject, and term. Marks are entered out of 100.'}</p>
+            <p>{editing ? 'Draft or open assessments without saved results can be edited.' : 'Choose a teaching assignment to set the class, subject, and term. New assessments open immediately for mark entry.'}</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close"><X size={19} /></button>
         </div>
@@ -112,7 +112,7 @@ export default function AssessmentFormModal({ assessment, assignments, terms, si
             <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Cancel</button>
             <button className="primary-button" type="submit" disabled={saving || (!canEdit && !canSetExamDateOnly) || (isExam && !form.assessmentDate) || (!editing && (!selectedAssignment || !canCreateForSelectedTerm))}>
               {saving && <LoaderCircle size={16} className="animate-spin" />}
-              {saving ? 'Saving…' : editing ? 'Save changes' : 'Create assessment'}
+              {saving ? 'Saving…' : editing ? 'Save changes' : 'Create and open assessment'}
             </button>
           </div>
         </form>

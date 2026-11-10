@@ -92,7 +92,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
   const counts = {
     inProgress: termAssessments.filter((item) => ['DRAFT', 'OPEN'].includes(item.status)).length,
     review: termAssessments.filter((item) => item.status === 'SUBMITTED').length,
-    readyToLock: termAssessments.filter((item) => item.status === 'APPROVED').length,
+    approved: termAssessments.filter((item) => ['APPROVED', 'LOCKED'].includes(item.status)).length,
   };
   const totalCards = Object.values(readiness).reduce((sum, item) => sum + (item.cards?.length || 0), 0);
   const readyCards = Object.values(readiness).reduce((sum, item) => sum + (item.cards || []).filter((card) => card.complete).length, 0);
@@ -153,7 +153,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
       { Metric: 'Term', Value: `${term?.academicYear?.name ? `${term.academicYear.name} · ` : ''}${term?.sequence}. ${term?.name || ''}` },
       { Metric: 'Assessments in progress', Value: counts.inProgress },
       { Metric: 'Assessments awaiting review', Value: counts.review },
-      { Metric: 'Assessments approved to lock', Value: counts.readyToLock },
+      { Metric: 'Assessments approved and report-ready', Value: counts.approved },
       { Metric: 'Students ready for reports', Value: readyCards },
       { Metric: 'Students checked for report readiness', Value: totalCards },
       { Metric: 'Student issue rows', Value: blockerRows.length },
@@ -184,7 +184,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
               : <>
                 <div className="exam-results-progress-copy"><strong>{readinessLoading ? '…' : readinessPercent === null ? '—' : `${readinessPercent}%`}</strong><span>{readinessLoading ? `Checking ${reportStage === 'MID_TERM' ? 'mid-term' : 'end-of-term'} report readiness` : readinessErrorCount ? `Could not check ${readinessErrorCount} class${readinessErrorCount === 1 ? '' : 'es'}` : readinessPercent === null ? 'No student reports to check' : `${readyCards} of ${totalCards} students have complete ${reportStage === 'MID_TERM' ? 'mid-term' : 'end-of-term'} results`}</span></div>
                 <div className="exam-results-progress-track" role="progressbar" aria-label={`${reportStage === 'MID_TERM' ? 'Mid-term' : 'End-of-term'} report readiness`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={readinessPercent ?? 0}><span style={{ width: `${readinessPercent ?? 0}%` }} /></div>
-                <div className="exam-results-summary-meta"><span>{counts.review} awaiting review</span><span>{counts.inProgress} marks in progress</span><span>{counts.readyToLock} approved to lock</span></div>
+                <div className="exam-results-summary-meta"><span>{counts.review} awaiting review</span><span>{counts.inProgress} marks in progress</span><span>{counts.approved} approved for reports</span></div>
               </>}
       </div>
       <button className="exam-results-toggle" type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-controls="exam-results-details" disabled={loading || Boolean(error) || !termId}>
@@ -200,7 +200,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
             <div className="exam-results-metrics">
               <div><span>Marks in progress</span><strong>{counts.inProgress}</strong></div>
               <div><span>Awaiting review</span><strong>{counts.review}</strong></div>
-              <div><span>Approved to lock</span><strong>{counts.readyToLock}</strong></div>
+              <div><span>Approved for reports</span><strong>{counts.approved}</strong></div>
               <div><span>Reports ready</span><strong>{readyCards} / {totalCards}</strong></div>
             </div>
             <div className="overflow-x-auto">

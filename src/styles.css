@@ -4907,7 +4907,8 @@ select:focus-visible,
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.assessment-workflow-stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.assessment-workflow-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+.assessment-workflow-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0; padding: 0; list-style: none; }
 .assessment-workflow-stages li { display: flex; align-items: flex-start; gap: .6rem; min-width: 0; }
 .assessment-workflow-stages li > span { display: grid; place-items: center; flex: 0 0 1.65rem; height: 1.65rem; border-radius: 999px; background: #eaf3ed; color: #25634a; font-size: .75rem; font-weight: 700; }
 .assessment-workflow-stages li div { display: grid; gap: .2rem; }

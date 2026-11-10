@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LoaderCircle, Save, X } from 'lucide-react';
 import { fetchAssessmentResults, resultStatuses, saveAssessmentResults } from './assessmentApi.js';
 import AssessmentPopup from './AssessmentPopup.jsx';
+import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 
 function rowSnapshot(row) {
   return {
@@ -36,6 +37,13 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
   const attendanceRestrictedExam = ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType);
   const examDateLabel = assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : '';
   const dirtyRows = useMemo(() => changedRows(rows, originalRows), [originalRows, rows]);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  function requestClose() {
+    if (saving) return;
+    if (dirtyRows.length) setConfirmDiscard(true);
+    else onClose();
+  }
 
   const loadResults = useCallback(async () => {
     setError('');
@@ -113,7 +121,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget && !saving) onClose();
+      if (event.target === event.currentTarget) requestClose();
     }}>
       <AssessmentPopup message={error} onDismiss={() => setError('')} />
       <AssessmentPopup message={notice} type="success" onDismiss={() => setNotice('')} />
@@ -122,11 +130,20 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           <div>
             <p className="eyebrow">Results entry · Maximum {Number(assessment.maxMark)}</p>
             <h2 id="assessment-results-title">{assessment.title}</h2>
-            <p>{assessment.teachingAssignment?.subjectStream?.classLevel?.name || assessment.teachingAssignment?.classGroup?.classLevel?.name || assessment.teachingAssignment?.classSubject?.classLevel?.name || 'Class'} · {assessment.subject?.name}{assessment.teachingAssignment?.subjectStream?.name ? ` · Stream ${assessment.teachingAssignment.subjectStream.name}` : ''}</p>
+            <p>{[
+              assessment.teachingAssignment?.classGroup?.classLevel?.name
+                || assessment.teachingAssignment?.subjectStream?.classLevel?.name
+                || assessment.teachingAssignment?.classSubject?.classLevel?.name,
+              assessment.teachingAssignment?.classGroup?.name,
+              assessment.teachingAssignment?.subjectStream?.name && `Stream ${assessment.teachingAssignment.subjectStream.name}`,
+              assessment.subject?.name,
+            ].filter(Boolean).join(' · ') || 'Class and subject unavailable'}</p>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Close" disabled={saving}><X size={19} /></button>
+          <button className="icon-button" type="button" onClick={requestClose} aria-label="Close" disabled={saving}><X size={19} /></button>
         </div>
-        {locked && <p className="form-hint mt-4">Existing results are read only. Students enrolled after submission can still receive their first result.</p>}
+        {['APPROVED', 'LOCKED'].includes(assessment.status)
+          ? <p className="form-hint mt-4">Approved results are read only. An administrator must reset this assessment before making corrections.</p>
+          : locked && <p className="form-hint mt-4">Existing results are read only. Students enrolled after submission can still receive their first result.</p>}
         {attendanceRestrictedExam && <p className="form-hint mt-4">Only students marked PRESENT in class attendance on {examDateLabel || 'the exam date'} are initially eligible for a result. Administrators can reopen a submitted exam to approve corrections for absent students.</p>}
         {rows.some((row) => row.approvedAbsenceCorrection) && <p className="form-hint mt-2">An administrator reopened this exam. Absent students shown below may now receive their approved makeup result.</p>}
         {loading ? (
@@ -177,7 +194,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           </>
         )}
         <div className="modal-actions assessment-results-actions">
-          <button className="secondary-button" type="button" onClick={onClose} disabled={saving}>Close</button>
+          <button className="secondary-button" type="button" onClick={requestClose} disabled={saving}>Close</button>
           {rows.length > 0 && dirtyRows.length > 0 && (
             <button className="primary-button" type="button" onClick={saveChanges} disabled={saving || loading || dirtyRows.length === 0}>
               {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
@@ -186,6 +203,14 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           )}
         </div>
       </section>
+      {confirmDiscard && <ConfirmActionModal
+        title="Discard unsaved marks?"
+        message="Your changes in this assessment have not been saved. Close the dialog and discard them?"
+        confirmLabel="Discard changes"
+        tone="danger"
+        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={onClose}
+      />}
     </div>
   );
 }

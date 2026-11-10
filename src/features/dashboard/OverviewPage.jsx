@@ -213,16 +213,16 @@ function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
   const assessments = summary.assessments || [];
   const open = assessments.filter((item) => item.status === 'OPEN');
   const awaitingReview = assessments.filter((item) => item.status === 'SUBMITTED');
-  const readyToLock = assessments.filter((item) => item.status === 'APPROVED');
+  const approved = assessments.filter((item) => ['APPROVED', 'LOCKED'].includes(item.status));
   const statusOrder = { SUBMITTED: 0, APPROVED: 1, OPEN: 2, DRAFT: 3 };
   const workQueue = assessments
-    .filter((item) => item.status !== 'LOCKED')
+    .filter((item) => !['APPROVED', 'LOCKED'].includes(item.status))
     .sort((a, b) => (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4))
     .slice(0, 6);
   const workflowStats = [
     { label: 'Marks in progress', value: open.length, hint: 'Open assessments', icon: Clock3, tone: 'stat-peach' },
     { label: 'Awaiting review', value: awaitingReview.length, hint: 'Submitted for approval', icon: ClipboardCheck, tone: 'stat-lilac' },
-    { label: 'Ready to lock', value: readyToLock.length, hint: 'Approved assessments', icon: LockKeyhole, tone: 'stat-green' }
+    { label: 'Approved for reports', value: approved.length, hint: 'Results ready for reports', icon: LockKeyhole, tone: 'stat-green' }
   ];
   const actions = [
     { label: 'Assessments', detail: 'Review marks and workflow', page: 'assessments', icon: ClipboardList },
@@ -269,7 +269,7 @@ function ExamOfficerOverview({ summary, loading, error, onRetry, onNavigate }) {
           const assignment = assessment.teachingAssignment;
           const subject = assessment.subject?.name || assignment?.subject?.name || assignment?.classSubject?.subject?.name || 'Subject';
           const type = assessment.assessmentType?.replaceAll('_', ' ').toLowerCase() || 'assessment';
-          const status = { DRAFT: 'Needs opening', OPEN: 'Marks in progress', SUBMITTED: 'Awaiting review', APPROVED: 'Ready to lock' }[assessment.status] || assessment.status;
+          const status = { DRAFT: 'Needs opening', OPEN: 'Marks in progress', SUBMITTED: 'Awaiting review', APPROVED: 'Approved for reports', LOCKED: 'Approved for reports' }[assessment.status] || assessment.status;
           return <tr key={assessment.id}>
             <td><strong>{assessment.title}</strong><span className="exam-queue-meta">{type}</span></td>
             <td><strong>{examClassLabel(assessment)}</strong><span className="exam-queue-meta">{subject}</span></td>

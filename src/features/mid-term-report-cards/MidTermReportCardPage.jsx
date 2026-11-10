@@ -100,7 +100,7 @@ function MissingItemsPanel({ reportCards }) {
       <div className="report-card-selection-heading">
         <div>
           <h2>Missing before mid-term reports can be finalised</h2>
-          <p>{incompleteStudents} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} still need attention. Every subject needs at least 2 coursework assessments plus the mid-term exam, all approved and locked, with recorded results and a calculated grade.</p>
+          <p>{incompleteStudents} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} still need attention. Every subject needs at least 2 coursework assessments plus the mid-term exam, all approved, with recorded results and a calculated grade.</p>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -149,9 +149,10 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       setError('');
       try {
         if (['TEACHER', 'FORM_TUTOR'].includes(user.role)) {
-          const [assignments, termData] = await Promise.all([
+          const [assignments, termData, groupData] = await Promise.all([
             user.role === 'TEACHER' ? fetchAllPages('/teaching-assignments') : Promise.resolve([]),
-            fetchAllPages('/terms')
+            fetchAllPages('/terms'),
+            user.role === 'TEACHER' ? fetchAllPages('/class-groups') : Promise.resolve([])
           ]);
           if (!cancelled) {
             const uniqueById = (items) => [...new Map(items.map((item) => [item.id, item])).values()];
@@ -159,7 +160,8 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
             setTerms(user.role === 'TEACHER'
               ? uniqueById([...assignments.map((assignment) => assignment.term), ...termData].filter(Boolean))
               : termData);
-            setGroups(uniqueById(assignments.map((assignment) => assignment.classGroup).filter(Boolean)));
+            const assignedGroups = groupData.filter((group) => assignments.some((assignment) => assignment.termId && (assignment.classGroupId === group.id || assignment.subjectStream?.classLevelId === group.classLevelId)));
+            setGroups(uniqueById([...assignments.map((assignment) => assignment.classGroup).filter(Boolean), ...assignedGroups]));
           }
           return;
         }
@@ -207,7 +209,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
 
   const availableGroups = ['TEACHER', 'FORM_TUTOR'].includes(user.role)
     ? [...new Map([
-        ...groups.filter((group) => teacherAssignments.some((assignment) => assignment.classGroupId === group.id && assignment.termId === termId)),
+        ...groups.filter((group) => teacherAssignments.some((assignment) => assignment.termId === termId && (assignment.classGroupId === group.id || assignment.subjectStream?.classLevelId === group.classLevelId))),
         ...formTutorGroups
       ].map((group) => [group.id, group])).values()]
     : groups;
@@ -337,7 +339,7 @@ export default function MidTermReportCardsPage({ user, signOut, onNavigate }) {
       {batchReportCards && (
         <section className="report-card-preview report-card-batch">
           <div className="report-card-actions no-print">
-            <span>{batchReportCards.length} complete mid-term report{batchReportCards.length === 1 ? '' : 's'} loaded. Every subject is graded from approved and locked assessments.</span>
+            <span>{batchReportCards.length} complete mid-term report{batchReportCards.length === 1 ? '' : 's'} loaded. Every subject is graded from approved assessments.</span>
             <button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button>
           </div>
           {!batchReportCards.length

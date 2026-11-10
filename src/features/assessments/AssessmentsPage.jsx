@@ -5,6 +5,7 @@ import AssessmentResultsModal from './AssessmentResultsModal.jsx';
 import FormFeedback from '../../components/FormFeedback.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
 import FormTutorReportDetailsPanel from './FormTutorReportDetailsPanel.jsx';
+import { fetchClassGroupMidTermReportCards } from '../mid-term-report-cards/midTermReportCardApi.js';
 import {
   assessmentStatusLabel,
   assessmentStatuses,
@@ -20,11 +21,9 @@ import {
 } from './assessmentApi.js';
 
 const workflowStages = [
-  ['Draft', 'Prepare the assessment'],
   ['Open', 'Enter marks'],
   ['Submitted', 'Review submitted marks'],
-  ['Approved', 'Lock results'],
-  ['Locked', 'Generate class reports']
+  ['Approved', 'Generate class reports']
 ];
 
 function nextStepDescription(status, role) {
@@ -33,8 +32,8 @@ function nextStepDescription(status, role) {
   if (status === 'SUBMITTED') return ['TEACHER', 'FORM_TUTOR'].includes(role)
     ? 'Submitted; waiting for an administrator to review.'
     : 'Review submitted marks before approving.';
-  if (status === 'APPROVED') return 'Lock results when they are ready for reports.';
-  if (status === 'LOCKED') return 'Results are locked and ready for report generation.';
+  if (status === 'APPROVED') return 'Approved results are ready for report generation.';
+  if (status === 'LOCKED') return 'Legacy locked results are ready for report generation.';
   return '';
 }
 
@@ -62,6 +61,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
   const [busyId, setBusyId] = useState('');
   const [pendingReset, setPendingReset] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [reportNavigationLoading, setReportNavigationLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +201,45 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
     setRefreshKey((current) => current + 1);
   }
 
+  async function openCurrentReports() {
+    if (reportNavigationLoading) return;
+    setReportNavigationLoading(true);
+    setActionError('');
+    let destination = 'mid-term-report-cards';
+    const selectedTerm = termMap.get(termFilter) || currentTerm;
+
+    try {
+      if (selectedTerm) {
+        const groups = await fetchAllPages('/class-groups');
+        const termGroups = groups.filter((group) => (
+          !selectedTerm.academicYearId
+          || !group.academicYearId
+          || group.academicYearId === selectedTerm.academicYearId
+        ));
+        const midTermRows = await Promise.all(termGroups.map(async (group) => {
+          try {
+            const result = await fetchClassGroupMidTermReportCards(selectedTerm.id, group.id, { allowIncomplete: true });
+            return { cards: result.data || [], publication: result.publication || null };
+          } catch (cause) {
+            return { error: cause.message || 'Could not check mid-term publication.' };
+          }
+        }));
+        const enrolledClasses = midTermRows.filter((row) => row.cards?.length > 0);
+        const allMidTermReportsPublished = midTermRows.length > 0
+          && !midTermRows.some((row) => row.error)
+          && enrolledClasses.length > 0
+          && enrolledClasses.every((row) => Boolean(row.publication?.publishedAt));
+        if (allMidTermReportsPublished) destination = 'report-cards';
+      }
+    } catch {
+      // If publication status cannot be confirmed, keep the workflow on mid-term reports.
+    } finally {
+      setReportNavigationLoading(false);
+    }
+
+    onNavigate(destination);
+  }
+
   function openCreate() {
     setFormAssessment(null);
     setFormOpen(true);
@@ -231,6 +270,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
         const incompleteResults = resultRows.filter((result) => {
           if (assessment.adminReopened && ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType)
             && ['ABSENT', 'NOT_ENTERED'].includes(result.status) && (result.mark == null || result.mark === '')) return false;
+          if (['ABSENT', 'EXEMPT'].includes(result.status)) return false;
           if (result.status !== 'PRESENT' || result.mark == null || String(result.mark).trim() === '') return true;
           const mark = Number(result.mark);
           return !Number.isFinite(mark) || mark < 0 || mark > maxMark;
@@ -243,7 +283,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
           ));
           const extraCount = incompleteResults.length - names.length;
           setActionError(
-            `Assessment was not submitted to admins: ${incompleteResults.length} eligible student${incompleteResults.length === 1 ? '' : 's'} do not have a valid numeric mark. Enter a mark from 0 to ${maxMark} for every student${names.length ? ` (${names.join(', ')}${extraCount > 0 ? `, and ${extraCount} more` : ''})` : ''}.`,
+            `Assessment was not submitted to admins: ${incompleteResults.length} eligible student${incompleteResults.length === 1 ? '' : 's'} do not have a recorded result. Enter a mark from 0 to ${maxMark} for students marked present, or record absent or exempt${names.length ? ` (${names.join(', ')}${extraCount > 0 ? `, and ${extraCount} more` : ''})` : ''}.`,
           );
           return;
         }
@@ -325,8 +365,13 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
       <section className="assessment-workflow-guide" aria-label="Assessment to report workflow">
         <div className="assessment-workflow-guide-heading">
           <div><strong>From mark entry to reports</strong><span>Each assessment’s status shows the next step.</span></div>
-          {['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER', 'TEACHER'].includes(user.role) && (
-            <button className="secondary-button assessment-workflow-link" type="button" onClick={() => onNavigate('report-cards')}>Open report cards <ArrowRight size={14} /></button>
+          {['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role) && (
+            <div className="assessment-workflow-links">
+              <button className="secondary-button assessment-workflow-link" type="button" onClick={openCurrentReports} disabled={reportNavigationLoading}>
+                {reportNavigationLoading ? <LoaderCircle size={14} className="animate-spin" /> : null}
+                {reportNavigationLoading ? 'Checking report status…' : 'Open reports'} <ArrowRight size={14} />
+              </button>
+            </div>
           )}
         </div>
         <ol className="assessment-workflow-stages">
@@ -428,11 +473,11 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
                   const className = [classLevel?.name, group?.name, assignment?.subjectStream?.name ? `Stream ${assignment.subjectStream.name}` : ''].filter(Boolean).join(' · ');
                   const term = termMap.get(assessment.termId) || assessment.term;
                   const nextStatus = assessmentTransitions[assessment.status];
-                  const nextActionLabel = ({ DRAFT: 'Open for marks', OPEN: 'Submit for review', SUBMITTED: 'Approve results', APPROVED: 'Lock results' })[assessment.status] || assessmentStatusLabel(nextStatus);
+                  const nextActionLabel = ({ DRAFT: 'Open for marks', OPEN: 'Submit for review', SUBMITTED: 'Approve results' })[assessment.status] || assessmentStatusLabel(nextStatus);
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
-                  const canDelete = assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0;
-                  const canReset = term?.status !== 'CLOSED'
+                  const canDelete = assessment.canDelete ?? (assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0);
+                  const canReset = (assessment.canReset ?? ['DRAFT', 'OPEN'].includes(term?.status))
                     && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
                     && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
                   return (
@@ -458,7 +503,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Open marks for this assessment">{assessment.status === 'DRAFT' || assessment.status === 'OPEN' ? ((assessment._count?.results ?? 0) > 0 ? 'Update marks' : 'Enter marks') : ['SUBMITTED', 'APPROVED'].includes(assessment.status) && !['TEACHER', 'FORM_TUTOR'].includes(user.role) ? 'Review marks' : 'View marks'}</button>
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
-                          {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete draft assessment"><Trash2 size={14} /> Delete</button>}
+                          {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete assessment without saved results"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (
                             <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`${nextActionLabel} assessment`}>
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
@@ -519,7 +564,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
       />}
       {pendingDelete && <ConfirmActionModal
         title="Delete this assessment?"
-        message={`“${pendingDelete.title}” will be permanently deleted. Only draft assessments without saved results can be deleted.`}
+        message={`“${pendingDelete.title}” will be permanently deleted. Assessments without saved results can be deleted while their term is editable and reports have not been published.`}
         confirmLabel={busyId === pendingDelete.id ? 'Deleting…' : 'Delete assessment'}
         confirmDisabled={busyId === pendingDelete.id}
         onCancel={() => setPendingDelete(null)}

@@ -80,7 +80,7 @@ export function ReportCardPaper({ reportCard, canEditDetails = false }) {
   );
 }
 
-function ReadinessPanel({ reportCards, canPublish, publishing, onPublish }) {
+function ReadinessPanel({ reportCards }) {
   const incomplete = reportCards.filter((card) => !card.complete);
   const rows = incomplete.flatMap((card) => card.summary.requiredSubjects === 0
     ? [{ key: `${card.enrollment.id}-subjects`, student: studentName(card.student), admissionNumber: card.student?.admissionNumber, subject: '-', issue: 'No required subjects are configured for this class.' }]
@@ -94,7 +94,7 @@ function ReadinessPanel({ reportCards, canPublish, publishing, onPublish }) {
 
   return (
     <section className="panel report-card-selection no-print">
-      <div className="report-card-selection-heading"><div><h2>End-of-term report readiness</h2><p>{incomplete.length} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} need attention. Approved and locked assessments still need to be calculated, finalized, and published.</p></div>{canPublish && <button className="primary-button" type="button" onClick={onPublish} disabled={publishing}>{publishing ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishing ? 'Calculating and publishing…' : 'Calculate and publish all results'}</button>}</div>
+      <div className="report-card-selection-heading"><div><h2>End-of-term report readiness</h2><p>{incomplete.length} of {reportCards.length} student{reportCards.length === 1 ? '' : 's'} need attention. Approved assessments still need to be calculated, finalized, and published.</p></div></div>
       {incomplete.length === 0
         ? <div className="table-message">Every student is ready. Select “View / download all reports” to generate the reports.</div>
         : <div className="overflow-x-auto"><table className="people-table"><thead><tr><th>Student</th><th>Subject</th><th>What is missing</th></tr></thead><tbody>{rows.map((row) => <tr key={row.key}><td><strong>{row.student}</strong><span className="report-card-subject-code">{row.admissionNumber}</span></td><td>{row.subject}</td><td>{row.issue}</td></tr>)}</tbody></table></div>}
@@ -147,12 +147,13 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
       setError('');
       try {
         if (user.role === 'TEACHER') {
-          const assignments = await fetchAllPages('/teaching-assignments');
+          const [assignments, groupData] = await Promise.all([fetchAllPages('/teaching-assignments'), fetchAllPages('/class-groups')]);
           if (!cancelled) {
             const uniqueById = (items) => [...new Map(items.map((item) => [item.id, item])).values()];
             setTeacherAssignments(assignments);
             setTerms(uniqueById(assignments.map((assignment) => assignment.term).filter(Boolean)));
-            setGroups(uniqueById(assignments.map((assignment) => assignment.classGroup).filter(Boolean)));
+            const assignedGroups = groupData.filter((group) => assignments.some((assignment) => assignment.classGroupId === group.id || assignment.subjectStream?.classLevelId === group.classLevelId));
+            setGroups(uniqueById([...assignments.map((assignment) => assignment.classGroup).filter(Boolean), ...assignedGroups]));
           }
           return;
         }
@@ -178,8 +179,9 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
   }, [signOut, user.role]);
 
   const availableGroups = user.role === 'TEACHER'
-    ? groups.filter((group) => teacherAssignments.some((assignment) => assignment.classGroupId === group.id && assignment.termId === termId))
+    ? groups.filter((group) => teacherAssignments.some((assignment) => assignment.termId === termId && (assignment.classGroupId === group.id || assignment.subjectStream?.classLevelId === group.classLevelId)))
     : groups;
+  const selectedTermIsFinalized = terms.some((term) => term.id === termId && term.status === 'FINALIZED');
 
   async function loadBatchReportCards() {
     if (!termId || !classGroupId) return;
@@ -315,7 +317,7 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
       </div>
       {error && <ToastMessage onDismiss={() => { setError(''); setErrorCode(''); }}><span>{error}</span>{errorCode === 'END_OF_TERM_ASSESSMENTS_INCOMPLETE' && !readinessReportCards && <button className="text-button" type="button" onClick={loadReadiness} disabled={loadingReadiness}>{loadingReadiness ? 'Checking…' : 'Check readiness'}</button>}{errorCode === 'CLASS_LEVEL_GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('class-levels')}>Assign a grading scale to this class level</button>}{errorCode === 'GRADE_SCALE_NOT_CONFIGURED' && <button className="text-button" type="button" onClick={() => onNavigate('grading-scales')}>Create a grade scale</button>}</ToastMessage>}
       {notice && <ToastMessage type="success" onDismiss={() => setNotice('')}>{notice}</ToastMessage>}
-      <AssessmentPopup message={paymentRequired ? 'Subscription payment has not been confirmed for this finalized term. Please make payment before publishing or downloading reports.' : finalExamResultsStarted ? 'Final exam results are being entered or are awaiting lock for this class. Publishing and downloading reports are disabled until mark entry is complete and the exam is locked.' : ''} duration={0} actionLabel={paymentRequired && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? 'Make payment' : ''} onAction={() => onNavigate('subscriptions')} />
+      <AssessmentPopup message={paymentRequired ? 'Subscription payment has not been confirmed for this finalized term. Please make payment before publishing or downloading reports.' : finalExamResultsStarted ? 'Final exam results are being entered or are awaiting approval for this class. Publishing and downloading reports are disabled until mark entry is complete and the exam is approved.' : ''} duration={0} actionLabel={paymentRequired && ['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(user.role) ? 'Make payment' : ''} onAction={() => onNavigate('subscriptions')} />
 
       <section className="panel report-card-selection">
         <div className="report-card-selection-heading"><div><h2>Generate class report batch</h2><p>All active student reports for the selected term and class group will appear together.</p></div></div>
@@ -347,17 +349,17 @@ export default function ReportCardsPage({ user, signOut, onNavigate }) {
         : readinessReportCards.every((card) => card.complete)
           ? <div className="panel table-message no-print report-readiness-success" role="status">
             <span>{downloadsRestricted ? 'Readiness is available, but report downloads are disabled until the subscription is paid and final exam mark entry is complete.' : publication ? `End-of-term reports were published ${new Date(publication.publishedAt).toLocaleString()}.` : 'Every subject result is ready. The headteacher must finalize the term before a school administrator can publish.'}{!downloadsRestricted && ' Select “View / download all reports” to preview or print them.'}</span>
-            {canPublishResults && !publication && !paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults}>{publishingClassResults ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishingClassResults ? 'Publishing results…' : 'Publish end-of-term reports for class'}</button>}
+            {canPublishResults && selectedTermIsFinalized && !publication && !paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => setShowPublishConfirmation(true)} disabled={publishingClassResults}>{publishingClassResults ? <LoaderCircle size={15} className="animate-spin" /> : null}{publishingClassResults ? 'Publishing results…' : 'Publish end-of-term reports for class'}</button>}
             {canPublishResults && publication && unpublishWindowOpen && !paymentRequired && !finalExamResultsStarted && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}
           </div>
-          : <ReadinessPanel reportCards={readinessReportCards} canPublish={canPublishResults && !paymentRequired && !finalExamResultsStarted} publishing={publishingClassResults} onPublish={() => setShowPublishConfirmation(true)} />)}
+          : <ReadinessPanel reportCards={readinessReportCards} />)}
       {batchReportCards && <section className="report-card-preview report-card-batch">
-        <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. Marks are calculated directly from locked assessments{publication ? ' and published for this class.' : '.'}</span>{canPublishResults && publication && unpublishWindowOpen && !paymentRequired && !finalExamResultsStarted && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}{!paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button>}</div>
+        <div className="report-card-actions no-print"><span>{batchReportCards.length} complete student report{batchReportCards.length === 1 ? '' : 's'} loaded. Marks are calculated directly from approved assessments{publication ? ' and published for this class.' : '.'}</span>{canPublishResults && publication && unpublishWindowOpen && !paymentRequired && !finalExamResultsStarted && <button className="secondary-button" type="button" onClick={() => setShowUnpublishConfirmation(true)} disabled={unpublishingClassResults}><RotateCcw size={15} /> Unpublish for testing</button>}{!paymentRequired && !finalExamResultsStarted && <button className="primary-button" type="button" onClick={() => window.print()} disabled={!batchReportCards.length}><Printer size={16} /> Download / print all</button>}</div>
         {!batchReportCards.length ? <div className="panel table-message"><span>No active student enrollments found in this class group and term.</span></div> : batchReportCards.map((card) => <ReportCardPaper key={card.enrollment.id} reportCard={card} />)}
       </section>}
       {showPublishConfirmation && <ConfirmActionModal
         title="Calculate and publish end-of-term results?"
-        message="The headteacher must finalize the term before publication. The system will calculate results from approved and locked assessments, then release every subject for the selected class and term to students and parents. Nothing will be published if a required mark or calculation is incomplete."
+        message="The headteacher must finalize the term before publication. The system will calculate results from approved assessments, then release every subject for the selected class and term to students and parents. Nothing will be published if a required mark or calculation is incomplete."
         confirmationText="PUBLISH END-OF-TERM"
         confirmLabel={publishingClassResults ? 'Calculating and publishing…' : 'Calculate and publish all results'}
         tone="primary"
