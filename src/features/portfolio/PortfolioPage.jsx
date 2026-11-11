@@ -2,6 +2,10 @@
 import React from "react";
 import { useState } from "react";
 import "./portfolio.css";
+import profileImage from "../../assets/EdgarChinenga.jpg";
+import schoolhouseDashboard from "../../assets/images/school-mgt-screenshots/screenshot2.png";
+import dimtDashboard from "../../assets/images/DMIT-Screenshots/Screenshot12.png";
+import nthakaAnalytics from "../../assets/images/Nthaka-Screenshots/Screenshot8.png";
 
 const projects = [
   {
@@ -9,8 +13,8 @@ const projects = [
     name: "Schoolhouse",
     category: "School Management System",
     description:
-      "A comprehensive school management and academic reporting platform designed to simplify student administration, assessment management and academic reporting.",
-    technologies: ["React", "Node.js", "Express", "PostgreSQL", "Prisma"],
+      "A web-based school management and reporting platform covering school records, academic years and terms, class and subject structures, teaching assignments, assessments, results and automated reports.",
+    technologies: ["React", "Node.js", "Express.js", "PostgreSQL", "Prisma", "Docker", "Git"],
     features: [
       "Student and enrolment management",
       "Academic years, classes and teaching assignments",
@@ -18,18 +22,48 @@ const projects = [
       "Term reports and academic progression",
       "Role-based access control",
     ],
-    status: "Active development & implementation",
+    status: "Active development",
     featured: true,
     link: "https://nc.nexa-circuit.com",
-    image: "/portfolio/schoolhouse-dashboard.png",
+    image: schoolhouseDashboard,
   },
   {
     number: "02",
-    name: "DIMT Student Management System",
-    category: "Institutional Information System",
+    name: "HRMS (SaaS)",
+    category: "Human Resources Platform",
     description:
-      "A web-based student management platform developed to support academic administration, student records and institutional information management at Domasi Institute of Management and Technology.",
-    technologies: ["PHP", "Laravel", "MySQL", "JavaScript"],
+      "A software-as-a-service HR platform bringing employee records, HR processes and workforce administration together in one web-based system.",
+    technologies: ["SaaS", "Employee records", "HR processes", "Workforce administration"],
+    features: [
+      "Centralised employee records",
+      "Digital HR processes",
+      "Workforce administration",
+      "Web-based access",
+    ],
+    status: "Request a demo",
+  },
+  {
+    number: "03",
+    name: "Nthaka Eco",
+    category: "Mobile Eco-trade Platform",
+    description:
+      "A smart eco-trade system connecting smallholder farmers, buyers and cooperatives through a transparent marketplace.",
+    technologies: ["Mobile application", "Eco-trade", "Smallholder marketplace"],
+    features: [
+      "Connects farmers, buyers and cooperatives",
+      "Supports transparent marketplace activity",
+    ],
+    status: "Available on Google Play",
+    link: "https://play.google.com/store/apps/details?id=com.nexacircuit.nthaka_eco",
+    image: nthakaAnalytics,
+  },
+  {
+    number: "04",
+    name: "DIMT Student Management System",
+    category: "Student Management System & Portal",
+    description:
+      "The institution's student management system and portal, supporting student registration and records while giving students access to their academic information.",
+    technologies: ["Student registration", "Academic records", "Student portal"],
     features: [
       "Student records management",
       "Academic administration",
@@ -37,15 +71,16 @@ const projects = [
       "Database-driven information management",
     ],
     status: "Implemented",
-    image: "/portfolio/dimt-sms.png",
+    image: dimtDashboard,
+    link: "https://dimtmw.com/login",
   },
   {
-    number: "03",
+    number: "05",
     name: "DIMT eLibrary",
     category: "Digital Library & Repository",
     description:
       "An institutional digital library implemented using DSpace to provide an organised platform for accessing and managing academic resources and digital publications.",
-    technologies: ["DSpace", "Java", "Angular", "Linux"],
+    technologies: ["DSpace", "Local hosting", "Digital repository"],
     features: [
       "Digital resource management",
       "Institutional repository",
@@ -53,67 +88,58 @@ const projects = [
       "Digital access to learning materials",
     ],
     status: "Implemented",
-    image: "/portfolio/dimt-elibrary.png",
   },
-  {
-    number: "04",
-    name: "HillTop Smart Timetable",
-    category: "School Scheduling Solution",
-    description:
-      "A school timetable management solution developed to support the organisation of teaching periods, teacher allocations, room utilisation and examination invigilation schedules.",
-    technologies: ["React", "Vite", "Tailwind CSS", "Node.js", "MySQL"],
-    features: [
-      "Teacher and subject scheduling",
-      "Timetable management",
-      "Room allocation",
-      "Invigilation scheduling",
-      "Teaching cover coordination",
-    ],
-    status: "Developed for school operations",
-    image: "/portfolio/hilltop-timetable.png",
-  },
+ 
 ];
 
 const experience = [
   {
-    period: "Professional experience",
+    period: "August 2022 – April 2026",
     role: "IT Officer",
     organisation: "Domasi Institute of Management and Technology",
     description:
-      "Worked on institutional ICT operations, infrastructure, technical support and the development and implementation of student information systems and a digital library.",
+      "Developed and maintained the student management system and student portal, set up the DSpace eLibrary, supported LAN/WAN connectivity and user devices, prepared database reports, and trained staff and students.",
   },
   {
-    period: "Professional experience",
-    role: "IT Officer",
+    period: "2025 – Present",
+    role: "ICT Officer",
     organisation: "HillTop Academy",
     description:
-      "Supported school ICT operations and worked on technology solutions addressing institutional scheduling and administrative requirements.",
+      "Handle day-to-day school ICT operations and help develop the HillTop Smart Timetable for planning teaching schedules and allocating staff and rooms.",
   },
   {
     period: "2025 – Present",
     role: "Founder & Chief Technology Officer",
     organisation: "Nexa Circuit Ltd",
     description:
-      "Leading software development and technology solutions, including systems design, database development, deployment and technical project delivery.",
+      "Lead software product design and development, from client requirements and database design through implementation, deployment, maintenance and user support.",
   },
 ];
 
 const skills = [
   {
-    title: "Software Development",
-    items: ["React", "JavaScript", "Node.js", "Express.js", "PHP", "Laravel", ".NET"],
+    title: "Systems Development",
+    items: ["Requirements", "Web applications", "Implementation", "Documentation", "Maintenance"],
   },
   {
     title: "Databases & Data Management",
-    items: ["PostgreSQL", "MySQL", "Prisma ORM", "Database Design", "SQL"],
+    items: ["PostgreSQL", "MySQL", "Relational database design", "SQL reports", "Prisma"],
   },
   {
-    title: "Infrastructure & Systems",
-    items: ["Linux Administration", "Windows Environments", "Networking", "Server Management", "Docker"],
+    title: "Infrastructure & Support",
+    items: ["LAN/WAN networks", "Linux servers", "Deployments", "End-user devices", "Technical support"],
   },
   {
-    title: "Security & Development Operations",
-    items: ["Cybersecurity Principles", "Access Control", "Git & GitHub", "CI/CD", "Backup Management"],
+    title: "Security, Continuity & Training",
+    items: ["Access controls", "Backups", "Data integrity", "Software updates", "User training"],
+  },
+  {
+    title: "Development Tools",
+    items: ["React", "Node.js", "Laravel / PHP", "Git", "Docker", "CI/CD"],
+  },
+  {
+    title: "Education Systems",
+    items: ["Registration", "Enrolment", "Academic records", "Assessments", "Results", "Reporting", "Libraries", "Timetabling"],
   },
 ];
 
@@ -137,7 +163,7 @@ function ProjectCard({ project }) {
       }`}
     >
       <div className="portfolio-project-image">
-        {!imageFailed && (
+        {project.image && !imageFailed && (
           <img
             src={project.image}
             alt={`${project.name} application preview`}
@@ -205,7 +231,7 @@ export default function Portfolio() {
           <span className="portfolio-brand-mark">EC</span>
           <span>
             <strong>EDGAR CHINENGA</strong>
-            <small>TECHNOLOGY PROFESSIONAL</small>
+            <small>ICT OFFICER & SOFTWARE DEVELOPER</small>
           </span>
         </a>
 
@@ -225,7 +251,7 @@ export default function Portfolio() {
         <div className="portfolio-hero-inner">
           <div className="portfolio-hero-copy">
             <div className="portfolio-availability">
-              <span></span> COMPUTER ENGINEERING & TECHNOLOGY
+              <span></span> ICT OFFICER & SOFTWARE DEVELOPER
             </div>
 
             <p className="portfolio-hero-intro">Hello, I'm</p>
@@ -236,15 +262,16 @@ export default function Portfolio() {
             </h1>
 
             <h2>
-              IT Professional <span>·</span> Systems Developer
-              <span> · </span> Technology Leader
+              ICT Officer <span>·</span> Software Developer
+              <span> · </span> Founder & CTO
             </h2>
 
             <p className="portfolio-hero-description">
-              I design, develop and implement technology solutions that
-              help organisations work smarter. My experience combines
-              software engineering, institutional ICT operations,
-              infrastructure management and systems administration.
+              I am an ICT Officer and Software Developer with nearly five
+              years of experience managing institutional ICT systems,
+              networks and digital platforms. Through Nexa Circuit Ltd, I
+              develop and deploy software from requirements and database
+              design through implementation and ongoing support.
             </p>
 
             <div className="portfolio-hero-actions">
@@ -264,12 +291,16 @@ export default function Portfolio() {
 
           <div className="portfolio-hero-visual">
             <div className="portfolio-visual-frame">
-              <div className="portfolio-visual-monogram">EC</div>
+              <img
+                className="portfolio-visual-portrait"
+                src={profileImage}
+                alt="Edgar Chinenga"
+              />
               <div className="portfolio-visual-caption">
                 <span>ENGINEERING IDEAS INTO SOLUTIONS</span>
-                <strong>Technology with purpose.</strong>
+                <strong>Reliable technology. Practical solutions.</strong>
               </div>
-              <div className="portfolio-visual-number">01 / 04</div>
+              <div className="portfolio-visual-number">01 / 06</div>
             </div>
             <div className="portfolio-visual-decoration"></div>
           </div>
@@ -294,27 +325,34 @@ export default function Portfolio() {
 
         <div className="portfolio-about-right">
           <p className="portfolio-about-lead">
-            I am a Computer Engineering graduate with practical experience
-            in developing, implementing and supporting technology systems
-            in institutional and educational environments.
+            I am an ICT Officer and Software Developer with a Bachelor of
+            Applied Science in Computer Engineering and nearly five years
+            of experience supporting institutional technology.
           </p>
           <p>
-            My work spans software development, database management,
-            server administration, networking and end-user support. Having
-            worked within educational institutions, I understand the
-            importance of reliable ICT infrastructure and systems that
-            support everyday academic and administrative activities.
+            My work spans software development, relational database design
+            and administration, Linux servers, LAN/WAN networking, end-user
+            support and training. I have worked on student registration,
+            academic records, assessments, results, reporting, library
+            systems and timetabling.
           </p>
           <p>
-            Through Nexa Circuit Ltd, I continue to lead the development
-            of digital solutions, combining technical knowledge with
-            practical problem-solving and project delivery.
+            Through Nexa Circuit Ltd, I take software projects from client
+            requirements and database design to deployment, maintenance and
+            ongoing user support, with a focus on reliability, data accuracy
+            and security.
           </p>
 
           <div className="portfolio-education">
-            <span>ACADEMIC QUALIFICATION</span>
-            <strong>BSc Computer Engineering</strong>
-            <small>University of Livingstonia</small>
+            <span>EDUCATION</span>
+            <div className="portfolio-education-entry">
+              <strong>Bachelor of Science in Computer Engineering</strong>
+              <small>University of Livingstonia — Laws Campus · Jan 2018–Jun 2022</small>
+            </div>
+            <div className="portfolio-education-entry">
+              <strong>International General Certificate of Secondary Education</strong>
+              <small>Mzuzu International Academy · Sep 2012–May 2018</small>
+            </div>
           </div>
         </div>
       </section>
@@ -324,7 +362,7 @@ export default function Portfolio() {
         <SectionHeading
           eyebrow="02 — PROFESSIONAL EXPERIENCE"
           title="Experience across education and technology."
-          description="My professional experience combines institutional ICT responsibilities with software development and technology leadership."
+          description="Nearly five years of experience across institutional ICT operations, education systems and software product development."
         />
 
         <div className="portfolio-experience-list">
@@ -426,13 +464,13 @@ export default function Portfolio() {
         </p>
 
         <div className="portfolio-contact-links">
-          <a href="mailto:YOUR_EMAIL@example.com">
+          <a href="mailto:edgarchinenga@gmail.com">
             <span>Email</span>
-            YOUR_EMAIL@example.com ↗
+            edgarchinenga@gmail.com ↗
           </a>
-          <a href="tel:+265XXXXXXXXX">
+          <a href="tel:+265885435964">
             <span>Telephone</span>
-            +265 XXX XXX XXX ↗
+            +265 885 435 964 / +265 994 826 129 ↗
           </a>
           <a
             href="https://nexa-circuit.com"
@@ -449,7 +487,7 @@ export default function Portfolio() {
       <footer className="portfolio-footer">
         <div>
           <strong>EDGAR CHINENGA</strong>
-          <span>Technology Professional & Systems Developer</span>
+          <span>ICT Officer & Software Developer</span>
         </div>
         <p>
           © {new Date().getFullYear()} Edgar Chinenga. All rights reserved.
