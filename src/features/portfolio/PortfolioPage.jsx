@@ -7,6 +7,37 @@ import schoolhouseDashboard from "../../assets/images/school-mgt-screenshots/scr
 import dimtDashboard from "../../assets/images/DMIT-Screenshots/Screenshot12.png";
 import nthakaAnalytics from "../../assets/images/Nthaka-Screenshots/Screenshot8.png";
 
+function sortProjectScreenshots(screenshots) {
+  return Object.entries(screenshots)
+    .sort(([firstPath], [secondPath]) => {
+      const firstNumber = Number(firstPath.match(/screenshot(\d+)\.png$/i)?.[1]);
+      const secondNumber = Number(secondPath.match(/screenshot(\d+)\.png$/i)?.[1]);
+      return firstNumber - secondNumber;
+    })
+    .map(([, image]) => image);
+}
+
+const projectScreenshots = {
+  schoolhouse: sortProjectScreenshots(
+    import.meta.glob("../../assets/images/school-mgt-screenshots/*.png", {
+      eager: true,
+      import: "default",
+    }),
+  ),
+  nthaka: sortProjectScreenshots(
+    import.meta.glob("../../assets/images/Nthaka-Screenshots/*.png", {
+      eager: true,
+      import: "default",
+    }),
+  ),
+  dimt: sortProjectScreenshots(
+    import.meta.glob("../../assets/images/DMIT-Screenshots/*.png", {
+      eager: true,
+      import: "default",
+    }),
+  ),
+};
+
 const projects = [
   {
     number: "01",
@@ -26,6 +57,7 @@ const projects = [
     featured: true,
     link: "https://nc.nexa-circuit.com",
     image: schoolhouseDashboard,
+    screenshots: projectScreenshots.schoolhouse,
   },
   {
     number: "02",
@@ -56,6 +88,7 @@ const projects = [
     status: "Available on Google Play",
     link: "https://play.google.com/store/apps/details?id=com.nexacircuit.nthaka_eco",
     image: nthakaAnalytics,
+    screenshots: projectScreenshots.nthaka,
   },
   {
     number: "04",
@@ -72,6 +105,7 @@ const projects = [
     ],
     status: "Implemented",
     image: dimtDashboard,
+    screenshots: projectScreenshots.dimt,
     link: "https://dimtmw.com/login",
   },
   {
@@ -240,17 +274,16 @@ function ProjectCard({ project, onImageClick }) {
 }
 
 export default function Portfolio() {
-  const [activeImageIndex, setActiveImageIndex] = useState(null);
+  const [activeGallery, setActiveGallery] = useState(null);
   const touchStartX = useRef(null);
   const imageCloseButtonRef = useRef(null);
-  const imageProjects = projects.filter((project) => project.image);
-  const imageModalOpen = activeImageIndex !== null;
-  const activeImage = activeImageIndex === null
-    ? null
-    : imageProjects[activeImageIndex];
+  const activeProject = activeGallery
+    ? projects.find((project) => project.number === activeGallery.projectNumber)
+    : null;
+  const activeImage = activeProject?.screenshots?.[activeGallery.imageIndex] ?? null;
 
   useEffect(() => {
-    if (!imageModalOpen) return undefined;
+    if (!activeGallery || !activeProject) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     const previouslyFocused = document.activeElement;
@@ -258,14 +291,20 @@ export default function Portfolio() {
     imageCloseButtonRef.current?.focus();
 
     function handleKeyDown(event) {
-      if (event.key === "Escape") setActiveImageIndex(null);
+      if (event.key === "Escape") setActiveGallery(null);
       if (event.key === "ArrowRight") {
-        setActiveImageIndex((index) => (index + 1) % imageProjects.length);
+        setActiveGallery((gallery) => ({
+          ...gallery,
+          imageIndex: (gallery.imageIndex + 1) % activeProject.screenshots.length,
+        }));
       }
       if (event.key === "ArrowLeft") {
-        setActiveImageIndex(
-          (index) => (index - 1 + imageProjects.length) % imageProjects.length,
-        );
+        setActiveGallery((gallery) => ({
+          ...gallery,
+          imageIndex:
+            (gallery.imageIndex - 1 + activeProject.screenshots.length) %
+            activeProject.screenshots.length,
+        }));
       }
     }
 
@@ -275,16 +314,25 @@ export default function Portfolio() {
       window.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [imageModalOpen, imageProjects.length]);
+  }, [activeGallery !== null, activeProject?.number, activeProject?.screenshots?.length]);
 
   function showProjectImage(project) {
-    setActiveImageIndex(imageProjects.findIndex((item) => item.number === project.number));
+    const projectScreenshots = project.screenshots ?? [];
+    const clickedImageIndex = projectScreenshots.indexOf(project.image);
+    setActiveGallery({
+      projectNumber: project.number,
+      imageIndex: clickedImageIndex >= 0 ? clickedImageIndex : 0,
+    });
   }
 
   function changeActiveImage(direction) {
-    setActiveImageIndex(
-      (index) => (index + direction + imageProjects.length) % imageProjects.length,
-    );
+    if (!activeProject) return;
+    setActiveGallery((gallery) => ({
+      ...gallery,
+      imageIndex:
+        (gallery.imageIndex + direction + activeProject.screenshots.length) %
+        activeProject.screenshots.length,
+    }));
   }
 
   return (
@@ -575,12 +623,12 @@ export default function Portfolio() {
         <a href="#home">Back to top ↑</a>
       </footer>
 
-      {activeImage && (
+      {activeImage && activeProject && (
         <div
           className="portfolio-image-modal"
           role="presentation"
           onClick={(event) => {
-            if (event.target === event.currentTarget) setActiveImageIndex(null);
+            if (event.target === event.currentTarget) setActiveGallery(null);
           }}
           onTouchStart={(event) => {
             touchStartX.current = event.changedTouches[0].clientX;
@@ -598,21 +646,22 @@ export default function Portfolio() {
             className="portfolio-image-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={`${activeImage.name} project image`}
+            aria-label={`${activeProject.name} project image`}
           >
             <div className="portfolio-image-dialog-header">
               <div>
-                <strong>{activeImage.name}</strong>
-                <span>{activeImage.category}</span>
+                <strong>{activeProject.name}</strong>
+                <span>{activeProject.category}</span>
               </div>
               <span className="portfolio-image-counter">
-                {String(activeImageIndex + 1).padStart(2, "0")} / {String(imageProjects.length).padStart(2, "0")}
+                {String(activeGallery.imageIndex + 1).padStart(2, "0")} /{" "}
+                {String(activeProject.screenshots.length).padStart(2, "0")}
               </span>
               <button
                 type="button"
                 className="portfolio-image-close"
                 ref={imageCloseButtonRef}
-                onClick={() => setActiveImageIndex(null)}
+                onClick={() => setActiveGallery(null)}
                 aria-label="Close image viewer"
               >
                 ×
@@ -628,7 +677,10 @@ export default function Portfolio() {
               >
                 ‹
               </button>
-              <img src={activeImage.image} alt={`${activeImage.name} application preview`} />
+              <img
+                src={activeImage}
+                alt={`${activeProject.name} application preview ${activeGallery.imageIndex + 1}`}
+              />
               <button
                 type="button"
                 className="portfolio-image-arrow"
@@ -638,7 +690,11 @@ export default function Portfolio() {
                 ›
               </button>
             </div>
-            <p className="portfolio-image-hint">Use the arrows or swipe to browse · Esc to close</p>
+            <p className="portfolio-image-hint">
+              {activeProject.screenshots.length > 1
+                ? "Use the arrows or swipe to browse screenshots · Esc to close"
+                : "Esc to close"}
+            </p>
           </section>
         </div>
       )}
