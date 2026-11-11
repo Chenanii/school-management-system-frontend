@@ -1,7 +1,18 @@
 
 import React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./portfolio.css";
+import edgarPortrait from "../../assets/EdgarChinenga.jpg";
+import schoolhouseDashboard from "../../assets/images/school-mgt-screenshots/screenshot2.png";
+import schoolhouseReport from "../../assets/images/school-mgt-screenshots/screenshot3.png";
+import schoolhouseAssessments from "../../assets/images/school-mgt-screenshots/screenshot4.png";
+import dimtDashboard from "../../assets/images/DMIT-Screenshots/Screenshot2.png";
+import dimtRecords from "../../assets/images/DMIT-Screenshots/Screenshot5.png";
+import dimtAssessments from "../../assets/images/DMIT-Screenshots/Screenshot11.png";
+import nthakaDashboard from "../../assets/images/Nthaka-Screenshots/Screenshot2.png";
+import nthakaSales from "../../assets/images/Nthaka-Screenshots/Screenshot3.png";
+import nthakaDiseases from "../../assets/images/Nthaka-Screenshots/Screenshot5.png";
+import nthakaAnalytics from "../../assets/images/Nthaka-Screenshots/Screenshot8.png";
 
 const projects = [
   {
@@ -11,6 +22,11 @@ const projects = [
     description:
       "A comprehensive school management and academic reporting platform designed to simplify student administration, assessment management and academic reporting.",
     technologies: ["React", "Node.js", "Express", "PostgreSQL", "Prisma"],
+    images: [
+      { src: schoolhouseDashboard, alt: "Schoolhouse dashboard" },
+      { src: schoolhouseReport, alt: "Schoolhouse student report preview" },
+      { src: schoolhouseAssessments, alt: "Schoolhouse assessment management" },
+    ],
     features: [
       "Student and enrolment management",
       "Academic years, classes and teaching assignments",
@@ -25,11 +41,54 @@ const projects = [
   },
   {
     number: "02",
+    name: "Nexa Circuit HRMS",
+    category: "Human Resource Management SaaS",
+    description:
+      "A web-based HR platform that brings employee records, HR processes and workforce administration into one system.",
+    technologies: [],
+    features: [
+      "Employee records",
+      "Workforce administration",
+      "HR process management",
+      "SaaS delivery",
+    ],
+    status: "Request a demo",
+    image: "/portfolio/hrms.png",
+  },
+  {
+    number: "03",
+    name: "Nthaka Eco",
+    category: "Mobile Agricultural Marketplace",
+    description:
+      "A smart eco-trade mobile app connecting smallholder farmers, buyers and cooperatives through a transparent marketplace.",
+    technologies: ["Mobile app", "Digital marketplace"],
+    images: [
+      { src: nthakaDashboard, alt: "Nthaka Eco mobile app dashboard" },
+      { src: nthakaSales, alt: "Nthaka Eco sales screen" },
+      { src: nthakaDiseases, alt: "Nthaka Eco plant disease screen" },
+      { src: nthakaAnalytics, alt: "Nthaka Eco analytics screen" },
+    ],
+    features: [
+      "Connects smallholder farmers and buyers",
+      "Cooperative participation",
+      "Transparent eco-trade marketplace",
+    ],
+    status: "Available on Google Play",
+    link: "https://play.google.com/store/apps/details?id=com.nexacircuit.nthaka_eco",
+    image: "/portfolio/nthaka-eco.png",
+  },
+  {
+    number: "04",
     name: "DIMT Student Management System",
     category: "Institutional Information System",
     description:
-      "A web-based student management platform developed to support academic administration, student records and institutional information management at Domasi Institute of Management and Technology.",
-    technologies: ["PHP", "Laravel", "MySQL", "JavaScript"],
+      "The institution's student registration and records system, with a portal where students can view their academic information.",
+    technologies: [],
+    images: [
+      { src: dimtDashboard, alt: "DIMT student management dashboard" },
+      { src: dimtRecords, alt: "DIMT student records and enrolment" },
+      { src: dimtAssessments, alt: "DIMT academic results screen" },
+    ],
     features: [
       "Student records management",
       "Academic administration",
@@ -37,14 +96,15 @@ const projects = [
       "Database-driven information management",
     ],
     status: "Implemented",
+    link: "https://dimtmw.com/login",
     image: "/portfolio/dimt-sms.png",
   },
   {
-    number: "03",
+    number: "05",
     name: "DIMT eLibrary",
     category: "Digital Library & Repository",
     description:
-      "An institutional digital library implemented using DSpace to provide an organised platform for accessing and managing academic resources and digital publications.",
+      "A locally hosted DSpace digital library that organises institutional learning resources and makes them easy to find.",
     technologies: ["DSpace", "Java", "Angular", "Linux"],
     features: [
       "Digital resource management",
@@ -55,65 +115,49 @@ const projects = [
     status: "Implemented",
     image: "/portfolio/dimt-elibrary.png",
   },
-  {
-    number: "04",
-    name: "HillTop Smart Timetable",
-    category: "School Scheduling Solution",
-    description:
-      "A school timetable management solution developed to support the organisation of teaching periods, teacher allocations, room utilisation and examination invigilation schedules.",
-    technologies: ["React", "Vite", "Tailwind CSS", "Node.js", "MySQL"],
-    features: [
-      "Teacher and subject scheduling",
-      "Timetable management",
-      "Room allocation",
-      "Invigilation scheduling",
-      "Teaching cover coordination",
-    ],
-    status: "Developed for school operations",
-    image: "/portfolio/hilltop-timetable.png",
-  },
+
 ];
 
 const experience = [
   {
-    period: "Professional experience",
-    role: "IT Officer",
-    organisation: "Domasi Institute of Management and Technology",
-    description:
-      "Worked on institutional ICT operations, infrastructure, technical support and the development and implementation of student information systems and a digital library.",
-  },
-  {
-    period: "Professional experience",
-    role: "IT Officer",
-    organisation: "HillTop Academy",
-    description:
-      "Supported school ICT operations and worked on technology solutions addressing institutional scheduling and administrative requirements.",
-  },
-  {
     period: "2025 – Present",
-    role: "Founder & Chief Technology Officer",
+    role: "CoFounder & Chief Technology Officer",
     organisation: "Nexa Circuit Ltd",
     description:
-      "Leading software development and technology solutions, including systems design, database development, deployment and technical project delivery.",
+      "Lead software product design and development, including Schoolhouse. Own application architecture, database design, deployment and maintenance, and support project delivery and clients.",
+  },
+  {
+    period: "April 2026 – November 2026",
+    role: "ICT Support & Software Development",
+    organisation: "HillTop Academy",
+    description:
+      "Handle day-to-day school ICT operations and staff support, and help develop the HillTop Smart Timetable for planning schedules and assigning staff and rooms.",
+  },
+  {
+    period: "August 2022 – April 2026",
+    role: "ICT Officer",
+    organisation: "Domasi Institute of Management and Technology",
+    description:
+      "Developed and maintained the Student Management System, student portal and DSpace eLibrary; supported LAN/WAN, devices, databases, reporting, backups, access management, and staff and student training. Also taught computing and practical mathematics.",
   },
 ];
 
 const skills = [
   {
-    title: "Software Development",
-    items: ["React", "JavaScript", "Node.js", "Express.js", "PHP", "Laravel", ".NET"],
+    title: "Systems Development",
+    items: ["React", "Node.js", "Express.js", "Laravel / PHP", "Requirements", "Documentation", "Maintenance"],
   },
   {
     title: "Databases & Data Management",
-    items: ["PostgreSQL", "MySQL", "Prisma ORM", "Database Design", "SQL"],
+    items: ["PostgreSQL", "MySQL", "Prisma", "Database Design", "SQL Reporting"],
   },
   {
     title: "Infrastructure & Systems",
-    items: ["Linux Administration", "Windows Environments", "Networking", "Server Management", "Docker"],
+    items: ["LAN / WAN", "Linux Servers", "Deployments", "End-user Devices", "Docker"],
   },
   {
-    title: "Security & Development Operations",
-    items: ["Cybersecurity Principles", "Access Control", "Git & GitHub", "CI/CD", "Backup Management"],
+    title: "Security & User Support",
+    items: ["Access Controls", "Backups", "Data Protection", "Git", "CI/CD", "User Training"],
   },
 ];
 
@@ -129,6 +173,28 @@ function SectionHeading({ eyebrow, title, description }) {
 
 function ProjectCard({ project }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const dialogRef = useRef(null);
+  const hasGallery = project.images?.length > 0 && !imageFailed;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (modalOpen && !dialog.open) dialog.showModal();
+    if (!modalOpen && dialog.open) dialog.close();
+  }, [modalOpen]);
+
+  const showPreviousImage = () => {
+    setActiveImage((current) =>
+      (current - 1 + project.images.length) % project.images.length,
+    );
+  };
+
+  const showNextImage = () => {
+    setActiveImage((current) => (current + 1) % project.images.length);
+  };
 
   return (
     <article
@@ -137,13 +203,69 @@ function ProjectCard({ project }) {
       }`}
     >
       <div className="portfolio-project-image">
-        {!imageFailed && (
-          <img
-            src={project.image}
-            alt={`${project.name} application preview`}
-            loading="lazy"
-            onError={() => setImageFailed(true)}
-          />
+        {hasGallery && (
+          <>
+            <div
+              className="portfolio-project-image-gallery"
+              aria-roledescription="carousel"
+              aria-label={`${project.name} screenshots`}
+            >
+              <button
+                type="button"
+                className="portfolio-image-open"
+                onClick={() => setModalOpen(true)}
+                aria-label={`Open ${project.name} screenshot ${activeImage + 1} in full view`}
+              >
+                <div
+                  className="portfolio-project-image-track"
+                  style={{ transform: `translateX(-${activeImage * 100}%)` }}
+                  aria-live="polite"
+                >
+                  {project.images.map((image, index) => (
+                    <img
+                      key={image.src}
+                      src={image.src}
+                      alt={image.alt}
+                      loading={index === activeImage ? "eager" : "lazy"}
+                      onError={() => setImageFailed(true)}
+                    />
+                  ))}
+                </div>
+              </button>
+            </div>
+            {project.images.length > 1 && (
+              <div className="portfolio-project-image-controls">
+                <button
+                  type="button"
+                  className="portfolio-image-arrow"
+                  onClick={showPreviousImage}
+                  aria-label={`Previous ${project.name} screenshot`}
+                >
+                  ‹
+                </button>
+                <div className="portfolio-image-pagination" aria-label="Choose screenshot">
+                  {project.images.map((image, index) => (
+                    <button
+                      key={image.src}
+                      type="button"
+                      className={index === activeImage ? "active" : ""}
+                      onClick={() => setActiveImage(index)}
+                      aria-label={`Show screenshot ${index + 1} of ${project.images.length}`}
+                      aria-current={index === activeImage ? "true" : undefined}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="portfolio-image-arrow"
+                  onClick={showNextImage}
+                  aria-label={`Next ${project.name} screenshot`}
+                >
+                  ›
+                </button>
+              </div>
+            )}
+          </>
         )}
         <div className="portfolio-project-image-placeholder">
           <span>{project.number}</span>
@@ -192,6 +314,63 @@ function ProjectCard({ project }) {
           </a>
         )}
       </div>
+
+      <dialog
+        ref={dialogRef}
+        className="portfolio-image-modal"
+        aria-label={`${project.name} screenshot viewer`}
+        onClose={() => setModalOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) setModalOpen(false);
+        }}
+      >
+        <div className="portfolio-image-modal-content">
+          <div className="portfolio-image-modal-header">
+            <div>
+              <strong>{project.name}</strong>
+              <span>{activeImage + 1} / {project.images?.length ?? 0}</span>
+            </div>
+            <button
+              type="button"
+              className="portfolio-image-modal-close"
+              onClick={() => setModalOpen(false)}
+              aria-label="Close image viewer"
+              autoFocus
+            >
+              ×
+            </button>
+          </div>
+          <div className="portfolio-image-modal-stage">
+            <img
+              src={project.images?.[activeImage]?.src}
+              alt={project.images?.[activeImage]?.alt ?? `${project.name} preview`}
+            />
+            {project.images?.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="portfolio-image-modal-arrow previous"
+                  onClick={showPreviousImage}
+                  aria-label={`Previous ${project.name} screenshot`}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="portfolio-image-modal-arrow next"
+                  onClick={showNextImage}
+                  aria-label={`Next ${project.name} screenshot`}
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+          <p className="portfolio-image-modal-caption">
+            {project.images?.[activeImage]?.alt}
+          </p>
+        </div>
+      </dialog>
     </article>
   );
 }
@@ -202,7 +381,11 @@ export default function Portfolio() {
       {/* NAVIGATION */}
       <nav className="portfolio-nav">
         <a href="#home" className="portfolio-brand">
-          <span className="portfolio-brand-mark">EC</span>
+          <img
+            className="portfolio-brand-photo"
+            src={edgarPortrait}
+            alt="Edgar Chinenga"
+          />
           <span>
             <strong>EDGAR CHINENGA</strong>
             <small>TECHNOLOGY PROFESSIONAL</small>
@@ -236,15 +419,16 @@ export default function Portfolio() {
             </h1>
 
             <h2>
-              IT Professional <span>·</span> Systems Developer
-              <span> · </span> Technology Leader
+             <span>·</span> Software Developer
+              <span> · </span> Computer Engineer
             </h2>
 
             <p className="portfolio-hero-description">
-              I design, develop and implement technology solutions that
-              help organisations work smarter. My experience combines
-              software engineering, institutional ICT operations,
-              infrastructure management and systems administration.
+              I’m Software Developer with nearly five
+              years of experience managing institutional ICT systems,
+              networks and digital platforms. Through Nexa Circuit Ltd,
+              I take software projects from requirements and database
+              design through implementation and ongoing support.
             </p>
 
             <div className="portfolio-hero-actions">
@@ -257,14 +441,18 @@ export default function Portfolio() {
             </div>
 
             <div className="portfolio-hero-company">
-              <span>FOUNDER & CTO</span>
+              <span>COFOUNDER & CTO</span>
               <strong>NEXA CIRCUIT LTD</strong>
             </div>
           </div>
 
           <div className="portfolio-hero-visual">
             <div className="portfolio-visual-frame">
-              <div className="portfolio-visual-monogram">EC</div>
+              <img
+                className="portfolio-visual-portrait"
+                src={edgarPortrait}
+                alt="Edgar Chinenga"
+              />
               <div className="portfolio-visual-caption">
                 <span>ENGINEERING IDEAS INTO SOLUTIONS</span>
                 <strong>Technology with purpose.</strong>
@@ -276,7 +464,7 @@ export default function Portfolio() {
         </div>
 
         <div className="portfolio-hero-bottom">
-          <span>BASED IN MALAWI</span>
+          <span>MALAWIAN COMPUTER ENGINEER</span>
           <span>SOFTWARE DEVELOPMENT</span>
           <span>ICT INFRASTRUCTURE</span>
           <span>SYSTEMS ADMINISTRATION</span>
@@ -294,27 +482,29 @@ export default function Portfolio() {
 
         <div className="portfolio-about-right">
           <p className="portfolio-about-lead">
-            I am a Computer Engineering graduate with practical experience
-            in developing, implementing and supporting technology systems
-            in institutional and educational environments.
+            I’m an Software Developer with a Bachelor’s
+            degree in Computer Engineering and nearly five years of
+            experience managing institutional ICT systems and digital
+            platforms.
           </p>
           <p>
-            My work spans software development, database management,
-            server administration, networking and end-user support. Having
-            worked within educational institutions, I understand the
-            importance of reliable ICT infrastructure and systems that
-            support everyday academic and administrative activities.
+            I build and support systems across the full project lifecycle,
+            from requirements and relational database design to
+            implementation, documentation and maintenance. My experience
+            includes student registration and records, assessments,
+            results, reporting, library systems and timetabling.
           </p>
           <p>
-            Through Nexa Circuit Ltd, I continue to lead the development
-            of digital solutions, combining technical knowledge with
-            practical problem-solving and project delivery.
+            I value reliable systems, accurate data, security and practical
+            solutions. I also support and train users, helping staff and
+            students get confident with the technology they use.
           </p>
 
           <div className="portfolio-education">
-            <span>ACADEMIC QUALIFICATION</span>
-            <strong>BSc Computer Engineering</strong>
-            <small>University of Livingstonia</small>
+            <span>EDUCATION</span>
+            <strong>BSc in Computer Engineering</strong>
+            <small>University of Livingstonia, 2018 – 2022</small>
+            <small>IGCSE · Mzuzu International Academy, 2012 – 2018</small>
           </div>
         </div>
       </section>
@@ -323,8 +513,8 @@ export default function Portfolio() {
       <section className="portfolio-section portfolio-experience" id="experience">
         <SectionHeading
           eyebrow="02 — PROFESSIONAL EXPERIENCE"
-          title="Experience across education and technology."
-          description="My professional experience combines institutional ICT responsibilities with software development and technology leadership."
+          title="Building and supporting institutional technology."
+          description="Experience in software delivery, school ICT operations, institutional systems, infrastructure and user support."
         />
 
         <div className="portfolio-experience-list">
@@ -426,21 +616,25 @@ export default function Portfolio() {
         </p>
 
         <div className="portfolio-contact-links">
-          <a href="mailto:YOUR_EMAIL@example.com">
+          <a href="mailto:edgarchinenga@gmail.com">
             <span>Email</span>
-            YOUR_EMAIL@example.com ↗
+            edgarchinenga@gmail.com ↗
           </a>
-          <a href="tel:+265XXXXXXXXX">
+          <a href="tel:+265885435964">
             <span>Telephone</span>
-            +265 XXX XXX XXX ↗
+            +265 885 435 964 ↗
+          </a>
+          <a href="tel:+265994826129">
+            <span>Telephone</span>
+            +265 994 826 129 ↗
           </a>
           <a
-            href="https://nexa-circuit.com"
+            href="https://nc.nexa-circuit.com/edgar-chinenga"
             target="_blank"
             rel="noreferrer"
           >
-            <span>Company</span>
-            Nexa Circuit Ltd ↗
+            <span>Portfolio</span>
+            nc.nexa-circuit.com/edgar-chinenga ↗
           </a>
         </div>
       </section>
@@ -449,7 +643,7 @@ export default function Portfolio() {
       <footer className="portfolio-footer">
         <div>
           <strong>EDGAR CHINENGA</strong>
-          <span>Technology Professional & Systems Developer</span>
+          <span>ICT Officer · Software Developer · Computer Engineer</span>
         </div>
         <p>
           © {new Date().getFullYear()} Edgar Chinenga. All rights reserved.
