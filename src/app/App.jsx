@@ -43,6 +43,7 @@ import ResetPasswordPage from "../features/auth/ResetPasswordPage.jsx";
 import ProfilesPage from "../features/users/ProfilesPage.jsx";
 import LandingPage from "../features/landing/LandingPage.jsx";
 import SchoolManagementPage from "../features/schools/SchoolManagementPage.jsx";
+import PortfolioPage from "../features/portfolio/PortfolioPage.jsx";
 
 const pageIds = new Set(sections.map(({ id }) => id));
 
@@ -59,6 +60,7 @@ export default function App() {
   const isTeacherInvitation = window.location.pathname === "/accept-invitation";
   const isPasswordReset = window.location.pathname === "/reset-password";
   const isLandingPage = window.location.pathname === "/";
+  const isPortfolioPage = window.location.pathname === "/edgar-chinenga";
   const [page, setPage] = useState(
     () => workspaceRoute(window.location.pathname, pageIds).page,
   );
@@ -129,13 +131,13 @@ export default function App() {
   }, [user?.role, user?.schoolId, signOut, loadSummary, user]);
 
   useEffect(() => {
-    if (isTeacherInvitation || !summary.school?.slug) return;
+    if (isTeacherInvitation || isPortfolioPage || !summary.school?.slug) return;
     const route = workspaceRoute(window.location.pathname, pageIds);
     const nextPath = workspacePath(route.page, summary.school.slug);
     if (window.location.pathname !== nextPath) {
       window.history.replaceState({ page: route.page }, "", nextPath);
     }
-  }, [isTeacherInvitation, summary.school?.slug]);
+  }, [isTeacherInvitation, isPortfolioPage, summary.school?.slug]);
 
   useEffect(() => {
     const schoolId = user?.role === "SUPER_ADMIN"
@@ -222,6 +224,7 @@ export default function App() {
 
   if (isTeacherInvitation) return <TeacherInvitationPage />;
   if (isPasswordReset) return <ResetPasswordPage />;
+  if (isPortfolioPage) return <PortfolioPage />;
   if (!user && isLandingPage) return <LandingPage />;
   if (!user)
     return (
