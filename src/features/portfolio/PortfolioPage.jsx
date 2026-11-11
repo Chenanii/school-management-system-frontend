@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./portfolio.css";
 import profileImage from "../../assets/EdgarChinenga.jpg";
 import schoolhouseDashboard from "../../assets/images/school-mgt-screenshots/screenshot2.png";
@@ -10,7 +10,7 @@ import nthakaAnalytics from "../../assets/images/Nthaka-Screenshots/Screenshot8.
 const projects = [
   {
     number: "01",
-    name: "Schoolhouse",
+    name: "Schoolhouse (SaaS)",
     category: "School Management System",
     description:
       "A web-based school management and reporting platform covering school records, academic years and terms, class and subject structures, teaching assignments, assessments, results and automated reports.",
@@ -101,18 +101,18 @@ const experience = [
       "Developed and maintained the student management system and student portal, set up the DSpace eLibrary, supported LAN/WAN connectivity and user devices, prepared database reports, and trained staff and students.",
   },
   {
-    period: "2025 – Present",
-    role: "ICT Officer",
-    organisation: "HillTop Academy",
-    description:
-      "Handle day-to-day school ICT operations and help develop the HillTop Smart Timetable for planning teaching schedules and allocating staff and rooms.",
-  },
-  {
-    period: "2025 – Present",
-    role: "Founder & Chief Technology Officer",
+    period: "June 2025 – Present",
+    role: "Co-founder & Chief Technology Officer",
     organisation: "Nexa Circuit Ltd",
     description:
       "Lead software product design and development, from client requirements and database design through implementation, deployment, maintenance and user support.",
+  },
+  {
+    period: "2025 – Present",
+    role: "ICT Support",
+    organisation: "HillTop Academy",
+    description:
+      "Handle day-to-day school ICT operations and help develop the HillTop Smart Timetable for planning teaching schedules and allocating staff and rooms.",
   },
 ];
 
@@ -153,8 +153,9 @@ function SectionHeading({ eyebrow, title, description }) {
   );
 }
 
-function ProjectCard({ project }) {
+function ProjectCard({ project, onImageClick }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const hasImage = project.image && !imageFailed;
 
   return (
     <article
@@ -163,19 +164,28 @@ function ProjectCard({ project }) {
       }`}
     >
       <div className="portfolio-project-image">
-        {project.image && !imageFailed && (
-          <img
-            src={project.image}
-            alt={`${project.name} application preview`}
-            loading="lazy"
-            onError={() => setImageFailed(true)}
-          />
+        {hasImage ? (
+          <button
+            type="button"
+            className="portfolio-project-image-trigger"
+            onClick={() => onImageClick(project)}
+            aria-label={`View ${project.name} image`}
+          >
+            <img
+              src={project.image}
+              alt={`${project.name} application preview`}
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
+            <span className="portfolio-image-zoom">View image</span>
+          </button>
+        ) : (
+          <div className="portfolio-project-image-placeholder">
+            <span>{project.number}</span>
+            <strong>{project.name}</strong>
+            <small>{project.category}</small>
+          </div>
         )}
-        <div className="portfolio-project-image-placeholder">
-          <span>{project.number}</span>
-          <strong>{project.name}</strong>
-          <small>{project.category}</small>
-        </div>
         {project.featured && (
           <span className="portfolio-featured-label">Featured Project</span>
         )}
@@ -207,31 +217,89 @@ function ProjectCard({ project }) {
           ))}
         </div>
 
-        {project.link && (
+        {project.link ? (
           <a
             href={project.link}
             target="_blank"
             rel="noreferrer"
-            className="portfolio-project-link"
+            className="portfolio-project-link portfolio-project-link-visit"
           >
-            Visit project <span>↗</span>
+            Visit site <span>↗</span>
           </a>
-        )}
+        ) : project.status === "Request a demo" ? (
+          <a
+            href={`mailto:edgarchinenga@gmail.com?subject=${encodeURIComponent(`Request a demo: ${project.name}`)}`}
+            className="portfolio-project-link portfolio-project-link-demo"
+          >
+            Request a demo <span>→</span>
+          </a>
+        ) : null}
       </div>
     </article>
   );
 }
 
 export default function Portfolio() {
+  const [activeImageIndex, setActiveImageIndex] = useState(null);
+  const touchStartX = useRef(null);
+  const imageCloseButtonRef = useRef(null);
+  const imageProjects = projects.filter((project) => project.image);
+  const imageModalOpen = activeImageIndex !== null;
+  const activeImage = activeImageIndex === null
+    ? null
+    : imageProjects[activeImageIndex];
+
+  useEffect(() => {
+    if (!imageModalOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement;
+    document.body.style.overflow = "hidden";
+    imageCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setActiveImageIndex(null);
+      if (event.key === "ArrowRight") {
+        setActiveImageIndex((index) => (index + 1) % imageProjects.length);
+      }
+      if (event.key === "ArrowLeft") {
+        setActiveImageIndex(
+          (index) => (index - 1 + imageProjects.length) % imageProjects.length,
+        );
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [imageModalOpen, imageProjects.length]);
+
+  function showProjectImage(project) {
+    setActiveImageIndex(imageProjects.findIndex((item) => item.number === project.number));
+  }
+
+  function changeActiveImage(direction) {
+    setActiveImageIndex(
+      (index) => (index + direction + imageProjects.length) % imageProjects.length,
+    );
+  }
+
   return (
     <main className="edgar-portfolio">
       {/* NAVIGATION */}
       <nav className="portfolio-nav">
         <a href="#home" className="portfolio-brand">
-          <span className="portfolio-brand-mark">EC</span>
+          <img
+            className="portfolio-brand-portrait"
+            src={profileImage}
+            alt=""
+          />
           <span>
             <strong>EDGAR CHINENGA</strong>
-            <small>ICT OFFICER & SOFTWARE DEVELOPER</small>
+            <small>SOFTWARE DEVELOPER</small>
           </span>
         </a>
 
@@ -251,7 +319,7 @@ export default function Portfolio() {
         <div className="portfolio-hero-inner">
           <div className="portfolio-hero-copy">
             <div className="portfolio-availability">
-              <span></span> ICT OFFICER & SOFTWARE DEVELOPER
+              <span></span> SOFTWARE DEVELOPER
             </div>
 
             <p className="portfolio-hero-intro">Hello, I'm</p>
@@ -262,12 +330,12 @@ export default function Portfolio() {
             </h1>
 
             <h2>
-              ICT Officer <span>·</span> Software Developer
-              <span> · </span> Founder & CTO
+              Software Developer
+              <span> · </span> Co-founder & CTO
             </h2>
 
             <p className="portfolio-hero-description">
-              I am an ICT Officer and Software Developer with nearly five
+              I am a software developer with nearly five
               years of experience managing institutional ICT systems,
               networks and digital platforms. Through Nexa Circuit Ltd, I
               develop and deploy software from requirements and database
@@ -284,7 +352,7 @@ export default function Portfolio() {
             </div>
 
             <div className="portfolio-hero-company">
-              <span>FOUNDER & CTO</span>
+              <span>CO-FOUNDER & CTO</span>
               <strong>NEXA CIRCUIT LTD</strong>
             </div>
           </div>
@@ -300,7 +368,9 @@ export default function Portfolio() {
                 <span>ENGINEERING IDEAS INTO SOLUTIONS</span>
                 <strong>Reliable technology. Practical solutions.</strong>
               </div>
-              <div className="portfolio-visual-number">01 / 06</div>
+              <div className="portfolio-visual-number">
+                01 / {String(projects.length).padStart(2, "0")}
+              </div>
             </div>
             <div className="portfolio-visual-decoration"></div>
           </div>
@@ -325,9 +395,9 @@ export default function Portfolio() {
 
         <div className="portfolio-about-right">
           <p className="portfolio-about-lead">
-            I am an ICT Officer and Software Developer with a Bachelor of
-            Applied Science in Computer Engineering and nearly five years
-            of experience supporting institutional technology.
+            I am a software developer with a Computer Engineering degree and
+            nearly five years of experience supporting institutional
+            technology.
           </p>
           <p>
             My work spans software development, relational database design
@@ -386,15 +456,25 @@ export default function Portfolio() {
 
       {/* PROJECTS */}
       <section className="portfolio-section portfolio-projects" id="projects">
-        <SectionHeading
-          eyebrow="03 — SELECTED WORK"
-          title="Systems developed and implemented."
-          description="A selection of practical technology projects demonstrating my experience in software development and institutional systems implementation."
-        />
+        <div className="portfolio-projects-heading">
+          <SectionHeading
+            eyebrow="03 — SELECTED WORK"
+            title="Technology built around real needs."
+            description="From school administration and HR to student services and eco-trade, each project turns practical requirements into working digital systems."
+          />
+          <span className="portfolio-project-count">
+            {String(projects.length).padStart(2, "0")}
+            <small>PROJECTS</small>
+          </span>
+        </div>
 
         <div className="portfolio-project-grid">
           {projects.map((project) => (
-            <ProjectCard key={project.number} project={project} />
+            <ProjectCard
+              key={project.number}
+              project={project}
+              onImageClick={showProjectImage}
+            />
           ))}
         </div>
 
@@ -487,14 +567,81 @@ export default function Portfolio() {
       <footer className="portfolio-footer">
         <div>
           <strong>EDGAR CHINENGA</strong>
-          <span>ICT Officer & Software Developer</span>
+          <span>Software Developer</span>
         </div>
         <p>
           © {new Date().getFullYear()} Edgar Chinenga. All rights reserved.
         </p>
         <a href="#home">Back to top ↑</a>
       </footer>
+
+      {activeImage && (
+        <div
+          className="portfolio-image-modal"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setActiveImageIndex(null);
+          }}
+          onTouchStart={(event) => {
+            touchStartX.current = event.changedTouches[0].clientX;
+          }}
+          onTouchEnd={(event) => {
+            if (touchStartX.current === null) return;
+            const swipeDistance = event.changedTouches[0].clientX - touchStartX.current;
+            if (Math.abs(swipeDistance) > 50) {
+              changeActiveImage(swipeDistance < 0 ? 1 : -1);
+            }
+            touchStartX.current = null;
+          }}
+        >
+          <section
+            className="portfolio-image-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${activeImage.name} project image`}
+          >
+            <div className="portfolio-image-dialog-header">
+              <div>
+                <strong>{activeImage.name}</strong>
+                <span>{activeImage.category}</span>
+              </div>
+              <span className="portfolio-image-counter">
+                {String(activeImageIndex + 1).padStart(2, "0")} / {String(imageProjects.length).padStart(2, "0")}
+              </span>
+              <button
+                type="button"
+                className="portfolio-image-close"
+                ref={imageCloseButtonRef}
+                onClick={() => setActiveImageIndex(null)}
+                aria-label="Close image viewer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="portfolio-image-stage">
+              <button
+                type="button"
+                className="portfolio-image-arrow"
+                onClick={() => changeActiveImage(-1)}
+                aria-label="Previous project image"
+              >
+                ‹
+              </button>
+              <img src={activeImage.image} alt={`${activeImage.name} application preview`} />
+              <button
+                type="button"
+                className="portfolio-image-arrow"
+                onClick={() => changeActiveImage(1)}
+                aria-label="Next project image"
+              >
+                ›
+              </button>
+            </div>
+            <p className="portfolio-image-hint">Use the arrows or swipe to browse · Esc to close</p>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
-
