@@ -142,7 +142,7 @@ const experience = [
       "Lead software product design and development, from client requirements and database design through implementation, deployment, maintenance and user support.",
   },
   {
-    period: "2025 – Present",
+    period: "April 2026 – November 2026",
     role: "ICT Support",
     organisation: "HillTop Academy",
     description:
