@@ -503,7 +503,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
                         <div className="assessment-actions">
                           <button className="table-action" onClick={() => setResultsAssessment(assessment)} title="Open marks for this assessment">{assessment.status === 'DRAFT' || assessment.status === 'OPEN' ? ((assessment._count?.results ?? 0) > 0 ? 'Update marks' : 'Enter marks') : ['SUBMITTED', 'APPROVED'].includes(assessment.status) && !['TEACHER', 'FORM_TUTOR'].includes(user.role) ? 'Review marks' : 'View marks'}</button>
                           <button className="table-action" onClick={() => openEdit(assessment)} disabled={!canEdit} title={canEdit ? 'Edit assessment or set its missing exam date' : 'Only draft or open assessments without results can be edited'}>Edit</button>
-                          {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete assessment without saved results"><Trash2 size={14} /> Delete</button>}
+                          {canDelete && <button className="table-action assessment-delete-action" onClick={() => setPendingDelete(assessment)} disabled={busyId === assessment.id} title="Delete assessment without entered results"><Trash2 size={14} /> Delete</button>}
                           {nextStatus && canTransition && (
                             <button className="table-action assessment-next-action" onClick={() => advanceStatus(assessment)} disabled={busyId === assessment.id} title={`${nextActionLabel} assessment`}>
                               {busyId === assessment.id ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
@@ -564,7 +564,7 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
       />}
       {pendingDelete && <ConfirmActionModal
         title="Delete this assessment?"
-        message={`“${pendingDelete.title}” will be permanently deleted. Assessments without saved results can be deleted while their term is editable and reports have not been published.`}
+        message={`“${pendingDelete.title}” will be permanently deleted. Assessments without entered results can be deleted while their term is editable and reports have not been published.`}
         confirmLabel={busyId === pendingDelete.id ? 'Deleting…' : 'Delete assessment'}
         confirmDisabled={busyId === pendingDelete.id}
         onCancel={() => setPendingDelete(null)}
