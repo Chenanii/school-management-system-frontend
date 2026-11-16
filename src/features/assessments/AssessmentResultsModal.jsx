@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LoaderCircle, Save, X } from 'lucide-react';
+import { LoaderCircle, Save, Search, X } from 'lucide-react';
 import { fetchAssessmentResults, resultStatuses, saveAssessmentResults } from './assessmentApi.js';
 import AssessmentPopup from './AssessmentPopup.jsx';
 import ConfirmActionModal from '../../components/ConfirmActionModal.jsx';
@@ -33,10 +33,21 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const locked = !['DRAFT', 'OPEN'].includes(assessment.status);
   const attendanceRestrictedExam = ['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType);
   const examDateLabel = assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : '';
   const dirtyRows = useMemo(() => changedRows(rows, originalRows), [originalRows, rows]);
+  const visibleRows = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase();
+    if (!query) return rows;
+    return rows.filter((row) => [
+      row.student.firstName,
+      row.student.middleName,
+      row.student.lastName,
+      row.student.admissionNumber
+    ].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
+  }, [rows, searchTerm]);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   function requestClose() {
@@ -162,12 +173,28 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
           </div>
         ) : (
           <>
-            <div className="assessment-results-count">{rows.length} {attendanceRestrictedExam ? 'eligible students' : 'active enrolments'} · {dirtyRows.length} unsaved changes</div>
+            <div className="assessment-results-toolbar">
+              <div className="assessment-results-count">
+                {searchTerm.trim() ? `${visibleRows.length} of ${rows.length} students` : `${rows.length} ${attendanceRestrictedExam ? 'eligible students' : 'active enrolments'}`}
+                {' · '}{dirtyRows.length} unsaved changes
+              </div>
+              <div className="assessment-results-search-wrap">
+                <Search size={16} className="search-icon" aria-hidden="true" />
+                <input
+                  className="search-input assessment-results-search"
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search students or admission number"
+                  aria-label="Search assessment students"
+                />
+              </div>
+            </div>
             <div className="assessment-results-scroll">
               <table className="people-table assessment-results-table">
                 <thead><tr><th>Student</th><th>Result status</th><th>Mark</th><th>Teacher comment</th></tr></thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {visibleRows.map((row) => (
                     <tr key={row.enrollmentId}>
                       <td data-label="Student">
                         <div className="assessment-student-name">
@@ -188,6 +215,7 @@ export default function AssessmentResultsModal({ assessment, signOut, onClose, o
                       </td>
                     </tr>
                   ))}
+                  {visibleRows.length === 0 && <tr><td colSpan="4" className="text-center text-muted">No students match “{searchTerm.trim()}”.</td></tr>}
                 </tbody>
               </table>
             </div>
