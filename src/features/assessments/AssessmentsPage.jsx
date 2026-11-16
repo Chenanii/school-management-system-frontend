@@ -477,9 +477,11 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
                   const canTransition = user.role !== 'TEACHER' || ['DRAFT', 'OPEN'].includes(assessment.status);
                   const canEdit = ['DRAFT', 'OPEN'].includes(assessment.status) && ((assessment._count?.results ?? 0) === 0 || (['MID_TERM_EXAM', 'FINAL_EXAM'].includes(assessment.assessmentType) && !assessment.assessmentDate));
                   const canDelete = assessment.canDelete ?? (assessment.status === 'DRAFT' && (assessment._count?.results ?? 0) === 0);
-                  const canReset = (assessment.canReset ?? ['DRAFT', 'OPEN'].includes(term?.status))
-                    && ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
-                    && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
+                  const canResetRole = user.role === 'TEACHER'
+                    ? isMyClass && assessment.status === 'SUBMITTED'
+                    : ['SCHOOL_ADMIN', 'SUPER_ADMIN', 'HEADTEACHER', 'ACADEMIC_ADMIN', 'EXAMS_OFFICER'].includes(user.role)
+                      && ['SUBMITTED', 'APPROVED', 'LOCKED'].includes(assessment.status);
+                  const canReset = (assessment.canReset ?? ['DRAFT', 'OPEN'].includes(term?.status)) && canResetRole;
                   return (
                     <tr key={assessment.id}>
                       <td data-label="Assessment">
@@ -557,7 +559,9 @@ export default function AssessmentsPage({ user, signOut, onNavigate }) {
       )}
       {pendingReset && <ConfirmActionModal
         title="Reset assessment to open?"
-        message={`Existing marks for “${pendingReset.title}” will be kept. Reopening also approves result corrections for students recorded absent on a mid-term or final exam. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`}
+        message={user.role === 'TEACHER'
+          ? `Existing marks for “${pendingReset.title}” will be kept. Reopening lets you correct the results, then submit the assessment for review again.`
+          : `Existing marks for “${pendingReset.title}” will be kept. Reopening also approves result corrections for students recorded absent on a mid-term or final exam. Any draft term results calculated from this class and subject will be cleared and must be recalculated.`}
         confirmLabel="Reset assessment"
         onCancel={() => setPendingReset(null)}
         onConfirm={() => { const assessment = pendingReset; setPendingReset(null); reopenAssessment(assessment); }}
