@@ -114,10 +114,30 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
       return [assignment?.teacher?.firstName, assignment?.teacher?.lastName].filter(Boolean).join(' ') || assignment?.teacher?.email || 'Unassigned';
     };
     const blockerRows = [];
+    const studentAssessmentRows = [];
     termGroups.forEach((group) => {
       const groupLabel = [group.classLevel?.name, group.name].filter(Boolean).join(' · ') || group.name;
       (readiness[group.id]?.cards || []).forEach((card) => {
         const student = [card.student?.firstName, card.student?.middleName, card.student?.lastName].filter(Boolean).join(' ');
+        (card.assessmentDetails || []).forEach((assessment) => {
+          const assessmentGroup = classFor(assessment.classGroupId);
+          studentAssessmentRows.push({
+            'Current class': groupLabel,
+            'Assessment class': assessmentGroup
+              ? [assessmentGroup.classLevel?.name, assessmentGroup.name].filter(Boolean).join(' · ')
+              : assessment.classGroupName || 'Class-level or subject stream',
+            Placement: assessment.previousClassGroup ? 'Previous class group' : 'Current placement',
+            Student: student,
+            'Admission number': card.student?.admissionNumber || '',
+            Subject: assessment.subjectName || '',
+            Assessment: assessment.title || '',
+            'Assessment type': assessment.assessmentType?.replaceAll('_', ' ') || '',
+            'Assessment status': assessment.assessmentStatus || '',
+            'Result status': assessment.resultStatus || (assessment.recorded ? 'RECORDED' : 'NOT_ENTERED'),
+            Mark: assessment.mark ?? '',
+            'Maximum mark': assessment.maxMark ?? '',
+          });
+        });
         if (!card.complete && card.summary?.requiredSubjects === 0) {
           blockerRows.push({ 'Report stage': reportStage === 'MID_TERM' ? 'Mid-term' : 'End-of-term', Class: groupLabel, Student: student, 'Admission number': card.student?.admissionNumber || '', Subject: '', 'Issue to resolve': 'No required subjects are configured for this class.', 'Responsible teacher': 'School administration' });
         }
@@ -157,6 +177,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
       { Metric: 'Students ready for reports', Value: readyCards },
       { Metric: 'Students checked for report readiness', Value: totalCards },
       { Metric: 'Student issue rows', Value: blockerRows.length },
+      { Metric: 'Student assessment detail rows', Value: studentAssessmentRows.length },
       { Metric: 'Exported at', Value: new Date().toLocaleString() },
     ];
     const workbook = XLSX.utils.book_new();
@@ -166,6 +187,7 @@ export default function ExamResultsStatus({ schoolId, onNavigate }) {
       XLSX.utils.book_append_sheet(workbook, worksheet, name);
     };
     addSheet('Student blockers', blockerRows, ['Report stage', 'Class', 'Student', 'Admission number', 'Subject', 'Issue to resolve', 'Responsible teacher']);
+    addSheet('Student assessments', studentAssessmentRows, ['Current class', 'Assessment class', 'Placement', 'Student', 'Admission number', 'Subject', 'Assessment', 'Assessment type', 'Assessment status', 'Result status', 'Mark', 'Maximum mark']);
     addSheet('Assessment status', workflowRows, ['Class', 'Assessment', 'Subject', 'Teacher', 'Status', 'Assessment type']);
     addSheet('Term summary', summaryRows, ['Metric', 'Value']);
     const safeTerm = (term?.name || 'term').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
