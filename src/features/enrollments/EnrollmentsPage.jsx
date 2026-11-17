@@ -40,7 +40,7 @@ const reasonLabels = {
   ENROLLMENT_NOT_ACTIVE: 'Enrollment is not active',
   CLASS_LEVEL_MISMATCH: 'Different class level',
   ALREADY_IN_GROUP: 'Already in this class group',
-  HAS_RESULTS: 'Has assessment results'
+  REPORT_PUBLISHED: 'A report is already published for the current or destination class group'
 };
 
 function reasonLabel(reason) {
@@ -213,7 +213,7 @@ function AssignClassGroupPanel({ terms, groups, classLevels, signOut, onComplete
             </label>
           ))}</div>}
         <div className="enrollment-preview-footer">
-          <span>Students with assessment results are skipped. Up to {MAX_BATCH} per batch.</span>
+          <span>Assessments from both class groups stay on the report; missing results remain flagged. Groups with published reports are skipped. Up to {MAX_BATCH} per batch.</span>
           <button className="primary-button" type="button" onClick={() => setConfirmingAssign(true)} disabled={saving || loading || !classGroupId || !selectedIds.length}>
             {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />}{saving ? 'Assigning…' : `Assign ${selectedIds.length || ''} to class group`.replace('  ', ' ')}
           </button>
@@ -1064,13 +1064,11 @@ export default function EnrollmentsPage({ user, signOut }) {
                 <table className="people-table enrollment-table">
                   <thead><tr><th>Student</th><th>Term</th><th>Class level</th><th>Home class group</th><th>Previous enrollment</th><th>Status</th><th>Created</th>{canManage && <th>Actions</th>}</tr></thead>
                   <tbody>{enrollments.map((enrollment) => {
-                    const lockReason = enrollment._count?.results
-                      ? 'Class group cannot be changed after assessment results have been entered.'
-                      : enrollment.status !== 'ACTIVE'
-                        ? 'Only active enrollments can be moved.'
-                        : !openTermStatuses.includes(enrollment.term.status)
-                          ? 'Class group can only be changed while the term is open.'
-                          : '';
+                    const lockReason = enrollment.status !== 'ACTIVE'
+                      ? 'Only active enrollments can be moved.'
+                      : !openTermStatuses.includes(enrollment.term.status)
+                        ? 'Class group can only be changed while the term is open.'
+                        : '';
                     return (
                       <tr key={enrollment.id}>
                         <td><div className="enrollment-student-cell"><strong>{studentName(enrollment.student)}</strong><span>{enrollment.student?.admissionNumber}</span></div></td>
